@@ -24,7 +24,7 @@ export function ProfileCard() {
 			<h1 id="profile-name" className="mt-4 text-2xl font-bold tracking-tight">
 				{owner.name}
 			</h1>
-			<p className="mt-4 text-xs leading-relaxed text-ink-2">{owner.bio}</p>
+			<p className="mt-4 text-[13px] leading-relaxed text-ink-2">{owner.bio}</p>
 			<ul className="mt-5 flex flex-wrap gap-2" aria-label="Find me on">
 				{owner.links.map((link) => {
 					const Icon = ICONS[link.label];
