@@ -5,7 +5,7 @@
  */
 export const site = {
 	name: "Bobby Builds",
-	url: "https://bobbybuilds.wahab-ali-khan.workers.dev",
+	url: "https://bobbybuilds.app",
 	adminPath: "/admin",
 	/** Search engines stay out until launch: set to true to allow indexing. */
 	indexable: false,

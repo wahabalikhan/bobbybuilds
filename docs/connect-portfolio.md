@@ -91,5 +91,5 @@ Merge `connect-bobby-builds` into `main`. Your `~/Desktop/portfolio` working cop
 ## Later
 
 - **Comment events** (`comments_opened`, `comment_posted`) are in the CLAUDE.md Backlog, with the exact places to add them once the comment system moves to Supabase anonymous sign-in.
-- **Custom domain:** when Bobby Builds moves to `build.wahabalikhan.com`, change the script's `src` in `app/layout.js`, the Bobby Builds address in `public/_headers` (`script-src` and `connect-src`) and the footer link. The key and origins stay the same.
+- **Custom domain:** Bobby Builds moved to `https://bobbybuilds.app`. The three portfolio changes are in `docs/access-setup.md`, Step 4. The key and origins stay the same.
 - **A 404 page for the portfolio:** adding `data-bobby-not-found` to its 404 page would record broken links automatically.

@@ -1,6 +1,8 @@
 import { spawnSync } from "node:child_process";
+import { unstable_readConfig } from "wrangler";
 import { describe, expect, it } from "vitest";
 import { adminLiveConfig, adminLiveDevArgs, LIVE_ADMIN_NAME } from "../../scripts/lib/admin-live-config.mjs";
+import { site } from "../../src/lib/site";
 
 const base = {
 	name: "bobbybuilds",
@@ -12,8 +14,30 @@ const base = {
 	d1_databases: [{ binding: "DB", database_name: "bobbybuilds-db", database_id: "e9b730ed-b736-4006-b5d8-8059494cb6b7" }],
 	ratelimits: [{ name: "PV_LIMITER", namespace_id: "1001", simple: { limit: 60, period: 60 } }],
 	kv_namespaces: [{ binding: "PUBLIC_CACHE", id: "d905bda1b9a04f908918cd80b4cbeb64" }],
+	routes: [{ pattern: "bobbybuilds.app", custom_domain: true }],
 	vars: { ACCESS_TEAM_DOMAIN: "", ACCESS_AUD: "" },
 };
+
+describe("wrangler.jsonc and site.url", () => {
+	const config = unstable_readConfig({ config: "wrangler.jsonc" });
+
+	it("serves only the bare domain, leaving subdomains (jobs., mail.) free", () => {
+		expect(config.routes).toEqual([{ pattern: "bobbybuilds.app", custom_domain: true }]);
+		expect(config.preview_urls).toBe(false);
+	});
+
+	it("uses the custom domain as the site's address", () => {
+		const url = new URL(site.url);
+		expect(url.protocol).toBe("https:");
+		expect(url.hostname).toBe(config.routes?.[0] && typeof config.routes[0] === "object" ? config.routes[0].pattern : "");
+		expect(site.url).not.toContain("workers.dev");
+		expect(site.url).not.toMatch(/\/$/);
+	});
+
+	it("keeps search engines out until launch", () => {
+		expect(site.indexable).toBe(false);
+	});
+});
 
 describe("admin:live", () => {
 	const config = adminLiveConfig(base, "/repo");

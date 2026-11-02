@@ -41,7 +41,11 @@
 		{ "name": "EVENTS_LIMITER", "namespace_id": "1002", "simple": { "limit": 120, "period": 60 } },
 		{ "name": "METRICS_LIMITER", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
 	],
-	// Live on workers.dev for now. Preview URLs stay off: they would be a second, unprotected way in.
+	// The site lives at the bare domain only. Never add a wildcard route (*.bobbybuilds.app/*):
+	// jobs. belongs to the job board and mail. to Resend (see "Domain plan" in CLAUDE.md).
+	"routes": [{ "pattern": "bobbybuilds.app", "custom_domain": true }],
+	// workers.dev stays on only until the portfolio and job board use bobbybuilds.app (docs/access-setup.md, Step 6).
+	// Preview URLs stay off: they would be a second, unprotected way in.
 	"workers_dev": true,
 	"preview_urls": false,
 	"vars": {

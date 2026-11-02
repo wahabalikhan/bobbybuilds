@@ -1,13 +1,13 @@
 # Protecting /admin
 
-Live address: `https://bobbybuilds.wahab-ali-khan.workers.dev`
+Live address: `https://bobbybuilds.app` (Cloudflare Workers custom domain). Until Step 6 is done, the old `https://bobbybuilds.wahab-ali-khan.workers.dev` also works.
 
-## Where things stand now
+## How it works
 
-Cloudflare's one-click Access for Workers covers the **whole** Worker, with no path option. You also can't add a `workers.dev` hostname with a path to a self-hosted Access app. So until there's a custom domain, nothing protects /admin at the edge, and the app keeps it shut:
-
-- **Live:** `/admin` always returns **403**. `src/middleware.ts` needs a valid Cloudflare Access JWT, and `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` are empty, so nothing can pass.
-- **Public pages** stay open (no Access app on the Worker).
+- **Public pages** are open to everyone. There's no Access app in front of them, and they set no cookies.
+- **`/admin` and everything under it** sits behind a self-hosted Cloudflare Access application with two paths, `admin` and `admin/*`. Only one email address is allowed in, and it signs in with a one-time PIN.
+- **Behind Access**, `src/middleware.ts` also checks the Access JWT (`ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` in `wrangler.jsonc`). If Access were ever switched off or misconfigured, `/admin` would return **403** rather than open. While either value is empty, `/admin` always returns 403.
+- **Access cookie:** Access sets its own `CF_Authorization` cookie, only on `/admin` and only for you after you sign in. Public visitors never get it.
 
 ### Using /admin locally with `npm run preview`
 
@@ -31,69 +31,125 @@ Why this can't open the live site:
 
 ---
 
-## Later: custom domain and a path-based Access app
+## Setting up bobbybuilds.app
 
-Do this once `wahabalikhan.com` (or another domain) is on Cloudflare. These steps use `build.wahabalikhan.com`.
+The domain is registered at GoDaddy and its nameservers point to Cloudflare (`magali` and `tate`). In the Cloudflare dashboard, its status must show **Active** before you start.
 
-### Step 1: Put the domain on Cloudflare
+### Step 0: Check DNS, and redirect www
 
-1. Go to **dash.cloudflare.com**, then **Add a domain**, enter `wahabalikhan.com` and choose the **Free** plan.
-2. Check the DNS records Cloudflare imports. Keep any your portfolio and email need.
-3. At your registrar, change the nameservers to the two Cloudflare gives you. Wait until the domain shows **Active** (minutes to a day).
+1. Go to **dash.cloudflare.com**, click **bobbybuilds.app**, then **DNS**, then **Records**.
+2. **Check what's there.** There must be no **A**, **AAAA** or **CNAME** record on `bobbybuilds.app` (`@`), and no **MX**, or **TXT** starting `v=spf1`, left over from GoDaddy. Delete any you find: click **Edit**, then **Delete**.
+3. **Add a record for www**, so the redirect has something to catch:
+   - Click **Add record**.
+   - Type **AAAA**, Name `www`, IPv6 address `100::`, Proxy status **Proxied** (orange cloud).
+   - Click **Save**.
 
-### Step 2: Point the subdomain at the Worker
+   `100::` is a placeholder address. Cloudflare answers the request before it would ever go there.
+4. **Add the redirect:**
+   - In the left menu, click **Rules**, then **Overview**.
+   - Click **Create rule**, then **Redirect Rule**.
+   - Rule name: `www to bobbybuilds.app`.
+   - Under **If incoming requests match**, choose **Wildcard pattern**. Request URL: `https://www.bobbybuilds.app/*`.
+   - Under **Then**: Target URL `https://bobbybuilds.app/${1}`, Status code **301**, and tick **Preserve query string**.
+   - Click **Deploy**.
 
-1. In `wrangler.jsonc`, add:
-   ```jsonc
-   "routes": [{ "pattern": "build.wahabalikhan.com", "custom_domain": true }],
-   ```
-2. In `src/lib/site.ts`, set `url: "https://build.wahabalikhan.com"`.
-3. Run `npm run deploy`. Wrangler creates the DNS record and certificate. Check that `https://build.wahabalikhan.com` loads.
+Leave **Bot Fight Mode** off (**Security**, then **Bots**). On the Free plan it can't skip particular paths. It would challenge the job board's and Supabase's server requests to `/v1`.
 
-### Step 3: Create the Access application (path-based)
+### Step 1: Point the domain at the Worker (done in code)
 
-1. Go to **one.dash.cloudflare.com** (Zero Trust).
-   - The first time, pick a **team name**, for example `wahab`. Your team domain is `https://wahab.cloudflareaccess.com`. The Free plan is fine.
-2. Go to **Access controls**, then **Applications**, then **Add an application**, then **Self-hosted**.
-3. **Basic information:**
+- `wrangler.jsonc` has `"routes": [{ "pattern": "bobbybuilds.app", "custom_domain": true }]`. That's the bare domain only, never a wildcard.
+- `site.url` in `src/lib/site.ts` is `https://bobbybuilds.app`.
+- `npm run deploy` creates the DNS record (shown as type **Worker**) and the certificate.
+- Check that `https://bobbybuilds.app` loads. It can take a minute or two the first time.
+- Until Step 3, `/admin` there returns 403.
+
+### Step 2: Create the Access application
+
+1. Go to **one.dash.cloudflare.com** and pick your account.
+2. **Check the team.** Go to **Settings**, then **Team name and domain**. It should say `bobbybuilds.cloudflareaccess.com`.
+3. **Check the login method.** Go to **Settings**, then **Authentication**, and look under **Login methods**. **One-time PIN** should be listed. If it isn't, click **Add new**, then **One-time PIN**, then **Save**.
+4. **Start the application.** Go to **Access controls**, then **Applications**, then **Add an application**, then **Self-hosted**.
+5. **Basic information:**
    - Application name: `Bobby Builds admin`
    - Session duration: `24 hours`
-4. **Destinations / Public hostnames.** Add two:
-   - Subdomain `build`, domain `wahabalikhan.com`, path `admin`
-   - Subdomain `build`, domain `wahabalikhan.com`, path `admin/*`
-5. **Access policy.** Create a new policy:
-   - Name: `Only Wahab`, Action: **Allow**
-   - Include: **Emails**, then your email address. Nothing broader.
-6. **Login methods:** keep **One-time PIN** (Cloudflare emails you a code).
-7. **Save.** Open the application's **Overview** (or **Basic information**) and copy the **Application Audience (AUD) Tag**.
+6. Click **Add public hostname**. Leave Subdomain blank, choose Domain **bobbybuilds.app**, and set Path `admin`.
+7. Click **Add public hostname** again. Leave Subdomain blank, choose Domain **bobbybuilds.app**, and set Path `admin/*`.
+8. **Access policies.** Click **Create new policy**. It may open in a new tab.
+   - Policy name: `Only Wahab`
+   - Action: **Allow**
+   - Session duration: **Same as application session timeout**
+   - **Add include**: Selector **Emails**, Value: your email address. Add nothing else.
+   - Click **Save**. Back on the application tab, click **Select existing policies**, tick `Only Wahab`, then **Confirm**.
+9. **Login methods:**
+   - Turn off **Accept all available identity providers**.
+   - Tick only **One-time PIN**.
+   - Turn on **Instant Auth**, so it goes straight to the email prompt.
+10. Click **Next**. Leave **Experience settings** and the cookie settings at their defaults, then click **Next** again and **Save**.
+11. **Copy the AUD tag.** Go to **Applications**, click `Bobby Builds admin`, then **Configure** (or **Overview**). Click the copy button next to **Application Audience (AUD) Tag**.
 
-### Step 4: Give the app the two values
+Never use a wildcard hostname (`*.bobbybuilds.app`) in this app. `jobs.bobbybuilds.app` belongs to the job board.
+
+### Step 3: Give the app the two values
 
 In `wrangler.jsonc`:
 
 ```jsonc
 "vars": {
-	"ACCESS_TEAM_DOMAIN": "https://<team>.cloudflareaccess.com",
+	"ACCESS_TEAM_DOMAIN": "https://bobbybuilds.cloudflareaccess.com",
 	"ACCESS_AUD": "<the AUD tag>"
 }
 ```
 
-Neither value is a secret (the AUD is inside every JWT), so it's fine to commit them. Then `npm run deploy`.
+Neither value is a secret (the AUD is inside every JWT), so it's fine to commit them. Then run `npm run verify`, commit, and `npm run deploy`.
 
-### Step 5: Close the workers.dev address
+### Step 4: Move the portfolio to the new address
 
-`workers.dev` has no Access in front of it. /admin there would still return 403, because the JWT check stays on, but it's cleaner to close it. In `wrangler.jsonc`, set `"workers_dev": false`, keep `"preview_urls": false`, and deploy.
+In the portfolio repo, change three places from `https://bobbybuilds.wahab-ali-khan.workers.dev` to `https://bobbybuilds.app`:
 
-### Step 6: Test it
+| File | Change |
+| --- | --- |
+| `app/layout.js` | `<script defer src="https://bobbybuilds.app/t.js" data-key="pk_ofc9Edalhytt9Qvmshz3Wan3"></script>` |
+| `components/Footer.js` | The privacy link: `https://bobbybuilds.app/p/portfolio` |
+| `public/_headers` | `script-src` and `connect-src` (and the comment above them) |
+
+The key and origins in Bobby Builds stay the same. The snippet and the CSP ship in the same Pages deploy, so they never disagree.
+
+### Step 5: Move the job board to the new address (in its own repo)
+
+The job board builds its CSP (`script-src` and `connect-src`) from `HQ_URL`, so no code changes are needed. Set it in both places it's used:
+
+1. **The Worker.** In `~/Desktop/job_board`, run `npx wrangler secret list`.
+   - If `HQ_URL` is listed, run `npx wrangler secret put HQ_URL` and enter `https://bobbybuilds.app`. This makes a new deployment by itself.
+   - If it isn't listed, it's a `vars` entry in the job board's `wrangler.jsonc`. Change it there and deploy.
+2. **Supabase.** The ingest function sends `/v1/metrics` from there:
+   ```bash
+   supabase secrets set HQ_URL=https://bobbybuilds.app
+   ```
+3. **The job board's CLAUDE.md:** update the address in the "Bobby Builds HQ" section.
+
+The job board's registered origin stays `https://jobboard.wahab-ali-khan.workers.dev` until the job board moves to `jobs.bobbybuilds.app`. When it does, add the new origin in Settings first, then remove the old one.
+
+### Step 6: Close the workers.dev address
+
+Do this only once Steps 4 and 5 are live and data is arriving from both.
+
+- In `wrangler.jsonc`, set `"workers_dev": false` and keep `"preview_urls": false`. Then commit and deploy.
+- The cron Worker reaches the app through a service binding, so it isn't affected.
+
+### Step 7: Test it
 
 | Check | Expected |
 | --- | --- |
-| Private window: `https://build.wahabalikhan.com/` | Public page, no login |
-| Private window: `/admin` | Access login, then a one-time PIN to your email, then "You're in" (no amber banner) |
+| Private window: `https://bobbybuilds.app/`, `/p/portfolio`, `/journey` | Public pages, no login |
+| `curl -I https://bobbybuilds.app/` | `X-Robots-Tag: noindex, nofollow` (until launch) |
+| `https://www.bobbybuilds.app/journey?x=1` | 301 to `https://bobbybuilds.app/journey?x=1` |
+| Private window: `/admin` | Access login, then a one-time PIN to your email, then the dashboard (no amber banner) |
 | A different email at the login | No code arrives and you're not let in |
-| `curl -i https://build.wahabalikhan.com/admin` | Redirect to `*.cloudflareaccess.com` |
-| `curl -i https://build.wahabalikhan.com/admin/anything` | Redirect too (covered by `admin/*`) |
-| `/api/health` | `{"ok":true,"db":"connected"}`, no login |
-| `https://bobbybuilds.wahab-ali-khan.workers.dev/` | Gone, after Step 5 |
+| `curl -I https://bobbybuilds.app/admin` | 302 to `bobbybuilds.cloudflareaccess.com` |
+| `curl -I https://bobbybuilds.app/admin/settings` | 302 too (covered by `admin/*`) |
+| `/api/health` and `/t.js` | Open, no login |
+| The portfolio, with developer tools open | `t.js` from bobbybuilds.app, `POST /v1/pv` 200, no CSP errors |
+| The job board: run a search | It appears on the Job Board's Events tab |
+| `https://bobbybuilds.wahab-ali-khan.workers.dev/` | Gone, after Step 6 |
 
 If you ever change `adminPath` in `src/lib/site.ts`, update both Access paths to match **before** deploying.

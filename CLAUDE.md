@@ -113,10 +113,21 @@ The reference is `marclou.pdf` (Marc Lou's indie page). Use the same structure a
 - Local: `.dev.vars` (ignored by Git). Production: `npx wrangler secret put NAME`. Names only in `.dev.vars.example`.
 - Never in `.env*`, `NEXT_PUBLIC_*`, `wrangler.jsonc` vars, or Git. `npm run check-env` runs before build, deploy, upload and preview, and refuses if this is broken.
 - `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` are not secret and live in `wrangler.jsonc` vars. The admin path refuses every request while either is empty.
-- Until there's a custom domain with a path-based Access app, live /admin is always 403. Locally, `LOCAL_ADMIN_PREVIEW=on` in `.dev.vars` opens it with `npm run preview`, on loopback hostnames only (`src/lib/security/local-admin.ts`). Never weaken the loopback check or move the flag anywhere else. check-env enforces this.
+- Live /admin sits behind a path-based Access app on `bobbybuilds.app` (`admin`, `admin/*`), and the JWT check still runs behind it. Locally, `LOCAL_ADMIN_PREVIEW=on` in `.dev.vars` opens it with `npm run preview`, on loopback hostnames only (`src/lib/security/local-admin.ts`). Never weaken the loopback check or move the flag anywhere else. check-env enforces this.
 
 ## Deploying
 
-- Lives on workers.dev for now (`workers_dev: true`, `preview_urls: false`). Preview URLs stay off.
-- `npm run deploy`. Access setup steps are in `docs/access-setup.md`.
+- Lives at `https://bobbybuilds.app` (a Workers custom domain on the bare domain only). workers.dev stays on only until the portfolio and job board have moved (`docs/access-setup.md`, Step 6), then `workers_dev: false`. Preview URLs stay off.
+- `npm run deploy`. Domain and Access setup steps are in `docs/access-setup.md`.
+
+## Domain plan (bobbybuilds.app)
+
+Keep these free. Nothing in HQ may get in their way:
+
+- `bobbybuilds.app`: HQ. Its route is the exact domain, never `*.bobbybuilds.app/*`. The Access app covers only its `admin` and `admin/*` paths, never a wildcard hostname.
+- `www.bobbybuilds.app`: a 301 redirect to the bare domain (a proxied `AAAA 100::` record and a Redirect Rule).
+- `jobs.bobbybuilds.app` (later): the job board, "Tech Jobs, by Bobby Builds", on its own Worker custom domain.
+- `mail.bobbybuilds.app` (later): Resend sending. Its records sit under `mail` (`resend._domainkey.mail`, and the MX and TXT on `send.mail`).
+- `hello@bobbybuilds.app` (later): Cloudflare Email Routing, forwarding to a personal inbox. It adds MX records and one SPF TXT at the bare domain. There must only ever be one SPF record at the bare domain. Add a single `_dmarc` record when email goes live.
+- Keep Bot Fight Mode off: on the Free plan it can't skip particular paths, and it would challenge server requests to `/v1`.
 - Build updates email form (Phase 6) posts straight to an external newsletter tool (such as Buttondown). HQ never sees or stores the address.
