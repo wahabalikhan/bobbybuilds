@@ -42,7 +42,7 @@
 		{ "name": "METRICS_LIMITER", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
 	],
 	// The site lives at the bare domain only. Never add a wildcard route (*.bobbybuilds.app/*):
-	// jobs. belongs to the job board and mail. to Resend (see "Domain plan" in CLAUDE.md).
+	// techjobs. belongs to the job board and mail. to Resend (see "Domain plan" in CLAUDE.md).
 	"routes": [{ "pattern": "bobbybuilds.app", "custom_domain": true }],
 	// No workers.dev address and no preview URLs: they would be second ways in, without Access in front.
 	"workers_dev": false,

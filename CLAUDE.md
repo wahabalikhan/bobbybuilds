@@ -126,7 +126,7 @@ Keep these free. Nothing in HQ may get in their way:
 
 - `bobbybuilds.app`: HQ. Its route is the exact domain, never `*.bobbybuilds.app/*`. The Access app covers only its `admin` and `admin/*` paths, never a wildcard hostname.
 - `www.bobbybuilds.app`: a 301 redirect to the bare domain (a proxied `AAAA 100::` record and a Redirect Rule).
-- `jobs.bobbybuilds.app` (later): the job board, "Tech Jobs, by Bobby Builds", on its own Worker custom domain.
+- `techjobs.bobbybuilds.app` (later): the job board, "Tech Jobs, by Bobby Builds", on its own Worker custom domain.
 - `mail.bobbybuilds.app` (later): Resend sending. Its records sit under `mail` (`resend._domainkey.mail`, and the MX and TXT on `send.mail`).
 - `hello@bobbybuilds.app` (later): Cloudflare Email Routing, forwarding to a personal inbox. It adds MX records and one SPF TXT at the bare domain. There must only ever be one SPF record at the bare domain. Add a single `_dmarc` record when email goes live.
 - Keep Bot Fight Mode off: on the Free plan it can't skip particular paths, and it would challenge server requests to `/v1`.

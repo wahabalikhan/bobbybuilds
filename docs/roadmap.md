@@ -123,7 +123,7 @@ Done in the job board repo during its Phase 10.
     - `bobbybuilds.app` as a Workers custom domain (the bare domain only) and `site.url`.
     - `www` redirects to it with a 301.
     - `docs/access-setup.md` rewritten.
-    - A "Domain plan" in CLAUDE.md keeps `jobs.`, `mail.` and Email Routing clear.
+    - A "Domain plan" in CLAUDE.md keeps `techjobs.`, `mail.` and Email Routing clear.
   - `3a4d5e1`: a self-hosted Access app on `bobbybuilds.app` for the paths `admin` and `admin/*`. One email address, one-time PIN, team `bobbybuilds.cloudflareaccess.com`. The JWT check still runs behind it.
   - Portfolio `46acbe4`: the snippet, footer link and CSP moved to `bobbybuilds.app`.
   - The job board's `HQ_URL` was switched on its Worker and in Supabase. No code changes.

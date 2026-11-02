@@ -21,7 +21,7 @@ const base = {
 describe("wrangler.jsonc and site.url", () => {
 	const config = unstable_readConfig({ config: "wrangler.jsonc" });
 
-	it("serves only the bare domain, leaving subdomains (jobs., mail.) free", () => {
+	it("serves only the bare domain, leaving subdomains (techjobs., mail.) free", () => {
 		expect(config.routes).toEqual([{ pattern: "bobbybuilds.app", custom_domain: true }]);
 		expect(config.workers_dev).toBe(false);
 		expect(config.preview_urls).toBe(false);
