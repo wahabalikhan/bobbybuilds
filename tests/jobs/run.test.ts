@@ -61,10 +61,10 @@ describe("/internal/jobs", () => {
 		expect(run).toEqual({ task: "daily", ok: 1, finished_at: NOW });
 	});
 
-	it("rolls up today on the frequent task only every 15 minutes", async () => {
+	it("rolls up today on the frequent task only every 10 minutes", async () => {
 		const at = (minute: number) => Date.UTC(2026, 11, 7, 9, minute);
-		const quarter = await runTask("frequent", deps(), at(15));
-		const between = await runTask("frequent", deps(), at(20));
+		const quarter = await runTask("frequent", deps(), at(20));
+		const between = await runTask("frequent", deps(), at(25));
 		expect(quarter.summary).toHaveProperty("rollup");
 		expect(between.summary).not.toHaveProperty("rollup");
 		expect(between.summary).toHaveProperty("uptime");

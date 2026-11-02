@@ -65,6 +65,13 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
   - **Forms:** use `<SettingsForm>` and its fields (`src/components/admin/form.tsx`), which handle field errors, keeping what was typed, and showing a new secret key once.
   - **Logos:** image files in `public/logos/`, listed into `src/lib/logos.generated.ts` by `npm run build:logos`, which runs before dev, build and typecheck.
   - **Markdown:** `src/lib/markdown.ts`. Raw HTML is always escaped, links are http(s), mailto or same-site paths only, and images are same-site only. Use it for journey entries and project descriptions everywhere.
+- Public pages:
+  - **Routes:** `/`, `/p/[slug]`, `/journey`, `/journey/[slug]`, share images, `/sitemap.xml` and `/robots.txt`.
+  - **Data:** they read ONLY the public snapshot (`getSnapshot()` in `src/lib/public/`), never `@/lib/db` or bindings. `tests/node/public-boundary.test.ts` enforces this.
+  - **The snapshot:** built only from roll-ups, public numbers, published entries and public milestones (`src/lib/public/snapshot.ts`). It's stored in KV (`PUBLIC_CACHE`) and written only when its content changes.
+  - **When it's rebuilt:** by the 5-minute job every 10 minutes, by the daily job, and after every successful settings save. That's at most about 144 KV writes a day, against the free plan's 1,000. Don't add per-page KV writes.
+  - **Indexing:** `site.indexable` (`src/lib/site.ts`) controls it. While false, there's noindex in the meta tag and the `X-Robots-Tag` header, and `robots.txt` disallows everything. Launch means setting it to true.
+  - **Owner details** (name, location, bio, links, photo) live in `owner` in `src/lib/site.ts`. The photo is `public/profile.png` or `public/profile.jpg` (also `.jpeg`/`.webp`), detected at build into `PROFILE_PHOTO`; until one exists, the initial is shown.
 - Retention: raw `page_views`, `events`, `uptime_checks` and `job_runs` are deleted after 90 days (a row from exactly 90 days ago stays). Roll-ups, including `daily_uptime` and the Core Web Vitals p75 columns, are kept.
 - The package is `"type": "module"`, so every `.js`/`.ts` file is ESM. Don't add CommonJS files. If one is ever needed, name it `.cjs`.
 - Tests: `npm test` runs Vitest inside the Workers runtime (`@cloudflare/vitest-plugin`) on a fresh D1 with every migration applied.
@@ -84,6 +91,11 @@ The reference is `marclou.pdf` (Marc Lou's indie page). Use the same structure a
 - **Layout:** two-column card grids for projects, and a compact three-column list (icon, name, two grey lines, small pill badges) for minor items.
 - **Accent colour:** `--accent` (placeholder until Phase 6) is only for interactive states: focus, links and selection. It's never used for chart marks.
 - **Statuses:** reserved colours, always with an icon and a label.
+
+## Backlog
+
+- **Build-updates email form:** posts straight to a newsletter tool (such as Buttondown). HQ never stores emails. Add the tool's origin to `form-action` in the public CSP only.
+- **Share images:** embed the Geist font so titles are bold (the built-in font has one weight).
 
 ## Security headers and CSP
 

@@ -159,7 +159,7 @@ describe("CSV", () => {
 
 describe("admin access check", () => {
 	afterEach(() => {
-		delete process.env.LOCAL_ADMIN_PREVIEW;
+		Reflect.deleteProperty(process.env, "LOCAL_ADMIN_PREVIEW");
 	});
 
 	it("reads the hostname from a Host header", () => {

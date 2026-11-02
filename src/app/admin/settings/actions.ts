@@ -14,7 +14,9 @@ import type { FormState } from "@/lib/admin/form-state";
 import * as core from "@/lib/admin/settings-core";
 import { formValues } from "@/lib/admin/validate";
 import { LOGOS } from "@/lib/logos.generated";
+import { utcDay } from "@/lib/days";
 import { renderMarkdown } from "@/lib/markdown";
+import { publishSnapshot } from "@/lib/public/snapshot";
 import { adminHref } from "@/lib/site";
 
 type Core = (db: D1Database, prev: FormState, values: Record<string, string>, ctx: { logos: string[]; now: number }) => Promise<core.ActionResult>;
@@ -22,6 +24,14 @@ type Core = (db: D1Database, prev: FormState, values: Record<string, string>, ct
 async function run(prev: FormState, form: FormData, fn: Core): Promise<FormState> {
 	const { env } = await getCloudflareContext({ async: true });
 	const result = await fn(env.DB, prev, formValues(form), { logos: LOGOS, now: Date.now() });
+	if (result.state.status === "ok") {
+		// Show the change on the public pages straight away (written only if it changed them).
+		try {
+			await publishSnapshot(env.DB, env.PUBLIC_CACHE, utcDay());
+		} catch {
+			result.state.notes = [...(result.state.notes ?? []), "Saved, but the public pages couldn't be refreshed yet. They'll catch up within 10 minutes."];
+		}
+	}
 	revalidatePath(adminHref(), "layout");
 	if (result.redirectTo) redirect(result.redirectTo);
 	return result.state;

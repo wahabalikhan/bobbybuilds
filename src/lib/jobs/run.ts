@@ -4,18 +4,20 @@ import { type Fetch, syncGithubWeekly } from "./github";
 import { cleanUp, rotateDailySecret } from "./maintenance";
 import { rollupDay } from "./rollup";
 import { pingAll } from "./uptime";
+import { publishSnapshot } from "@/lib/public/snapshot";
 
 /**
  * The two scheduled tasks, triggered by the cron Worker (cron/):
- * - frequent (every 5 minutes): uptime pings; today's roll-up every 15 minutes
+ * - frequent (every 5 minutes): uptime pings; every 10 minutes, today's roll-up and the
+ *   public snapshot (written to KV only if it changed)
  * - daily (00:10 UTC): finalise yesterday's roll-up, refresh today's, rotate the daily
- *   secret, 90-day clean-up, GitHub weekly commits
+ *   secret, 90-day clean-up, GitHub weekly commits, public snapshot
  */
 
 export const TASKS = ["daily", "frequent"] as const;
 export type JobTask = (typeof TASKS)[number];
 
-export type JobDeps = { db: D1Database; fetch: Fetch; githubToken?: string; now?: () => number };
+export type JobDeps = { db: D1Database; fetch: Fetch; githubToken?: string; now?: () => number; kv?: KVNamespace };
 export type JobResult = { ok: boolean; task: JobTask; summary: Record<string, unknown> };
 
 async function frequent(deps: JobDeps, at: number) {
@@ -23,18 +25,29 @@ async function frequent(deps: JobDeps, at: number) {
 	const summary: Record<string, unknown> = {
 		uptime: uptime.map((check) => ({ project: check.projectId, up: check.up, ms: check.responseMs, status: check.statusCode })),
 	};
-	if (new Date(at).getUTCMinutes() % 15 === 0) summary.rollup = await rollupDay(deps.db, utcDay(at), at);
+	if (new Date(at).getUTCMinutes() % 10 === 0) {
+		summary.rollup = await rollupDay(deps.db, utcDay(at), at);
+		if (deps.kv) {
+			const { written, bytes } = await publishSnapshot(deps.db, deps.kv, utcDay(at), at);
+			summary.snapshot = { written, bytes };
+		}
+	}
 	return summary;
 }
 
 async function daily(deps: JobDeps, at: number) {
 	const today = utcDay(at);
-	return {
+	const summary: Record<string, unknown> = {
 		rollups: [await rollupDay(deps.db, addDays(today, -1), at), await rollupDay(deps.db, today, at)],
 		secret: await rotateDailySecret(deps.db, today),
 		cleanup: await cleanUp(deps.db, today),
 		github: await syncGithubWeekly(deps.db, deps.fetch, weekStart(today), deps.githubToken, at),
 	};
+	if (deps.kv) {
+		const { written, bytes } = await publishSnapshot(deps.db, deps.kv, today, at);
+		summary.snapshot = { written, bytes };
+	}
+	return summary;
 }
 
 /** Runs a task and records it in job_runs. Never throws: failures come back as ok: false. */

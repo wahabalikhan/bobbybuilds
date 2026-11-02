@@ -60,7 +60,12 @@ export async function middleware(request: NextRequest) {
 		return withHeaders(response, { ...securityHeaders, ...adminOnlyHeaders, "Content-Security-Policy": csp });
 	}
 
-	return withHeaders(NextResponse.next(), { ...securityHeaders, "Content-Security-Policy": publicCsp(isLoopbackHost(request.nextUrl.hostname)) });
+	return withHeaders(NextResponse.next(), {
+		...securityHeaders,
+		"Content-Security-Policy": publicCsp(isLoopbackHost(request.nextUrl.hostname)),
+		// Search engines stay out until launch (site.indexable in src/lib/site.ts).
+		...(site.indexable ? {} : { "X-Robots-Tag": "noindex, nofollow" }),
+	});
 }
 
 export const config = {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { site } from "@/lib/site";
+import { owner, site } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,9 +15,13 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
 	metadataBase: new URL(site.url),
-	title: { default: site.name, template: `%s · ${site.name}` },
-	description: "Wahab's indie products, built in public.",
+	title: { default: `${owner.name}: ${site.name}`, template: `%s · ${site.name}` },
+	description: `${owner.firstName}'s free, honest tools, built in public from ${owner.location}.`,
 	icons: { icon: { url: "/favicon.svg", type: "image/svg+xml" } },
+	// Search engines stay out until launch (site.indexable). Also sent as X-Robots-Tag by the middleware.
+	robots: site.indexable ? { index: true, follow: true } : { index: false, follow: false, nocache: true },
+	openGraph: { type: "website", siteName: site.name, locale: "en_GB" },
+	twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({

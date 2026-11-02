@@ -16,7 +16,7 @@ if (process.argv.some((arg) => arg.includes("remote"))) {
 	process.exit(1);
 }
 
-const proxy = await getPlatformProxy<{ DB: D1Database }>({ configPath: "wrangler.jsonc", remoteBindings: false, envFiles: [] });
+const proxy = await getPlatformProxy<{ DB: D1Database; PUBLIC_CACHE: KVNamespace }>({ configPath: "wrangler.jsonc", remoteBindings: false, envFiles: [] });
 const db = proxy.env.DB;
 
 // Deterministic randomness, so every run makes the same data.
@@ -276,6 +276,50 @@ for (let i = 0; i < 6; i += 1) {
 await insert("job_runs", { task: "daily", started_at: Date.parse(`${today}T00:10:00Z`), finished_at: Date.parse(`${today}T00:10:04Z`), ok: 1, summary: '{"demo":true}' });
 await flush(true);
 
+console.log("Adding demo descriptions, milestones and journey entries…");
+await db
+	.prepare("UPDATE projects SET description_md = ?2, links = ?3 WHERE id = ?1")
+	.bind(
+		portfolio.id,
+		"Demo description. My portfolio shows **how I work**, not just what the screens look like: the research, the trade-offs and what happened after launch.\n\nEach case study covers:\n\n- the problem and who had it\n- what I tried, and what didn't work\n- the result, in numbers where I can share them\n\nRead them at [wahabalikhan.com](https://wahabalikhan.com).",
+		JSON.stringify([{ label: "LinkedIn", url: "https://linkedin.com/in/wahabalikhan" }]),
+	)
+	.run();
+await db
+	.prepare("UPDATE projects SET description_md = ?2 WHERE id = ?1")
+	.bind(jobBoard.id, "Demo description. A job board with **only real tech jobs**, taken straight from company careers pages. No recruiters, no reposts, no ghost jobs.")
+	.run();
+await db.prepare("DELETE FROM milestones WHERE project_id IN (?1, ?2)").bind(...ids).run();
+for (const [projectId, day, title, note, isPublic] of [
+	[jobBoard.id, addDays(today, -60), "Started building", "First commit on a weekend.", 1],
+	[jobBoard.id, addDays(today, -40), "First 100 jobs listed", "", 1],
+	[jobBoard.id, addDays(today, -12), "Private: talk to a sponsor", "This one is private and must never appear publicly.", 0],
+	[portfolio.id, addDays(today, -100), "New portfolio live", "Rebuilt from scratch with case studies.", 1],
+] as const) {
+	await db.prepare("INSERT INTO milestones (project_id, day, title, note, is_public) VALUES (?1, ?2, ?3, ?4, ?5)").bind(projectId, day, title, note, isPublic).run();
+}
+await db.prepare("DELETE FROM journey_entries WHERE slug LIKE 'demo-%'").run();
+for (const [slug, title, body, projectId, published, daysAgo] of [
+	["demo-week-one", "Demo: week one of building in public", "I was made redundant in June. This week I started building the job board I wished I'd had.\n\n## What I shipped\n\n- the first scraper\n- a [simple list page](/p/job-board)\n\nNext week: alerts.", jobBoard.id, 1, 50],
+	["demo-what-honest-means", "Demo: what \"honest\" means for my tools", "No dark patterns, no fake urgency, no selling data. If a tool is free, it's free.", null, 1, 20],
+	["demo-draft-secret", "Draft: not ready yet", "This draft must never appear publicly.", portfolio.id, 0, 0],
+] as const) {
+	const publishedAt = published ? Date.parse(`${addDays(today, -daysAgo)}T09:00:00Z`) : null;
+	await db
+		.prepare("INSERT INTO journey_entries (slug, title, body_md, project_id, is_published, published_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")
+		.bind(slug, title, body, projectId, published, publishedAt)
+		.run();
+}
+// A private number with a value that's easy to spot: it must never reach a public page.
+await db.prepare("DELETE FROM metrics WHERE project_id = ?1 AND key = 'secret_revenue'").bind(jobBoard.id).run();
+const secretMetric = await db
+	.prepare("INSERT INTO metrics (project_id, key, label, source, is_public) VALUES (?1, 'secret_revenue', 'Private demo number', 'product', 0) RETURNING id")
+	.bind(jobBoard.id)
+	.first<{ id: number }>();
+await db.prepare("INSERT INTO metric_values (metric_id, day, value) VALUES (?1, ?2, 987654)").bind(secretMetric!.id, today).run();
+// Make returning users public so a product number shows on the public page.
+await db.prepare("UPDATE metrics SET is_public = 1 WHERE project_id = ?1 AND key = 'returning_users'").bind(jobBoard.id).run();
+
 console.log("Building roll-ups for every day…");
 for (let d = 0; d < DAYS; d += 1) await rollupDay(db, addDays(firstDay, d), now);
 
@@ -284,6 +328,9 @@ const before = addDays(today, -90);
 await db.prepare("DELETE FROM page_views WHERE day < ?1").bind(before).run();
 await db.prepare("DELETE FROM events WHERE day < ?1").bind(before).run();
 await db.prepare("DELETE FROM uptime_checks WHERE checked_at < ?1").bind(Date.parse(`${before}T00:00:00Z`)).run();
+
+// The public pages rebuild their snapshot from the new data on the next visit.
+await proxy.env.PUBLIC_CACHE.delete("public-snapshot");
 
 const counts = await db
 	.prepare(

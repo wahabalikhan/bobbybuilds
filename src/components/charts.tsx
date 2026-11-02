@@ -79,7 +79,10 @@ export function TimeSeriesChart({
 	unitLabel,
 	axisFormat,
 	unfinishedLast = false,
+	viewWidth = W,
 }: {
+	/** Drawing width: use about 360 for charts in half-width cards, so text stays readable. */
+	viewWidth?: number;
 	title: string;
 	series: Series[];
 	format?: Format;
@@ -97,7 +100,7 @@ export function TimeSeriesChart({
 	const ticks = niceTicks(Math.max(0, ...values));
 	const yMax = ticks[ticks.length - 1];
 	const tickFormat = axisFormat ? axisFormat(yMax) : format;
-	const plotW = W - PAD.left - PAD.right;
+	const plotW = viewWidth - PAD.left - PAD.right;
 	const plotH = height - PAD.top - PAD.bottom;
 	const x = (i: number) => PAD.left + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW);
 	const y = (v: number) => PAD.top + plotH - (v / yMax) * plotH;
@@ -129,11 +132,11 @@ export function TimeSeriesChart({
 	return (
 		<figure className="w-full">
 			<Legend series={series} />
-			<svg viewBox={`0 0 ${W} ${height}`} className="h-auto w-full" role="img" aria-label={summary}>
+			<svg viewBox={`0 0 ${viewWidth} ${height}`} className="h-auto w-full" role="img" aria-label={summary}>
 				<title>{summary}</title>
 				{ticks.map((t) => (
 					<g key={t}>
-						<line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--axis)" : "var(--grid)"} strokeWidth={1} />
+						<line x1={PAD.left} x2={viewWidth - PAD.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--axis)" : "var(--grid)"} strokeWidth={1} />
 						<text x={PAD.left - 8} y={y(t) + 4} textAnchor="end" fontSize={11} fill="var(--muted)" className="tabular">
 							{tickFormat(t)}
 						</text>
@@ -141,7 +144,7 @@ export function TimeSeriesChart({
 				))}
 				{references.map((r) => (
 					<g key={r.label}>
-						<line x1={PAD.left} x2={W - PAD.right} y1={y(r.value)} y2={y(r.value)} stroke="var(--muted)" strokeWidth={1} />
+						<line x1={PAD.left} x2={viewWidth - PAD.right} y1={y(r.value)} y2={y(r.value)} stroke="var(--muted)" strokeWidth={1} />
 						<text x={PAD.left + 4} y={y(r.value) - 4} textAnchor="start" fontSize={11} fill="var(--muted)">
 							{r.label}
 						</text>
@@ -206,7 +209,13 @@ export function ColumnChart({
 	format = formatCount,
 	height = 200,
 	unfinishedLast = false,
+	viewWidth = W,
+	showTable = true,
 }: {
+	/** Drawing width: about 360 for narrow screens, so labels stay readable. */
+	viewWidth?: number;
+	/** Hide the table view (when another copy of the chart on the page already has it). */
+	showTable?: boolean;
 	title: string;
 	bars: { label: string; value: number; detail?: string }[];
 	format?: Format;
@@ -216,21 +225,21 @@ export function ColumnChart({
 }) {
 	const ticks = niceTicks(Math.max(0, ...bars.map((b) => b.value)));
 	const yMax = ticks[ticks.length - 1];
-	const plotW = W - PAD.left - PAD.right;
+	const plotW = viewWidth - PAD.left - PAD.right;
 	const plotH = height - PAD.top - PAD.bottom;
 	const band = plotW / Math.max(1, bars.length);
 	const barW = Math.min(24, band * 0.6);
 	const y = (v: number) => PAD.top + plotH - (v / yMax) * plotH;
-	const every = Math.ceil(bars.length / 12);
+	const every = Math.ceil(bars.length / (viewWidth < 500 ? 6 : 12));
 	const total = bars.reduce((t, b) => t + b.value, 0);
 
 	return (
 		<figure className="w-full">
-			<svg viewBox={`0 0 ${W} ${height}`} className="h-auto w-full" role="img" aria-label={`${title}. Total ${format(total)}.`}>
+			<svg viewBox={`0 0 ${viewWidth} ${height}`} className="h-auto w-full" role="img" aria-label={`${title}. Total ${format(total)}.`}>
 				<title>{`${title}. Total ${format(total)}.`}</title>
 				{ticks.map((t) => (
 					<g key={t}>
-						<line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--axis)" : "var(--grid)"} strokeWidth={1} />
+						<line x1={PAD.left} x2={viewWidth - PAD.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--axis)" : "var(--grid)"} strokeWidth={1} />
 						<text x={PAD.left - 8} y={y(t) + 4} textAnchor="end" fontSize={11} fill="var(--muted)" className="tabular">
 							{format(t)}
 						</text>
@@ -262,7 +271,7 @@ export function ColumnChart({
 					);
 				})}
 			</svg>
-			<TableView caption={title} head={["", "Value"]} rows={bars.map((b) => [b.detail ?? b.label, format(b.value)])} />
+			{showTable && <TableView caption={title} head={["", "Value"]} rows={bars.map((b) => [b.detail ?? b.label, format(b.value)])} />}
 		</figure>
 	);
 }

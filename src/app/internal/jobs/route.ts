@@ -9,5 +9,6 @@ export async function POST(request: Request) {
 		fetch: (input, init) => fetch(input, init),
 		secret: env.ROLLUP_SECRET,
 		githubToken: env.GITHUB_TOKEN,
+		kv: env.PUBLIC_CACHE,
 	});
 }

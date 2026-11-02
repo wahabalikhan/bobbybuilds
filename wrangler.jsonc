@@ -32,6 +32,9 @@
 			"migrations_dir": "migrations"
 		}
 	],
+	// The public snapshot: everything the public pages show, rebuilt from the roll-ups every 10 minutes
+	// and only written when it changes (at most ~144 writes a day; the free plan allows 1,000).
+	"kv_namespaces": [{ "binding": "PUBLIC_CACHE", "id": "d905bda1b9a04f908918cd80b4cbeb64" }],
 	// Collector rate limits, per minute. Keys are hashes (never raw IPs). Counters are per Cloudflare location.
 	"ratelimits": [
 		{ "name": "PV_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
