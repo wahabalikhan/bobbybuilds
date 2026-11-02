@@ -2,14 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { site } from "@/lib/site";
 import { ACCESS_JWT_HEADER, isValidAccessJwt, readAccessConfig } from "@/lib/security/access";
 import { adminCsp, adminOnlyHeaders, createNonce, publicCsp, securityHeaders } from "@/lib/security/headers";
+import { isLocalAdminAllowed, LOCAL_ADMIN_HEADER } from "@/lib/security/local-admin";
 
 // Edge middleware (not Next 16 proxy.ts): it is what OpenNext officially supports on Cloudflare.
 // Admin pages live in src/app/admin. If site.adminPath is changed, requests to the new
 // path are rewritten here and the internal path is hidden.
 const INTERNAL_ADMIN_PATH = "/admin";
-
-// `next dev` only. Production builds always have NODE_ENV=production, so this can't ship.
-const skipAccessInDev = process.env.NODE_ENV === "development";
 
 function isUnder(pathname: string, base: string): boolean {
 	return pathname === base || pathname.startsWith(`${base}/`);
@@ -37,8 +35,9 @@ export async function middleware(request: NextRequest) {
 	}
 
 	if (isUnder(pathname, site.adminPath)) {
+		const localAdmin = isLocalAdminAllowed(request.nextUrl.hostname);
 		const token = request.headers.get(ACCESS_JWT_HEADER);
-		if (!skipAccessInDev && !(await isValidAccessJwt(token, readAccessConfig()))) {
+		if (!localAdmin && !(await isValidAccessJwt(token, readAccessConfig()))) {
 			return plainResponse("Sorry, you don't have access to this page.", 403);
 		}
 
@@ -46,6 +45,8 @@ export async function middleware(request: NextRequest) {
 		const csp = adminCsp(nonce);
 		// Next.js reads the nonce from the request's CSP header and stamps its own scripts.
 		const requestHeaders = new Headers(request.headers);
+		requestHeaders.delete(LOCAL_ADMIN_HEADER);
+		if (localAdmin) requestHeaders.set(LOCAL_ADMIN_HEADER, "1");
 		requestHeaders.set("Content-Security-Policy", csp);
 		requestHeaders.set("x-nonce", nonce);
 

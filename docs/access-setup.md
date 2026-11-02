@@ -1,91 +1,99 @@
-# Protecting /admin with Cloudflare Access
+# Protecting /admin
 
 Live address: `https://bobbybuilds.wahab-ali-khan.workers.dev`
 
-Two locks guard /admin:
+## Where things stand now
 
-1. **Cloudflare Access** (at Cloudflare's edge) asks you to log in before the request reaches the Worker.
-2. **The app's own check** (`src/middleware.ts`) verifies the signed JWT that Access attaches. Until `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` are set, /admin refuses everyone with a 403. That's what you see now.
+Cloudflare's one-click Access for Workers covers the **whole** Worker, with no path option. You also can't add a `workers.dev` hostname with a path to a self-hosted Access app. So until there's a custom domain, nothing protects /admin at the edge, and the app keeps it shut:
 
-Only /admin should be behind Access. The public pages must stay open.
+- **Live:** `/admin` always returns **403**. `src/middleware.ts` needs a valid Cloudflare Access JWT, and `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` are empty, so nothing can pass.
+- **Public pages** stay open (no Access app on the Worker).
+
+### Using /admin locally with `npm run preview`
+
+1. Add this line to `.dev.vars`. It's ignored by Git and never uploaded by `wrangler deploy`:
+   ```
+   LOCAL_ADMIN_PREVIEW=on
+   ```
+2. Run `npm run preview` and open `http://localhost:8787/admin`.
+   An amber banner reads "Local preview: Cloudflare Access is skipped on this machine only."
+3. Remove the line (or set it empty) when you're done if you like. Leaving it is safe.
+
+Why this can't open the live site:
+
+- The skip only works when the request's hostname is `localhost`, `127.0.0.1` or `[::1]`. Cloudflare's edge only routes real hostnames to the Worker, so a live request never matches. Even locally, a request with the live hostname gets 403.
+- `npm run check-env` (which runs before every build, preview and deploy) refuses if `LOCAL_ADMIN_PREVIEW` appears in:
+  - any `.env*` file, because OpenNext bakes those into the bundle;
+  - `wrangler.jsonc`;
+  - the Worker's deployed secrets (checked on `npm run deploy`).
+
+`npm run dev` (plain Next.js dev server) also opens /admin on localhost without the flag.
 
 ---
 
-## Step 1: Turn on Access for the workers.dev address
+## Later: custom domain and a path-based Access app
 
-1. Go to **dash.cloudflare.com**, then **Workers & Pages**, then select **bobbybuilds**.
-2. Open **Settings**, then **Domains & Routes**.
-3. Find the **workers.dev** row (`bobbybuilds.wahab-ali-khan.workers.dev`). Open its **⋯** menu, or the toggle beside it, and choose **Enable Cloudflare Access**.
-   - If you've never used Zero Trust, Cloudflare asks you to pick a **team name** first, for example `wahab`. Your team domain is then `https://wahab.cloudflareaccess.com`. The Free plan is fine (up to 50 users).
-4. A box appears showing two values. **Copy both now**:
-   - `POLICY_AUD`: a long hex string. This is your `ACCESS_AUD`.
-   - `TEAM_DOMAIN`: `https://<team>.cloudflareaccess.com`. This is your `ACCESS_TEAM_DOMAIN`.
+Do this once `wahabalikhan.com` (or another domain) is on Cloudflare. These steps use `build.wahabalikhan.com`.
 
-Leave **Preview URLs** alone. They're switched off in `wrangler.jsonc` (`preview_urls: false`), so there's nothing to protect there.
+### Step 1: Put the domain on Cloudflare
 
-## Step 2: Limit Access to /admin only (important)
+1. Go to **dash.cloudflare.com**, then **Add a domain**, enter `wahabalikhan.com` and choose the **Free** plan.
+2. Check the DNS records Cloudflare imports. Keep any your portfolio and email need.
+3. At your registrar, change the nameservers to the two Cloudflare gives you. Wait until the domain shows **Active** (minutes to a day).
 
-The one-click option protects the **whole** workers.dev address, public pages included. Narrow it:
+### Step 2: Point the subdomain at the Worker
 
-1. In the same box (or the workers.dev row), click **Manage Cloudflare Access**. This opens the application in the Zero Trust dashboard (**one.dash.cloudflare.com**, then **Access controls**, then **Applications**).
-2. Open the application for `bobbybuilds.wahab-ali-khan.workers.dev` and click **Edit** (or **Configure**).
-3. Under **Application destinations** (called **Public hostnames** in some versions), find the `bobbybuilds.wahab-ali-khan.workers.dev` entry and set **Path** to `admin`.
-4. Click **+ Add public hostname** (or **Add destination**) and add the same hostname again with **Path** `admin/*`, so every page under /admin is covered too.
-5. **Save**.
+1. In `wrangler.jsonc`, add:
+   ```jsonc
+   "routes": [{ "pattern": "build.wahabalikhan.com", "custom_domain": true }],
+   ```
+2. In `src/lib/site.ts`, set `url: "https://build.wahabalikhan.com"`.
+3. Run `npm run deploy`. Wrangler creates the DNS record and certificate. Check that `https://build.wahabalikhan.com` loads.
 
-> **If you can't set a path there:** delete that application and create one by hand. Go to **Access controls**, **Applications**, **Add an application**, then **Self-hosted**. Fill in:
-> - Name: `Bobby Builds admin`
-> - Destinations: subdomain `bobbybuilds`, domain `wahab-ali-khan.workers.dev`, path `admin`, and a second destination with path `admin/*`
-> - Session duration: `24 hours`
->
-> Use the policy from Step 3. The AUD is under **Overview** (or **Basic information**) as **Application Audience (AUD) Tag**.
+### Step 3: Create the Access application (path-based)
 
-## Step 3: Check the policy lets only you in
+1. Go to **one.dash.cloudflare.com** (Zero Trust).
+   - The first time, pick a **team name**, for example `wahab`. Your team domain is `https://wahab.cloudflareaccess.com`. The Free plan is fine.
+2. Go to **Access controls**, then **Applications**, then **Add an application**, then **Self-hosted**.
+3. **Basic information:**
+   - Application name: `Bobby Builds admin`
+   - Session duration: `24 hours`
+4. **Destinations / Public hostnames.** Add two:
+   - Subdomain `build`, domain `wahabalikhan.com`, path `admin`
+   - Subdomain `build`, domain `wahabalikhan.com`, path `admin/*`
+5. **Access policy.** Create a new policy:
+   - Name: `Only Wahab`, Action: **Allow**
+   - Include: **Emails**, then your email address. Nothing broader.
+6. **Login methods:** keep **One-time PIN** (Cloudflare emails you a code).
+7. **Save.** Open the application's **Overview** (or **Basic information**) and copy the **Application Audience (AUD) Tag**.
 
-1. In the application, open **Policies** (or **Access policies**).
-2. There should be one **Allow** policy. Make sure its rule is **Include → Emails →** your email address only. Remove anything broader, such as "Everyone" or a whole email domain.
-3. Under **Login methods**, keep **One-time PIN** on (Cloudflare emails you a code). You can add GitHub or Google later if you prefer.
-4. **Save**.
+### Step 4: Give the app the two values
 
-## Step 4: Give the app the two values
-
-Edit `wrangler.jsonc`:
+In `wrangler.jsonc`:
 
 ```jsonc
 "vars": {
 	"ACCESS_TEAM_DOMAIN": "https://<team>.cloudflareaccess.com",
-	"ACCESS_AUD": "<the long POLICY_AUD value>"
+	"ACCESS_AUD": "<the AUD tag>"
 }
 ```
 
-Then deploy:
+Neither value is a secret (the AUD is inside every JWT), so it's fine to commit them. Then `npm run deploy`.
 
-```bash
-npm run deploy
-```
+### Step 5: Close the workers.dev address
 
-Neither value is a secret (the AUD travels inside every JWT), so it's fine to commit them.
+`workers.dev` has no Access in front of it. /admin there would still return 403, because the JWT check stays on, but it's cleaner to close it. In `wrangler.jsonc`, set `"workers_dev": false`, keep `"preview_urls": false`, and deploy.
 
-## Step 5: Test it
+### Step 6: Test it
 
 | Check | Expected |
 | --- | --- |
-| Private window, open `https://bobbybuilds.wahab-ali-khan.workers.dev/` | Public page loads, no login |
-| Private window, open `/admin` | Cloudflare Access login, then a one-time PIN to your email, then "You're in" |
-| Same in a different browser, entering a different email | No PIN arrives and you're not let in |
-| `curl -i https://bobbybuilds.wahab-ali-khan.workers.dev/admin` | Redirect to `*.cloudflareaccess.com` (Access is working) |
-| `curl -i -H "Cf-Access-Jwt-Assertion: fake" .../admin` | Still the Access redirect. If Access were ever off, the app would answer 403. |
+| Private window: `https://build.wahabalikhan.com/` | Public page, no login |
+| Private window: `/admin` | Access login, then a one-time PIN to your email, then "You're in" (no amber banner) |
+| A different email at the login | No code arrives and you're not let in |
+| `curl -i https://build.wahabalikhan.com/admin` | Redirect to `*.cloudflareaccess.com` |
+| `curl -i https://build.wahabalikhan.com/admin/anything` | Redirect too (covered by `admin/*`) |
 | `/api/health` | `{"ok":true,"db":"connected"}`, no login |
+| `https://bobbybuilds.wahab-ali-khan.workers.dev/` | Gone, after Step 5 |
 
-## Later: moving to a real domain
-
-When the site moves (for example to `build.wahabalikhan.com`):
-
-1. Change `url` in `src/lib/site.ts`.
-2. Add the custom domain in `wrangler.jsonc`.
-3. Point the Access application's destination at the new hostname, keeping the `admin` and `admin/*` paths.
-4. Consider `workers_dev: false`.
-
-The AUD stays the same if you edit the existing application.
-
-If you change `adminPath` in `src/lib/site.ts`, update the Access paths to match **before** deploying.
+If you ever change `adminPath` in `src/lib/site.ts`, update both Access paths to match **before** deploying.

@@ -40,6 +40,7 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
 - Local: `.dev.vars` (ignored by Git). Production: `npx wrangler secret put NAME`. Names only in `.dev.vars.example`.
 - Never in `.env*`, `NEXT_PUBLIC_*`, `wrangler.jsonc` vars, or Git. `npm run check-env` runs before build, deploy, upload and preview, and refuses if this is broken.
 - `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` are not secret and live in `wrangler.jsonc` vars. The admin path refuses every request while either is empty.
+- Until there's a custom domain with a path-based Access app, live /admin is always 403. Locally, `LOCAL_ADMIN_PREVIEW=on` in `.dev.vars` opens it with `npm run preview`, on loopback hostnames only (`src/lib/security/local-admin.ts`). Never weaken the loopback check or move the flag anywhere else. check-env enforces this.
 
 ## Deploying
 

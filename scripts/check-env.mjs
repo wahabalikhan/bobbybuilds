@@ -12,6 +12,9 @@
  * 3. .dev.vars.example and .env.example hold names only, no values.
  * 4. wrangler.jsonc "vars" (which are committed) hold no secret-looking names.
  * 5. .dev.vars and .env files are ignored by Git and not tracked.
+ * 6. The local-only admin flag (LOCAL_ADMIN_PREVIEW) lives only in .dev.vars: never in a
+ *    .env file (OpenNext would bake it into the bundle) or wrangler.jsonc. With --deploy,
+ *    also checks it isn't one of the Worker's deployed secrets.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -103,6 +106,33 @@ if (git(["rev-parse", "--is-inside-work-tree"]).status === 0) {
 		return (/^\.env(\..+)?$/.test(name) && name !== ".env.example") || (/^\.dev\.vars/.test(name) && name !== ".dev.vars.example");
 	});
 	for (const path of tracked) problems.push(`${path} is committed to Git. Remove it with \`git rm --cached ${path}\` and rotate any secrets in it.`);
+}
+
+// 6: the local-only admin flag
+const LOCAL_ADMIN_FLAG = "LOCAL_ADMIN_PREVIEW";
+for (const file of envFiles) {
+	if (readFileSync(join(root, file), "utf8").includes(LOCAL_ADMIN_FLAG)) {
+		problems.push(`${file} mentions ${LOCAL_ADMIN_FLAG}. It belongs only in .dev.vars, or it could ship in the build.`);
+	}
+}
+if (existsSync(wranglerPath) && readFileSync(wranglerPath, "utf8").includes(LOCAL_ADMIN_FLAG)) {
+	problems.push(`wrangler.jsonc mentions ${LOCAL_ADMIN_FLAG}. It belongs only in .dev.vars.`);
+}
+if (process.argv.includes("--deploy")) {
+	let secrets = null;
+	try {
+		const out = execFileSync("npx", ["wrangler", "secret", "list", "--format", "json"], {
+			cwd: root,
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "ignore"],
+		});
+		secrets = JSON.parse(out.slice(out.indexOf("[")));
+	} catch {
+		problems.push("Couldn't read the Worker's secrets with `wrangler secret list`. Check you're online and logged in.");
+	}
+	if (Array.isArray(secrets) && secrets.some((secret) => secret?.name === LOCAL_ADMIN_FLAG)) {
+		problems.push(`${LOCAL_ADMIN_FLAG} is a deployed secret. Remove it with \`npx wrangler secret delete ${LOCAL_ADMIN_FLAG}\`.`);
+	}
 }
 
 if (problems.length) {

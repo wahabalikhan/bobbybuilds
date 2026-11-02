@@ -9,3 +9,9 @@ NEXTJS_ENV=
 
 # Phase 4: shared with the cron Worker, sent as a header to the private roll-up route.
 ROLLUP_SECRET=
+
+# Local only. Set to "on" in .dev.vars to open /admin at http://localhost:8787 with
+# `npm run preview` while there's no Cloudflare Access in front of it. Only works on
+# localhost. Never put this in a .env file, wrangler.jsonc or a Wrangler secret
+# (check-env refuses if you do).
+LOCAL_ADMIN_PREVIEW=
