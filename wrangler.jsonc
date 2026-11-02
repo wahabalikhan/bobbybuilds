@@ -1,0 +1,48 @@
+/**
+ * Wrangler configuration: https://developers.cloudflare.com/workers/wrangler/configuration/
+ * Secrets never go in this file. Use `npx wrangler secret put NAME` (see .dev.vars.example).
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "bobbybuilds",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2026-11-01",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".open-next/assets"
+	},
+	"images": {
+		// https://opennext.js.org/cloudflare/howtos/image
+		"binding": "IMAGES"
+	},
+	"services": [
+		{
+			// Self-reference service binding; the service name must match the Worker name.
+			// https://opennext.js.org/cloudflare/caching
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "bobbybuilds"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "bobbybuilds-db",
+			"database_id": "e9b730ed-b736-4006-b5d8-8059494cb6b7",
+			"migrations_dir": "migrations"
+		}
+	],
+	// Live on workers.dev for now. Preview URLs stay off: they would be a second, unprotected way in.
+	"workers_dev": true,
+	"preview_urls": false,
+	"vars": {
+		// Not secret, but required: /admin refuses every request until both are set.
+		// Both come from the Cloudflare Access application (see docs/access-setup.md).
+		"ACCESS_TEAM_DOMAIN": "",
+		"ACCESS_AUD": ""
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true
+}

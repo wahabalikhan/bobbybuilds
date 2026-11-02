@@ -1,0 +1,11 @@
+# Copy to .dev.vars for local development. Names only here: never put real values in this file.
+# In production, set each secret with: npx wrangler secret put NAME
+#
+# Secrets belong in .dev.vars (local) or Wrangler secrets (production), never in .env files,
+# NEXT_PUBLIC_ variables, wrangler.jsonc or Git. `npm run check-env` enforces this.
+
+# Tells OpenNext which .env.* mode to use with `wrangler dev`. Not a secret.
+NEXTJS_ENV=
+
+# Phase 4: shared with the cron Worker, sent as a header to the private roll-up route.
+ROLLUP_SECRET=
