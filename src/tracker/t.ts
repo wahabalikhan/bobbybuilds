@@ -1,4 +1,3 @@
-import { onCLS, onINP, onLCP } from "web-vitals";
 import { install, type Send } from "./core";
 
 // <script defer src="https://…/t.js" data-key="pk_…"></script>
@@ -22,10 +21,17 @@ if (script) {
 
 	const installed = install({ win: window, key: script.dataset.key, send });
 	if (installed) {
-		// Registered before the tracker's own listeners, so final values arrive before the leave beacon.
-		onLCP((metric) => installed.tracker.setVital("lcp_ms", metric.value));
-		onCLS((metric) => installed.tracker.setVital("cls", metric.value));
-		onINP((metric) => installed.tracker.setVital("inp_ms", metric.value));
 		installed.start();
+
+		// Core Web Vitals live in a separate file, fetched once the page has finished loading.
+		// web-vitals reads buffered performance entries, so nothing from the load is missed.
+		const loadVitals = () => {
+			const vitals = document.createElement("script");
+			vitals.src = `${endpoint}/t-vitals.js`;
+			vitals.async = true;
+			document.head.appendChild(vitals);
+		};
+		if (document.readyState === "complete") loadVitals();
+		else window.addEventListener("load", loadVitals, { once: true });
 	}
 }

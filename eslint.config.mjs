@@ -5,5 +5,5 @@ import { defineConfig, globalIgnores } from "eslint/config";
 export default defineConfig([
 	...nextVitals,
 	...nextTs,
-	globalIgnores([".next/**", ".open-next/**", ".wrangler/**", "out/**", "build/**", "next-env.d.ts", "cloudflare-env.d.ts", "public/t.js"]),
+	globalIgnores([".next/**", ".open-next/**", ".wrangler/**", "out/**", "build/**", "next-env.d.ts", "cloudflare-env.d.ts", "public/t.js", "public/t-vitals.js"]),
 ]);

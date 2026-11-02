@@ -36,3 +36,4 @@ next-env.d.ts
 
 # Built from src/tracker by `npm run build:tracker` (runs before dev and build)
 /public/t.js
+/public/t-vitals.js

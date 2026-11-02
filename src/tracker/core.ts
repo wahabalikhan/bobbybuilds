@@ -8,6 +8,9 @@
  *
  * Automatic events: outbound_click { domain }, file_download { file, type },
  * not_found (pages marked with data-bobby-not-found). Everything else via bobby.track().
+ *
+ * Core Web Vitals come from t-vitals.js (web-vitals), which t.js loads after the page has
+ * loaded so the main script stays small.
  */
 
 export type SendPath = "/v1/pv" | "/v1/events";
@@ -21,7 +24,12 @@ export const DOWNLOAD_TYPES = [
 	"txt", "rtf", "epub", "dmg", "exe", "msi", "pkg", "apk", "mp3", "mp4", "mov", "fig", "sketch",
 ];
 
-type BobbyGlobal = { track: (name: string, props?: Props) => void; q?: IArguments[] | unknown[][] };
+type BobbyGlobal = {
+	track: (name: string, props?: Props) => void;
+	/** Internal: used by t-vitals.js to hand over Core Web Vitals. */
+	_vital?: (name: VitalName, value: number) => void;
+	q?: IArguments[] | unknown[][];
+};
 type TrackerWindow = Window & { bobby?: BobbyGlobal; doNotTrack?: string };
 type PrivacyNavigator = Navigator & { globalPrivacyControl?: boolean; msDoNotTrack?: string };
 
@@ -209,7 +217,7 @@ export function install({ win, key, send }: { win: Window; key: string | undefin
 	}
 
 	const tracker = createTracker({ key, win, send });
-	w.bobby = { track: (name, props) => tracker.track(name, props) };
+	w.bobby = { track: (name, props) => tracker.track(name, props), _vital: (name, value) => tracker.setVital(name, value) };
 	return {
 		tracker,
 		start() {

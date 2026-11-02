@@ -136,6 +136,18 @@ describe("leave beacon", () => {
 		});
 	});
 
+	it("takes Core Web Vitals from t-vitals.js through bobby._vital", async () => {
+		const { win, w, sent, send } = setup();
+		install({ win: w, key: "pk_test", send })!.start();
+		await tick();
+		const bobby = (w as unknown as { bobby: { _vital: (name: string, value: number) => void } }).bobby;
+		bobby._vital("lcp_ms", 2100.4);
+		bobby._vital("inp_ms", 180);
+		setVisibility(win, "hidden");
+		await tick();
+		expect(sent.at(-1)?.body).toMatchObject({ type: "leave", lcp_ms: 2100, inp_ms: 180 });
+	});
+
 	it("doesn't count time while the tab is hidden", async () => {
 		let clock = 0;
 		const { win, w, sent, send } = setup();

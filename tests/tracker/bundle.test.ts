@@ -3,15 +3,21 @@ import { readFileSync } from "node:fs";
 import { Window } from "happy-dom";
 import { beforeAll, describe, expect, it } from "vitest";
 
-// Runs the real built public/t.js (with web-vitals bundled) in a simulated browser.
+// Runs the real built public/t.js and public/t-vitals.js in a simulated browser.
 let bundle = "";
+let vitalsBundle = "";
 beforeAll(() => {
 	execFileSync("node", ["scripts/build-tracker.mjs"], { stdio: "ignore" });
 	bundle = readFileSync("public/t.js", "utf8");
+	vitalsBundle = readFileSync("public/t-vitals.js", "utf8");
 });
 
 async function runBundle({ gpc = false, key = "pk_bundle" }: { gpc?: boolean; key?: string | null } = {}) {
-	const win = new Window({ url: "https://wahabalikhan.com/work?utm_source=newsletter&secret=1" });
+	const win = new Window({
+		url: "https://wahabalikhan.com/work?utm_source=newsletter&secret=1",
+		// Record script tags t.js adds, without fetching them.
+		settings: { disableJavaScriptFileLoading: true, handleDisabledFileLoadingAsSuccess: true },
+	});
 	Object.defineProperty(win.navigator, "webdriver", { value: false, configurable: true });
 	if (gpc) Object.defineProperty(win.navigator, "globalPrivacyControl", { value: true, configurable: true });
 
@@ -34,8 +40,37 @@ async function runBundle({ gpc = false, key = "pk_bundle" }: { gpc?: boolean; ke
 }
 
 describe("built t.js", () => {
-	it("is small", () => {
-		expect(bundle.length).toBeLessThan(16_000);
+	it("is small, with web-vitals kept out of the main file", () => {
+		expect(bundle.length).toBeLessThan(6_000);
+		expect(bundle).not.toContain("largest-contentful-paint");
+		expect(vitalsBundle).toContain("largest-contentful-paint");
+	});
+
+	it("loads t-vitals.js from the collector once the page has loaded", async () => {
+		const { win } = await runBundle();
+		win.dispatchEvent(new win.Event("load"));
+		const sources = [...win.document.querySelectorAll("script")].map((el) => el.getAttribute("src"));
+		expect(sources.filter((src) => src === "https://bobby.example/t-vitals.js")).toHaveLength(1);
+		await win.happyDOM.close();
+	});
+
+	it("doesn't load t-vitals.js with Global Privacy Control on", async () => {
+		const { win } = await runBundle({ gpc: true });
+		win.dispatchEvent(new win.Event("load"));
+		const sources = [...win.document.querySelectorAll("script")].map((el) => el.getAttribute("src"));
+		expect(sources).not.toContain("https://bobby.example/t-vitals.js");
+		await win.happyDOM.close();
+	});
+
+	it("t-vitals.js runs quietly whether or not t.js is there", async () => {
+		const alone = new Window({ url: "https://wahabalikhan.com/" });
+		expect(() => alone.eval(vitalsBundle)).not.toThrow();
+		await alone.happyDOM.close();
+
+		const { win } = await runBundle();
+		expect(() => win.eval(vitalsBundle)).not.toThrow();
+		expect(typeof (win as unknown as { bobby: { _vital: unknown } }).bobby._vital).toBe("function");
+		await win.happyDOM.close();
 	});
 
 	it("sends a page view to the collector it was loaded from, as text/plain without cookies", async () => {

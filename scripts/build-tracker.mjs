@@ -1,23 +1,30 @@
 #!/usr/bin/env node
-/** Bundles src/tracker/t.ts (with web-vitals) into public/t.js. Runs before dev and build. */
+/**
+ * Bundles the tracker into public/:
+ *   t.js         the tracker (src/tracker/t.ts)
+ *   t-vitals.js  Core Web Vitals via web-vitals (src/tracker/vitals.ts), loaded by t.js after page load
+ * Runs before dev and build.
+ */
 import { build } from "esbuild";
-import { statSync } from "node:fs";
-import { gzipSync } from "node:zlib";
 import { readFileSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 
-const outfile = "public/t.js";
+const outputs = [
+	{ entry: "src/tracker/t.ts", outfile: "public/t.js", banner: "/* Bobby Builds t.js: no cookies, no personal data. Respects GPC and Do Not Track. */" },
+	{ entry: "src/tracker/vitals.ts", outfile: "public/t-vitals.js", banner: "/* Bobby Builds t-vitals.js: Core Web Vitals for t.js (web-vitals, Apache-2.0). */" },
+];
 
-await build({
-	entryPoints: ["src/tracker/t.ts"],
-	outfile,
-	bundle: true,
-	minify: true,
-	format: "iife",
-	target: "es2019",
-	legalComments: "none",
-	banner: { js: "/* Bobby Builds t.js: no cookies, no personal data. Respects GPC and Do Not Track. */" },
-});
-
-const bytes = statSync(outfile).size;
-const gzipped = gzipSync(readFileSync(outfile)).length;
-console.log(`✓ build-tracker: ${outfile} ${(bytes / 1024).toFixed(1)} KB (${(gzipped / 1024).toFixed(1)} KB gzipped)`);
+for (const { entry, outfile, banner } of outputs) {
+	await build({
+		entryPoints: [entry],
+		outfile,
+		bundle: true,
+		minify: true,
+		format: "iife",
+		target: "es2019",
+		legalComments: "none",
+		banner: { js: banner },
+	});
+	const file = readFileSync(outfile);
+	console.log(`✓ build-tracker: ${outfile} ${(file.length / 1024).toFixed(1)} KB (${(gzipSync(file).length / 1024).toFixed(1)} KB gzipped)`);
+}
