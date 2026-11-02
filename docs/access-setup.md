@@ -38,7 +38,8 @@ The domain is registered at GoDaddy and its nameservers point to Cloudflare (`ma
 ### Step 0: Check DNS, and redirect www
 
 1. Go to **dash.cloudflare.com**, click **bobbybuilds.app**, then **DNS**, then **Records**.
-2. **Check what's there.** There must be no **A**, **AAAA** or **CNAME** record on `bobbybuilds.app` (`@`), and no **MX**, or **TXT** starting `v=spf1`, left over from GoDaddy. Delete any you find: click **Edit**, then **Delete**.
+2. **Check what's there.** There must be no **A**, **AAAA** or **CNAME** record on `bobbybuilds.app` (`@`). Delete any you find: click **Edit**, then **Delete**.
+   - **Don't delete the email records.** The MX records, the SPF TXT (`v=spf1 include:_spf.mx.cloudflare.net ~all`), `cf2024-1._domainkey`, `resend._domainkey`, the `send` and `rsend` CNAMEs and `_dmarc` belong to email (see "Email" below).
 3. **Add a record for www**, so the redirect has something to catch:
    - Click **Add record**.
    - Type **AAAA**, Name `www`, IPv6 address `100::`, Proxy status **Proxied** (orange cloud).
@@ -54,6 +55,16 @@ The domain is registered at GoDaddy and its nameservers point to Cloudflare (`ma
    - Click **Deploy**.
 
 Leave **Bot Fight Mode** off (**Security**, then **Bots**). On the Free plan it can't skip particular paths. It would challenge the job board's and Supabase's server requests to `/v1`.
+
+### Email
+
+One address, `hello@bobbybuilds.app`, for everything, with no `mail.` subdomain:
+
+- **Receiving:** Cloudflare Email Routing forwards it to your personal inbox. It owns the MX records, the SPF TXT and DKIM `cf2024-1._domainkey` at the bare domain.
+- **Sending:** Resend, verified on `bobbybuilds.app`. Its records are TXT `resend._domainkey`, plus CNAMEs `send` and `rsend` (DNS only). Its SPF sits behind those CNAMEs, so the bare domain keeps exactly **one** SPF record. Resend's Receiving and tracking stay off.
+- **DMARC:** `_dmarc` is `v=DMARC1; p=none; rua=mailto:hello@bobbybuilds.app`. Move to `p=quarantine` after a couple of weeks of clean reports.
+
+The full record list is in the "Domain plan" in CLAUDE.md.
 
 ### Step 1: Point the domain at the Worker (done in code)
 

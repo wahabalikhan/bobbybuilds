@@ -126,8 +126,11 @@ Keep these free. Nothing in HQ may get in their way:
 
 - `bobbybuilds.app`: HQ. Its route is the exact domain, never `*.bobbybuilds.app/*`. The Access app covers only its `admin` and `admin/*` paths, never a wildcard hostname.
 - `www.bobbybuilds.app`: a 301 redirect to the bare domain (a proxied `AAAA 100::` record and a Redirect Rule).
-- `techjobs.bobbybuilds.app` (later): the job board, "Tech Jobs, by Bobby Builds", on its own Worker custom domain.
-- `mail.bobbybuilds.app` (later): Resend sending. Its records sit under `mail` (`resend._domainkey.mail`, and the MX and TXT on `send.mail`).
-- `hello@bobbybuilds.app` (later): Cloudflare Email Routing, forwarding to a personal inbox. It adds MX records and one SPF TXT at the bare domain. There must only ever be one SPF record at the bare domain. Add a single `_dmarc` record when email goes live.
+- `techjobs.bobbybuilds.app`: the job board, "Tech Jobs, by Bobby Builds", on its own Worker custom domain (repo ~/Desktop/job_board).
+- Email: one address, `hello@bobbybuilds.app`, for sending and receiving. There's no `mail.` subdomain.
+  - **Receiving:** Cloudflare Email Routing forwards hello@ to a personal inbox. It owns the bare domain's 3 MX records, its SPF TXT (`v=spf1 include:_spf.mx.cloudflare.net ~all`) and DKIM `cf2024-1._domainkey`.
+  - **Sending:** Resend, verified on the bare domain (eu-west-1). TXT `resend._domainkey` (DKIM), CNAME `send` → `send.forge.rmta.net` and CNAME `rsend` → `rsend-euw1.forge.rmta.net`, all DNS only. Resend's SPF and bounce handling sit behind those CNAMEs, never at the bare domain. Resend's Receiving stays off (it would need the bare domain's MX), and click and open tracking stay off.
+  - **There must only ever be one SPF record at the bare domain** (Email Routing's). Never add a second one; if something else ever needs it, merge it into that one record.
+  - **DMARC:** TXT `_dmarc` `v=DMARC1; p=none; rua=mailto:hello@bobbybuilds.app`. Move to `p=quarantine` after a couple of weeks of clean reports.
 - Keep Bot Fight Mode off: on the Free plan it can't skip particular paths, and it would challenge server requests to `/v1`.
 - Build updates email form (Phase 6) posts straight to an external newsletter tool (such as Buttondown). HQ never sees or stores the address.
