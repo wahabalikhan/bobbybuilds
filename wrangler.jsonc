@@ -32,6 +32,12 @@
 			"migrations_dir": "migrations"
 		}
 	],
+	// Collector rate limits, per minute. Keys are hashes (never raw IPs). Counters are per Cloudflare location.
+	"ratelimits": [
+		{ "name": "PV_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
+		{ "name": "EVENTS_LIMITER", "namespace_id": "1002", "simple": { "limit": 120, "period": 60 } },
+		{ "name": "METRICS_LIMITER", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
+	],
 	// Live on workers.dev for now. Preview URLs stay off: they would be a second, unprotected way in.
 	"workers_dev": true,
 	"preview_urls": false,

@@ -133,6 +133,9 @@ describe("page_views", () => {
 		["engaged time over 30 minutes", { engaged_ms: 1_800_001 }],
 		["scroll depth over 100%", { scroll_pct: 101 }],
 		["negative scroll depth", { scroll_pct: -1 }],
+		["an LCP over 60 seconds", { lcp_ms: 60_001 }],
+		["a CLS over 10", { cls_milli: 10_001 }],
+		["a negative INP", { inp_ms: -1 }],
 	])("rejects %s", async (_label, overrides) => {
 		const projectId = await createProject();
 		await expectRejected(insert("page_views", validPageView(projectId, overrides)));
@@ -154,6 +157,9 @@ describe("page_views", () => {
 					language: "fil",
 					engaged_ms: 1_800_000,
 					scroll_pct: 100,
+					lcp_ms: 60_000,
+					cls_milli: 10_000,
+					inp_ms: 0,
 				}),
 			),
 		).resolves.toBeTruthy();

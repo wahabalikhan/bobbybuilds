@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "check-env": "node scripts/check-env.mjs",
-    "prebuild": "npm run check-env",
+    "prebuild": "npm run check-env && npm run build:tracker",
     "build": "next build",
     "predeploy": "node scripts/check-env.mjs --deploy",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
@@ -21,14 +21,19 @@
     "db:migrate:remote": "wrangler d1 migrations apply bobbybuilds-db --remote",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
     "keys:create": "node scripts/keys-create.mts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:tracker": "node scripts/build-tracker.mjs",
+    "predev": "npm run build:tracker",
+    "test:collector": "vitest run tests/collector tests/tracker",
+    "playground": "node scripts/playground.mts"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.3",
     "jose": "^6.2.15",
     "next": "16.4.1",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "web-vitals": "^6.2.3"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.4.12",
@@ -36,8 +41,10 @@
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "16.4.1",
+    "happy-dom": "^21.0.4",
     "tailwindcss": "^4",
     "typescript": "^5.7.4",
     "vitest": "^4.1.12",

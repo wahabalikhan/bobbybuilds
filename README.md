@@ -10,6 +10,8 @@ npm run preview                  # build and run on the local Workers runtime
 npm run verify                   # check-env, typecheck, lint, tests (run before committing)
 npm run db:migrate:local         # apply migrations to the local D1
 npm run keys:create -- portfolio # create a project's keys (add --remote for the live database)
+npm run test:collector           # collector and tracker tests only
+npm run playground               # local test site on :5555 (run alongside npm run preview)
 npm run deploy                   # build and deploy to workers.dev
 ```
 

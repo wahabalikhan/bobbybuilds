@@ -7,3 +7,10 @@
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains
   Referrer-Policy: strict-origin-when-cross-origin
+
+# The tracker is loaded by other sites.
+/t.js
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+  Cross-Origin-Resource-Policy: cross-origin
+  Content-Type: text/javascript; charset=utf-8

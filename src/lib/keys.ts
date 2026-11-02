@@ -34,6 +34,12 @@ export function createSecretKey(): string {
 	return `sk_${randomBase62(40)}`;
 }
 
+/** `bytes` random bytes as lower-case hex (e.g. the daily secret). */
+export function randomHex(bytes: number): string {
+	const values = crypto.getRandomValues(new Uint8Array(bytes));
+	return Array.from(values, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 export async function sha256Hex(value: string): Promise<string> {
 	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
 	return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");

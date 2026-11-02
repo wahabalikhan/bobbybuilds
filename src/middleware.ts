@@ -65,7 +65,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
 	matcher: [
-		// Everything except build assets and static files, which carry no HTML.
-		"/((?!_next/static|_next/image|favicon\\.svg|.*\\.(?:svg|png|jpg|jpeg|webp|ico|txt|xml)$).*)",
+		// Everything except build assets, static files (which carry no HTML) and the /v1 collector,
+		// which sets its own headers (no-store, nosniff, CORS only for registered origins).
+		"/((?!_next/static|_next/image|v1/|favicon\\.svg|.*\\.(?:svg|png|jpg|jpeg|webp|ico|txt|xml|js)$).*)",
 	],
 };

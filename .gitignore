@@ -33,3 +33,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+# Built from src/tracker by `npm run build:tracker` (runs before dev and build)
+/public/t.js
