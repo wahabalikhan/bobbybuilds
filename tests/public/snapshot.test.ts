@@ -123,6 +123,22 @@ describe("public snapshot", () => {
 		expect(await env.PUBLIC_CACHE.get(SNAPSHOT_KEY)).not.toBeNull();
 	});
 
+	it("includes the GitHub contribution calendar, oldest day first, or null when there's none", async () => {
+		await db.prepare("DELETE FROM github_contributions").run();
+		expect((await buildSnapshot(db, TODAY, NOW)).github).toBeNull();
+		for (const [day, count] of [["2026-11-01", 4], ["2026-10-31", 0], ["2026-11-02", 9]] as const) await insert("github_contributions", { day, count, updated_at: NOW });
+		expect((await buildSnapshot(db, TODAY, NOW)).github).toEqual({ login: "wahabalikhan", firstDay: "2026-10-31", counts: [0, 4, 9] });
+		await db.prepare("DELETE FROM github_contributions").run();
+	});
+
+	it("uses public/logos/<slug>.* as a project's logo when none is chosen in Settings", async () => {
+		// "job-board" comes from the seed migration, with no logo chosen.
+		await project("pub-no-logo-file");
+		const snapshot = await buildSnapshot(db, TODAY, NOW);
+		expect(snapshot.projects.find((p) => p.slug === "job-board")!.logoPath).toBe("/logos/job-board.svg");
+		expect(snapshot.projects.find((p) => p.slug === "pub-no-logo-file")!.logoPath).toBeNull();
+	});
+
 	it("is refreshed by the 5-minute job every 10 minutes", async () => {
 		const deps = { db, fetch: (async () => new Response("[]")) as typeof fetch, kv: env.PUBLIC_CACHE };
 		const tenth = await runTask("frequent", deps, Date.UTC(2026, 10, 2, 9, 30));

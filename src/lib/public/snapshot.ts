@@ -12,10 +12,12 @@ import { addDays, weekStart } from "@/lib/days";
 import { listMetrics, metricSeries, type Metric } from "@/lib/db/dashboard";
 import { listProjects, type ProjectLink, type ProjectStatus } from "@/lib/db/projects";
 import { sha256Hex } from "@/lib/keys";
+import { LOGOS } from "@/lib/logos.generated";
 import { renderMarkdown } from "@/lib/markdown";
+import { owner } from "@/lib/site";
 
 export const SNAPSHOT_KEY = "public-snapshot";
-export const SNAPSHOT_VERSION = 1;
+export const SNAPSHOT_VERSION = 2;
 
 export type Point = { day: string; value: number };
 export type Month = { month: string; value: number };
@@ -63,6 +65,9 @@ export type PublicEntry = {
 	excerpt: string;
 };
 
+/** GitHub's contribution calendar for the last year: counts per day from firstDay (public data). */
+export type PublicGithub = { login: string; firstDay: string; counts: number[] };
+
 export type PublicSnapshot = {
 	version: number;
 	generatedAt: number;
@@ -71,6 +76,7 @@ export type PublicSnapshot = {
 	monthly: Month[];
 	projects: PublicProject[];
 	journey: PublicEntry[];
+	github: PublicGithub | null;
 };
 
 const sum = (points: { value: number }[]) => points.reduce((t, p) => t + p.value, 0);
@@ -154,7 +160,8 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			tagline: project.tagline,
 			status: project.status,
 			lesson: project.lesson,
-			logoPath: project.logoPath,
+			// The logo chosen in Settings, or public/logos/<slug>.* when none is chosen.
+			logoPath: project.logoPath ?? LOGOS.find((path) => path.replace(/\.[a-z]+$/, "") === `/logos/${project.slug}`) ?? null,
 			siteUrl: project.siteUrl,
 			links: project.links,
 			descriptionHtml: renderMarkdown(project.descriptionMd),
@@ -181,6 +188,13 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 		.bind(now)
 		.all<{ slug: string; title: string; body_md: string; published_at: number; project_slug: string | null; project_name: string | null }>();
 
+	const { results: contributions } = await db
+		.prepare("SELECT day, count FROM github_contributions ORDER BY day")
+		.all<{ day: string; count: number }>();
+	const github: PublicGithub | null = contributions.length
+		? { login: owner.githubLogin, firstDay: contributions[0].day, counts: contributions.map((c) => c.count) }
+		: null;
+
 	return {
 		version: SNAPSHOT_VERSION,
 		generatedAt: now,
@@ -196,6 +210,7 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			html: renderMarkdown(e.body_md),
 			excerpt: excerpt(e.body_md),
 		})),
+		github,
 	};
 }
 

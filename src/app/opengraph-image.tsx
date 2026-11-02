@@ -15,7 +15,7 @@ export default async function Image() {
 	return shareImage({
 		eyebrow: `${live} project${live === 1 ? "" : "s"}, built in public`,
 		title: owner.name,
-		subtitle: `Product designer from ${owner.location}, building free tools that are honest about what they do.`,
+		subtitle: `Product designer from ${owner.from}, building free tools that are honest about what they do.`,
 		pill: total > 0 ? `${formatWhole(total)} visitors in 12 months` : undefined,
 	});
 }

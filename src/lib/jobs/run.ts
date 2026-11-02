@@ -1,15 +1,17 @@
 import { addDays, utcDay, weekStart } from "@/lib/days";
 import { sha256Hex } from "@/lib/keys";
-import { type Fetch, syncGithubWeekly } from "./github";
+import { type Fetch, syncGithubContributions, syncGithubWeekly } from "./github";
 import { cleanUp, rotateDailySecret } from "./maintenance";
 import { rollupDay } from "./rollup";
 import { pingAll } from "./uptime";
 import { publishSnapshot } from "@/lib/public/snapshot";
+import { owner } from "@/lib/site";
 
 /**
  * The two scheduled tasks, triggered by the cron Worker (cron/):
  * - frequent (every 5 minutes): uptime pings; every 10 minutes, today's roll-up and the
- *   public snapshot (written to KV only if it changed)
+ *   public snapshot (written to KV only if it changed); hourly (on the hour, before that
+ *   snapshot), the GitHub contribution calendar
  * - daily (00:10 UTC): finalise yesterday's roll-up, refresh today's, rotate the daily
  *   secret, 90-day clean-up, GitHub weekly commits, public snapshot
  */
@@ -25,6 +27,9 @@ async function frequent(deps: JobDeps, at: number) {
 	const summary: Record<string, unknown> = {
 		uptime: uptime.map((check) => ({ project: check.projectId, up: check.up, ms: check.responseMs, status: check.statusCode })),
 	};
+	if (new Date(at).getUTCMinutes() === 0) {
+		summary.contributions = await syncGithubContributions(deps.db, deps.fetch, owner.githubLogin, deps.githubToken, at);
+	}
 	if (new Date(at).getUTCMinutes() % 10 === 0) {
 		summary.rollup = await rollupDay(deps.db, utcDay(at), at);
 		if (deps.kv) {

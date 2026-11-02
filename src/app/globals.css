@@ -1,11 +1,12 @@
 @import "tailwindcss";
 
 /*
- * Design tokens, for every page (public and admin). Light and dark are each chosen, not flipped.
+ * Design tokens. The public site is light only, whatever the visitor's system setting; the admin
+ * dashboard (wrapped in .admin-theme) also has a dark version, chosen by the system setting.
  * Look: white page, white cards with thin light-grey borders and 16px corners, no heavy shadows,
  * monochrome charts (light grey fill, dark line), small grey pills, black pill buttons.
  * --accent is #1D4ED8 (links, focus, selected states; never chart marks). Contrast: 6.7:1 on white,
- * hover #1E40AF 8.7:1; dark mode uses #6B8CF5 (6.3:1) with hover #93B0FF (9.3:1).
+ * hover #1E40AF 8.7:1; admin dark mode uses #6B8CF5 (6.3:1) with hover #93B0FF (9.3:1).
  * Status colours are reserved for state (always shown with an icon and a label).
  */
 :root {
@@ -27,6 +28,12 @@
 	--chart-fill: #f1f1f2;
 	--chart-bar: #0a0a0a;
 	--chart-soft: #c7c7cc;
+	/* GitHub contribution levels (the public GitHub section only: GitHub's own greens, light only). */
+	--gh-0: #ebedf0;
+	--gh-1: #9be9a8;
+	--gh-2: #40c463;
+	--gh-3: #30a14e;
+	--gh-4: #216e39;
 	--previous: #c7c7cc;
 	--good: #0ca30c;
 	--good-ink: #006300;
@@ -38,7 +45,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-	:root {
+	.admin-theme {
 		color-scheme: dark;
 		/* #1d4ed8 is only 2.95:1 on the dark page, so dark mode uses a lighter step (6.3:1). */
 		--accent: #6b8cf5;

@@ -28,9 +28,9 @@ export function Card({ title, note, children, className = "", action }: { title?
 }
 
 /** "My projects ………… 3": a small heading, a hairline, and something on the right. */
-export function SectionHeading({ id, children, aside }: { id?: string; children: ReactNode; aside?: ReactNode }) {
+export function SectionHeading({ id, children, aside, relaxed = false }: { id?: string; children: ReactNode; aside?: ReactNode; relaxed?: boolean }) {
 	return (
-		<div className="mb-4 flex items-baseline justify-between gap-3 border-b border-line pb-2">
+		<div className={`flex items-baseline justify-between gap-3 border-b border-line ${relaxed ? "mb-6 pb-3.5" : "mb-4 pb-2"}`}>
 			<h2 id={id} className="text-[15px] font-medium tracking-tight">
 				{children}
 			</h2>
@@ -153,8 +153,9 @@ export function StatusPill({ status }: { status: string }) {
 /** The project's logo from public/logos, or its first letter on a dark rounded square. */
 export function ProjectLogo({ name, logoPath, size = 28 }: { name: string; logoPath: string | null; size?: number }) {
 	if (logoPath) {
+		// A hairline ring keeps dark logos visible on dark backgrounds (and light ones on white).
 		// eslint-disable-next-line @next/next/no-img-element -- small local logos; next/image adds nothing here
-		return <img src={logoPath} alt="" width={size} height={size} className="shrink-0 rounded-lg" style={{ width: size, height: size }} />;
+		return <img src={logoPath} alt="" width={size} height={size} className="shrink-0 rounded-lg ring-1 ring-line" style={{ width: size, height: size }} />;
 	}
 	return (
 		<span aria-hidden className="inline-flex shrink-0 items-center justify-center rounded-lg bg-ink font-semibold text-page" style={{ width: size, height: size, fontSize: size * 0.48 }}>

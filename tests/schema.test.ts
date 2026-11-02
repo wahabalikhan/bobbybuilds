@@ -258,6 +258,21 @@ describe("github_weekly", () => {
 	});
 });
 
+describe("github_contributions", () => {
+	it("accepts a day and refuses a second row for the same day", async () => {
+		await expect(insert("github_contributions", { day: "2026-10-12", count: 4, updated_at: 1 })).resolves.toBeTruthy();
+		await expectRejected(insert("github_contributions", { day: "2026-10-12", count: 5, updated_at: 1 }), /UNIQUE constraint failed/);
+	});
+
+	it.each(["2026/10/12", "yesterday", "2026-02-30"])("rejects %s as a day", async (day) => {
+		await expectRejected(insert("github_contributions", { day, count: 1, updated_at: 1 }));
+	});
+
+	it.each([-1, 100001])("rejects a count of %i", async (count) => {
+		await expectRejected(insert("github_contributions", { day: "2026-10-13", count, updated_at: 1 }));
+	});
+});
+
 describe("roll-ups", () => {
 	it("refuses a second daily_totals row for the same project and day", async () => {
 		const projectId = await createProject();

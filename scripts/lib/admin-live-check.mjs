@@ -29,11 +29,13 @@ export async function checkLiveBanner(origin, extraPaths = []) {
 		if (csp.includes("upgrade-insecure-requests")) problems.push(`${path} sends upgrade-insecure-requests on loopback, so its CSS wouldn't load.`);
 	}
 
-	// The public pages must work too (they need the KV binding).
-	for (const path of ["/", "/journey"]) {
-		const page = await get(`${origin}${path}`);
-		if (page.status !== 200) problems.push(`The public page ${path} returned ${page.status}.`);
-	}
+	// The public pages must work too (they need the KV binding). /journey is either shown (200) or,
+	// while site.showJourney is false, redirected to the home page.
+	const homePage = await get(`${origin}/`);
+	if (homePage.status !== 200) problems.push(`The public page / returned ${homePage.status}.`);
+	const journey = await fetch(`${origin}/journey`, { redirect: "manual" });
+	const journeyHidden = [307, 308].includes(journey.status) && new URL(journey.headers.get("location") ?? "", origin).pathname === "/";
+	if (journey.status !== 200 && !journeyHidden) problems.push(`The public page /journey returned ${journey.status}.`);
 
 	const css = home.text.match(/href="(\/_next\/static\/[^"]+\.css)"/)?.[1];
 	if (!css) problems.push("/admin links no stylesheet.");

@@ -33,11 +33,7 @@ export default async function JourneyPage() {
 									<article className="rounded-2xl border border-line bg-card p-5">
 										<p className="flex flex-wrap items-center gap-2 text-sm text-muted">
 											<time dateTime={new Date(e.publishedAt).toISOString()}>{formatDay(new Date(e.publishedAt).toISOString().slice(0, 10), true)}</time>
-											{e.projectName && e.projectSlug && (
-												<Link href={`/p/${e.projectSlug}`}>
-													<Pill>{e.projectName}</Pill>
-												</Link>
-											)}
+											{e.projectName && <Pill>{e.projectName}</Pill>}
 										</p>
 										<h2 className="mt-1 text-lg font-semibold tracking-tight">
 											<Link href={`/journey/${e.slug}`} className="hover:underline">

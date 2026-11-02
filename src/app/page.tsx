@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SectionHeading } from "@/components/admin/ui";
+import { SiteFooter } from "@/components/public/footer";
+import { ContributionGraph } from "@/components/public/github";
 import { HeadlineCard } from "@/components/public/headline-card";
+import { ArrowIcon, GitHubIcon } from "@/components/public/icons";
 import { ProfileCard } from "@/components/public/profile";
-import { MinorList, ProjectCard } from "@/components/public/project-card";
+import { ProjectCard } from "@/components/public/project-card";
 import { SkipLink } from "@/components/public/site-header";
 import { formatDay } from "@/lib/format";
 import { getSnapshot } from "@/lib/public/get";
@@ -14,29 +17,29 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
 	title: { absolute: `${owner.name}: ${site.name}` },
-	description: `${owner.firstName}'s free, honest tools, built in public from ${owner.location}.`,
+	description: `${owner.firstName}'s free, honest tools, built in public from ${owner.from}.`,
 	alternates: { canonical: "/" },
 };
 
 export default async function Home() {
 	const snapshot = await getSnapshot();
 	const main = snapshot.projects.filter((p) => p.status === "live" || p.status === "building");
-	const minor = snapshot.projects.filter((p) => p.status === "idea" || p.status === "retired");
-	const withVisitors = snapshot.projects.filter((p) => p.monthly).map((p) => ({ slug: p.slug, name: p.name, monthly: p.monthly! }));
+	const withVisitors = snapshot.projects.filter((p) => p.monthly).map((p) => ({ slug: p.slug, name: p.name, logoPath: p.logoPath, monthly: p.monthly! }));
 	const latest = snapshot.journey.slice(0, 3);
+	const projectBySlug = new Map(snapshot.projects.map((p) => [p.slug, p]));
 
 	return (
 		<>
 			<SkipLink />
-			<div className="mx-auto max-w-[1180px] px-5 py-8 sm:px-6 lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-10 lg:py-12">
+			<div className="mx-auto max-w-[1040px] px-5 py-8 sm:px-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10 lg:py-12">
 				<aside className="mb-10 lg:sticky lg:top-12 lg:mb-0 lg:self-start">
 					<ProfileCard />
 				</aside>
 				<main id="content" className="min-w-0 space-y-12">
-					{withVisitors.length > 0 && <HeadlineCard all={snapshot.monthly} projects={withVisitors} />}
+					{withVisitors.length > 0 && <HeadlineCard projects={withVisitors} />}
 
 					<section aria-labelledby="projects-heading">
-						<SectionHeading id="projects-heading" aside={main.length}>
+						<SectionHeading id="projects-heading" aside={main.length} relaxed>
 							My projects
 						</SectionHeading>
 						<div className="grid gap-4 md:grid-cols-2">
@@ -46,19 +49,31 @@ export default async function Home() {
 						</div>
 					</section>
 
-					{minor.length > 0 && (
-						<section aria-labelledby="minor-heading">
-							<SectionHeading id="minor-heading" aside={minor.length}>
-								Ideas and retired
+					{snapshot.github && (
+						<section aria-labelledby="github-heading">
+							<SectionHeading
+								id="github-heading"
+								relaxed
+								aside={
+									<a href={`https://github.com/${snapshot.github.login}`} target="_blank" rel="noopener noreferrer me" className="inline-flex items-center gap-1.5 hover:text-ink">
+										<GitHubIcon /> {snapshot.github.login} <ArrowIcon />
+										<span className="sr-only">(opens in a new tab)</span>
+									</a>
+								}
+							>
+								GitHub
 							</SectionHeading>
-							<MinorList projects={minor} />
+							<div className="rounded-2xl border border-line bg-card p-5 sm:p-6">
+								<ContributionGraph github={snapshot.github} />
+							</div>
 						</section>
 					)}
 
-					{latest.length > 0 && (
+					{site.showJourney && latest.length > 0 && (
 						<section aria-labelledby="journey-heading">
 							<SectionHeading
 								id="journey-heading"
+								relaxed
 								aside={
 									<Link href="/journey" className="link">
 										All entries
@@ -73,7 +88,7 @@ export default async function Home() {
 										<Link href={`/journey/${e.slug}`} className="group block">
 											<span className="text-sm text-muted">
 												{formatDay(new Date(e.publishedAt).toISOString().slice(0, 10), true)}
-												{e.projectName && ` · ${e.projectName}`}
+												{e.projectSlug && ` · ${projectBySlug.get(e.projectSlug)?.name ?? e.projectName}`}
 											</span>
 											<span className="block font-medium group-hover:underline">{e.title}</span>
 											<span className="block text-sm text-ink-2">{e.excerpt}</span>
@@ -85,6 +100,7 @@ export default async function Home() {
 					)}
 				</main>
 			</div>
+			<SiteFooter year={Number(snapshot.today.slice(0, 4))} />
 		</>
 	);
 }

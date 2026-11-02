@@ -23,7 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 	const projects = await listProjects(env.DB);
 
 	return (
-		<div className="min-h-screen bg-page">
+		<div className="admin-theme min-h-screen bg-page text-ink">
 			{live ? (
 				<LiveDataBanner />
 			) : (

@@ -70,6 +70,14 @@ describe("/internal/jobs", () => {
 		expect(between.summary).toHaveProperty("uptime");
 	});
 
+	it("refreshes the GitHub contribution calendar on the frequent task only on the hour", async () => {
+		const at = (minute: number) => Date.UTC(2026, 11, 7, 9, minute);
+		const onTheHour = await runTask("frequent", deps(), at(0));
+		const tenPast = await runTask("frequent", deps(), at(10));
+		expect(onTheHour.summary).toHaveProperty("contributions");
+		expect(tenPast.summary).not.toHaveProperty("contributions");
+	});
+
 	it("records a failure as ok: false instead of throwing", async () => {
 		const brokenDb = new Proxy(db, {
 			get(target, prop) {

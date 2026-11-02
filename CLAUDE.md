@@ -48,12 +48,12 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
 - Local collector testing: run `npm run preview` and `npm run playground`. The playground adds a local-only project with origin `http://localhost:5555`.
 - Scheduled jobs:
   - **Logic:** lives in `src/lib/jobs/`, and `POST /internal/jobs` runs it (`run.ts`). The route needs `Authorization: Bearer <ROLLUP_SECRET>`, compared in constant time, and answers a plain 404 to anything else.
-  - **Cron Worker:** `cron/` (`bobbybuilds-cron`) only triggers the jobs, through a service binding. It runs `*/5` for `frequent` (uptime, plus today's roll-up every 15 minutes) and 00:10 UTC for `daily` (finalise yesterday, rotate the secret, 90-day clean-up, GitHub weekly commits).
+  - **Cron Worker:** `cron/` (`bobbybuilds-cron`) only triggers the jobs, through a service binding. It runs `*/5` for `frequent` (uptime; today's roll-up and the snapshot every 10 minutes; the GitHub contribution calendar on the hour) and 00:10 UTC for `daily` (finalise yesterday, rotate the secret, 90-day clean-up, GitHub weekly commits).
   - **Roll-ups** are rebuilt per day in one D1 batch, so running one again is safe. Every run is recorded in `job_runs`.
   - **Secrets:** `ROLLUP_SECRET` must be the same on both Workers, and `npm run deploy` / `deploy:cron` refuse without it. `GITHUB_TOKEN` (read-only Contents, selected repos only) is set on `bobbybuilds` only.
   - **Changing `ROLLUP_SECRET`:** set the new value on both Workers in one go, without printing it.
 - Admin dashboard:
-  - **Where things live:** pages in `src/app/admin/`. Queries in `src/lib/db/dashboard.ts`, `funnel.ts` and `streak.ts`. Charts in `src/components/charts.tsx`: server-rendered SVG with no chart library, a native `<title>` hover on each mark, and a table view for every chart.
+  - **Where things live:** pages in `src/app/admin/`. Queries in `src/lib/db/dashboard.ts`, `funnel.ts` and `streak.ts`. Charts in `src/components/charts.tsx`: server-rendered SVG with no chart library, a native `<title>` hover on each mark, and a table view for every chart. (The public page has its own charts: see Public pages.)
   - **Data sources:** charts read the roll-ups. Browser, OS, screen, language, the funnel, 404s, outbound clicks, downloads, events and CSV read raw data, so the last 90 days only (`clampToRaw`).
   - **Re-check access:** every admin server action and route calls `requireAdmin()` / `isAdminRequestFrom()` (`src/lib/admin/access.ts`), because server actions can be invoked from any page.
   - **Local data:** `npm run seed:demo` fills the local database only, and refuses `--remote`.
@@ -63,16 +63,17 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
   - **Server actions:** in `src/app/admin/settings/actions.ts`. Each one's first line is `await requireAdmin();`, and `tests/node/actions.test.ts` enforces it. A `"use server"` file may export only actions.
   - **Logic:** in `src/lib/admin/settings-core.ts`, which takes `db` and form values, with no Next.js. Validation is in `src/lib/admin/validate.ts`, and writes in `src/lib/db/settings.ts`.
   - **Forms:** use `<SettingsForm>` and its fields (`src/components/admin/form.tsx`), which handle field errors, keeping what was typed, and showing a new secret key once.
-  - **Logos:** image files in `public/logos/`, listed into `src/lib/logos.generated.ts` by `npm run build:logos`, which runs before dev, build and typecheck.
+  - **Logos:** image files in `public/logos/`, listed into `src/lib/logos.generated.ts` by `npm run build:logos`, which runs before dev, build and typecheck. A project with no logo chosen uses `public/logos/<slug>.*` if there is one.
   - **Markdown:** `src/lib/markdown.ts`. Raw HTML is always escaped, links are http(s), mailto or same-site paths only, and images are same-site only. Use it for journey entries and project descriptions everywhere.
 - Public pages:
-  - **Routes:** `/`, `/p/[slug]`, `/journey`, `/journey/[slug]`, share images, `/sitemap.xml` and `/robots.txt`.
+  - **Routes:** `/`, `/journey`, `/journey/[slug]`, share images, `/sitemap.xml` and `/robots.txt`. There are no project pages: project cards open the project's own site in a new tab (↗), and `/p/*` redirects permanently to `/` (`next.config.ts`). The journey is hidden while `site.showJourney` is false: no home section, no header link, no sitemap entries, and `/journey/*` redirects (temporarily) to `/`. Its code, table and admin editor stay; set it to true and deploy to bring it back.
+  - **Interactive pieces:** `src/components/public/charts.tsx` (the custom project dropdown, monthly bars and card sparklines, each with a hover popover) and `github.tsx` (the contribution grid). They only use figures already in the page. Each chart has a screen-reader-only table instead of a visible "Show as a table".
   - **Data:** they read ONLY the public snapshot (`getSnapshot()` in `src/lib/public/`), never `@/lib/db` or bindings. `tests/node/public-boundary.test.ts` enforces this.
-  - **The snapshot:** built only from roll-ups, public numbers, published entries and public milestones (`src/lib/public/snapshot.ts`). It's stored in KV (`PUBLIC_CACHE`) and written only when its content changes.
+  - **The snapshot:** built only from roll-ups, public numbers, published entries, public milestones and the GitHub contribution calendar (`github_contributions`, public data fetched hourly by the frequent job with `GITHUB_TOKEN`; a failed fetch keeps the last good year) (`src/lib/public/snapshot.ts`). Bump `SNAPSHOT_VERSION` when its shape changes. It's stored in KV (`PUBLIC_CACHE`) and written only when its content changes.
   - **When it's rebuilt:** by the 5-minute job every 10 minutes, by the daily job, and after every successful settings save. That's at most about 144 KV writes a day, against the free plan's 1,000. Don't add per-page KV writes.
   - **Indexing:** `site.indexable` (`src/lib/site.ts`) controls it. While false, there's noindex in the meta tag and the `X-Robots-Tag` header, and `robots.txt` disallows everything. Launch means setting it to true.
-  - **Owner details** (name, location, bio, links, photo) live in `owner` in `src/lib/site.ts`. The photo is `public/profile.png` or `public/profile.jpg` (also `.jpeg`/`.webp`), detected at build into `PROFILE_PHOTO`; until one exists, the initial is shown.
-- Retention: raw `page_views`, `events`, `uptime_checks` and `job_runs` are deleted after 90 days (a row from exactly 90 days ago stays). Roll-ups, including `daily_uptime` and the Core Web Vitals p75 columns, are kept.
+  - **Owner details** (name, full name for the copyright, location "United Kingdom" and `from` "the UK" for sentences, GitHub login, bio, links, photo) live in `owner` in `src/lib/site.ts`. The footer's tool icons are in `public/made-with/`. The photo is `public/profile.png` or `public/profile.jpg` (also `.jpeg`/`.webp`), detected at build into `PROFILE_PHOTO`; until one exists, the initial is shown.
+- Retention: raw `page_views`, `events`, `uptime_checks` and `job_runs` are deleted after 90 days (a row from exactly 90 days ago stays). Roll-ups, including `daily_uptime` and the Core Web Vitals p75 columns, are kept. `github_contributions` holds GitHub's last year only (older days are deleted on each refresh).
 - The package is `"type": "module"`, so every `.js`/`.ts` file is ESM. Don't add CommonJS files. If one is ever needed, name it `.cjs`.
 - Tests: `npm test` runs Vitest inside the Workers runtime (`@cloudflare/vitest-plugin`) on a fresh D1 with every migration applied.
 - Bindings: get them with `getCloudflareContext()` from `@opennextjs/cloudflare`. Run `npm run cf-typegen` after changing `wrangler.jsonc`.
@@ -81,14 +82,15 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
 
 The reference is `marclou.pdf` (Marc Lou's indie page). Use the same structure and feel, with our own accent colour and content, and never his brand.
 
-- **Page:** a clean white background (dark mode chosen separately), generous spacing, Geist.
+- **Page:** a clean white background, generous spacing, Geist. The public site is light only. The admin dashboard alone has a dark version (`.admin-theme` in `globals.css`, by the system setting).
 - **Cards:** white, with thin light-grey borders (`border-line`) and 16px corners (`rounded-2xl`). No heavy shadows.
 - **Section headings:** small, with a hairline underneath and a count or link on the right (`SectionHeading`).
 - **Numbers:** small rounded grey pills, e.g. "2,731 visitors" (`Pill`).
 - **Buttons:** black pills (`buttonClass`); secondary actions use `quietButtonClass`.
-- **Charts:** monochrome. Sparklines and time series have a light-grey fill and a dark line, and the latest unfinished period is dashed (`unfinishedLast`). Bars are dark, and the unfinished one is lighter.
+- **Charts:** monochrome. Sparklines and time series have a light-grey fill and a dark line, and the latest unfinished period is dashed (`unfinishedLast`). Bars are dark, and the unfinished one is lighter. The one exception is the public GitHub grid, in GitHub's own greens (`--gh-0` … `--gh-4`, with dark-mode versions).
+- **Popovers (public page):** white cards with a thin border and soft shadow: a bold heading (month or week), then rows of project logo, grey name and value, and a TOTAL row when there's more than one.
 - **Overview pages:** start with a big full headline number plus a bar chart card, with a dropdown pill top right.
-- **Layout:** two-column card grids for projects, and a compact three-column list (icon, name, two grey lines, small pill badges) for minor items.
+- **Layout:** two-column card grids for projects. (Ideas and retired projects aren't shown on the public page for now.)
 - **Accent colour:** `--accent` (placeholder until Phase 6) is only for interactive states: focus, links and selection. It's never used for chart marks.
 - **Statuses:** reserved colours, always with an icon and a label.
 

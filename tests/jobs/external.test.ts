@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { commitsInWeek, syncGithubWeekly } from "@/lib/jobs/github";
+import { beforeEach, describe, expect, it } from "vitest";
+import { commitsInWeek, syncGithubContributions, syncGithubWeekly } from "@/lib/jobs/github";
 import { checkOnce, pingAll } from "@/lib/jobs/uptime";
 import { createProject, db } from "../helpers";
 
@@ -85,6 +85,49 @@ describe("GitHub weekly commits", () => {
 		const second = fakeFetch(() => new Response("[]"));
 		await syncGithubWeekly(db, second.fn, "2026-11-02");
 		expect(second.calls.filter((c) => c.url.includes("history-repo"))).toHaveLength(2);
+	});
+});
+
+describe("GitHub contribution calendar", () => {
+	const calendar = (days: number, from = "2025-11-02", count = (i: number) => i % 5) => {
+		const list = Array.from({ length: days }, (_, i) => ({ date: new Date(Date.parse(`${from}T00:00:00Z`) + i * 86_400_000).toISOString().slice(0, 10), contributionCount: count(i) }));
+		const weeks = Array.from({ length: Math.ceil(days / 7) }, (_, w) => ({ contributionDays: list.slice(w * 7, w * 7 + 7) }));
+		return Response.json({ data: { user: { contributionsCollection: { contributionCalendar: { weeks } } } } });
+	};
+	const stored = async () => (await db.prepare("SELECT day, count FROM github_contributions ORDER BY day").all<{ day: string; count: number }>()).results;
+	beforeEach(async () => {
+		await db.prepare("DELETE FROM github_contributions").run();
+	});
+
+	it("asks GitHub's GraphQL API for the login's calendar with the token, and stores every day", async () => {
+		const { fn, calls } = fakeFetch(() => calendar(366));
+		const summary = await syncGithubContributions(db, fn, "wahabalikhan", "tok", 5);
+		expect(summary).toEqual({ days: 366, total: Array.from({ length: 366 }, (_, i) => i % 5).reduce((a, b) => a + b, 0) });
+		expect(calls[0].url).toBe("https://api.github.com/graphql");
+		expect((calls[0].init?.headers as Record<string, string>).Authorization).toBe("Bearer tok");
+		expect(JSON.parse(String(calls[0].init?.body)).variables).toEqual({ login: "wahabalikhan" });
+		const rows = await stored();
+		expect(rows.length).toBe(366);
+		expect(rows[0]).toEqual({ day: "2025-11-02", count: 0 });
+	});
+
+	it("replaces counts and deletes days older than the new window", async () => {
+		await syncGithubContributions(db, fakeFetch(() => calendar(366)).fn, "x", "tok", 5);
+		await syncGithubContributions(db, fakeFetch(() => calendar(366, "2025-11-09", () => 7)).fn, "x", "tok", 6);
+		const rows = await stored();
+		expect(rows.length).toBe(366);
+		expect(rows[0].day).toBe("2025-11-09");
+		expect(rows.every((r) => r.count === 7)).toBe(true);
+	});
+
+	it("keeps the last good year when GitHub fails or replies with something odd", async () => {
+		await syncGithubContributions(db, fakeFetch(() => calendar(366)).fn, "x", "tok", 5);
+		expect(await syncGithubContributions(db, fakeFetch(() => new Response("nope", { status: 502 })).fn, "x", "tok", 6)).toEqual({ error: "GitHub 502" });
+		expect(await syncGithubContributions(db, fakeFetch(() => Response.json({ errors: [{ message: "bad" }] })).fn, "x", "tok", 6)).toEqual({ error: "Unexpected calendar (0 days)" });
+		expect(await syncGithubContributions(db, fakeFetch(() => calendar(366, "2025-11-02", () => -3)).fn, "x", "tok", 6)).toEqual({ error: "Unexpected calendar (0 days)" });
+		expect(await syncGithubContributions(db, fakeFetch(() => { throw new Error("network"); }).fn, "x", "tok", 6)).toEqual({ error: "network" });
+		expect(await syncGithubContributions(db, fakeFetch(() => calendar(366)).fn, "x", undefined, 6)).toEqual({ error: "No GITHUB_TOKEN" });
+		expect((await stored()).length).toBe(366);
 	});
 });
 

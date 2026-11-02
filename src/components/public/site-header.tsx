@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { owner } from "@/lib/site";
+import { owner, site } from "@/lib/site";
 import { Avatar } from "./profile";
 
-/** A slim header for project and journey pages. */
+/** A slim header for the journey and 404 pages. */
 export function SiteHeader() {
 	return (
 		<header className="border-b border-line">
@@ -15,9 +15,11 @@ export function SiteHeader() {
 					<Link href="/" className="rounded-full px-3 py-1.5 hover:bg-pill hover:text-ink">
 						Projects
 					</Link>
-					<Link href="/journey" className="rounded-full px-3 py-1.5 hover:bg-pill hover:text-ink">
-						Journey
-					</Link>
+					{site.showJourney && (
+						<Link href="/journey" className="rounded-full px-3 py-1.5 hover:bg-pill hover:text-ink">
+							Journey
+						</Link>
+					)}
 				</nav>
 			</div>
 		</header>

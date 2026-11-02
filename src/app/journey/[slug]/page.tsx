@@ -32,11 +32,7 @@ export default async function JourneyEntry({ params }: { params: Promise<{ slug:
 					<header>
 						<p className="flex flex-wrap items-center gap-2 text-sm text-muted">
 							<time dateTime={new Date(entry.publishedAt).toISOString()}>{formatDay(new Date(entry.publishedAt).toISOString().slice(0, 10), true)}</time>
-							{entry.projectName && entry.projectSlug && (
-								<Link href={`/p/${entry.projectSlug}`}>
-									<Pill>{entry.projectName}</Pill>
-								</Link>
-							)}
+							{entry.projectName && <Pill>{entry.projectName}</Pill>}
 						</p>
 						<h1 className="mt-2 text-3xl font-bold tracking-tight">{entry.title}</h1>
 					</header>
