@@ -28,15 +28,23 @@ const sharedDirectives = [
 	"connect-src 'self'",
 	"manifest-src 'self'",
 	"worker-src 'self'",
-	...(isDev ? [] : ["upgrade-insecure-requests"]),
 ];
 
-export function publicCsp(): string {
-	return [...sharedDirectives, `script-src 'self' 'unsafe-inline'${devEval}`].join("; ");
+/**
+ * upgrade-insecure-requests on every real host. Not on loopback (http://127.0.0.1 for the
+ * local preview and admin:live): browsers would rewrite its CSS and JS to https://127.0.0.1,
+ * which doesn't exist, and the page would load unstyled.
+ */
+function directives(loopback: boolean): string[] {
+	return isDev || loopback ? sharedDirectives : [...sharedDirectives, "upgrade-insecure-requests"];
 }
 
-export function adminCsp(nonce: string): string {
-	return [...sharedDirectives, `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${devEval}`].join("; ");
+export function publicCsp(loopback = false): string {
+	return [...directives(loopback), `script-src 'self' 'unsafe-inline'${devEval}`].join("; ");
+}
+
+export function adminCsp(nonce: string, loopback = false): string {
+	return [...directives(loopback), `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${devEval}`].join("; ");
 }
 
 export const securityHeaders: Record<string, string> = {

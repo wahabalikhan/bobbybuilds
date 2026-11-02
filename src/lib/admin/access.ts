@@ -36,7 +36,10 @@ export async function isAdminRequestFrom(request: Request): Promise<boolean> {
 	return isAdminRequest(new URL(request.url).host || request.headers.get("host"), request.headers.get(ACCESS_JWT_HEADER));
 }
 
-/** True when the local admin is reading the live database (npm run admin:live). */
-export function isLiveData(): boolean {
-	return process.env.ADMIN_DATA === "live";
+/**
+ * True when this server is connected to the LIVE database from a local machine
+ * (npm run admin:live sets ADMIN_DATA=live). Checks the Worker's env and process.env.
+ */
+export function isLiveData(env?: Record<string, unknown>): boolean {
+	return env?.ADMIN_DATA === "live" || process.env.ADMIN_DATA === "live";
 }

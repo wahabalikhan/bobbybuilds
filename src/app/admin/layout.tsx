@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { LiveDataBanner } from "@/components/admin/live-banner";
 import { isLiveData } from "@/lib/admin/access";
 import { listProjects } from "@/lib/db/projects";
 import { LOCAL_ADMIN_HEADER } from "@/lib/security/local-admin";
@@ -16,16 +17,15 @@ export const metadata: Metadata = {
 // apply the CSP nonce from middleware.ts.
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
 	const localAdmin = (await headers()).get(LOCAL_ADMIN_HEADER) === "1";
-	const live = localAdmin && isLiveData();
 	const { env } = await getCloudflareContext({ async: true });
+	// Whenever the live database is connected, the banner shows. No other condition.
+	const live = isLiveData(env as unknown as Record<string, unknown>);
 	const projects = await listProjects(env.DB);
 
 	return (
 		<div className="min-h-screen bg-page">
 			{live ? (
-				<p role="alert" className="bg-critical px-4 py-2 text-center text-sm font-semibold text-white">
-					LIVE DATA: you&rsquo;re looking at, and can change, the live database from your own machine.
-				</p>
+				<LiveDataBanner />
 			) : (
 				localAdmin && (
 					<p className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">

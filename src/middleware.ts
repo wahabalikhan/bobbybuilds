@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { site } from "@/lib/site";
 import { ACCESS_JWT_HEADER, isValidAccessJwt, readAccessConfig } from "@/lib/security/access";
 import { adminCsp, adminOnlyHeaders, createNonce, publicCsp, securityHeaders } from "@/lib/security/headers";
-import { isLocalAdminAllowed, LOCAL_ADMIN_HEADER } from "@/lib/security/local-admin";
+import { isLocalAdminAllowed, isLoopbackHost, LOCAL_ADMIN_HEADER } from "@/lib/security/local-admin";
 
 // Edge middleware (not Next 16 proxy.ts): it is what OpenNext officially supports on Cloudflare.
 // Admin pages live in src/app/admin. If site.adminPath is changed, requests to the new
@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
 		}
 
 		const nonce = createNonce();
-		const csp = adminCsp(nonce);
+		const csp = adminCsp(nonce, isLoopbackHost(request.nextUrl.hostname));
 		// Next.js reads the nonce from the request's CSP header and stamps its own scripts.
 		const requestHeaders = new Headers(request.headers);
 		requestHeaders.delete(LOCAL_ADMIN_HEADER);
@@ -60,7 +60,7 @@ export async function middleware(request: NextRequest) {
 		return withHeaders(response, { ...securityHeaders, ...adminOnlyHeaders, "Content-Security-Policy": csp });
 	}
 
-	return withHeaders(NextResponse.next(), { ...securityHeaders, "Content-Security-Policy": publicCsp() });
+	return withHeaders(NextResponse.next(), { ...securityHeaders, "Content-Security-Policy": publicCsp(isLoopbackHost(request.nextUrl.hostname)) });
 }
 
 export const config = {

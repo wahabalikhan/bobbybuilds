@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
 import { RangePicker, StatusPill, Tabs } from "@/components/admin/ui";
 import { parseRange } from "@/lib/admin/range";
 import { requestTime } from "@/lib/admin/clock";
@@ -51,7 +51,7 @@ export default async function ProjectDashboard({
 
 	const { env } = await getCloudflareContext({ async: true });
 	const project = await getProjectBySlug(env.DB, slug);
-	if (!project) notFound();
+	if (!project) return <AdminNotFoundMessage what={`There’s no project called “${slug.slice(0, 60)}”.`} />;
 
 	const now = requestTime();
 	const today = utcDay(now);
