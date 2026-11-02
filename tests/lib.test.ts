@@ -60,7 +60,7 @@ describe("project queries", () => {
 		const projects = await listProjects(db);
 		const [portfolio, jobBoard] = projects.filter((p) => ["portfolio", "job-board"].includes(p.slug));
 		expect(portfolio.allowedOrigins).toEqual(["https://wahabalikhan.com", "https://www.wahabalikhan.com"]);
-		expect(portfolio.browserEvents).toEqual(["case_study_read", "contact_click"]);
+		expect(portfolio.browserEvents).toEqual(["case_study_read", "contact_click", "comments_opened", "comment_posted"]);
 		expect(jobBoard.status).toBe("building");
 		expect(jobBoard.allowedOrigins).toEqual(["https://jobboard.wahab-ali-khan.workers.dev"]);
 	});

@@ -34,6 +34,8 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
   - Every new limit gets a test in `tests/schema.test.ts`.
 - Query helpers live in `src/lib/db/`, taking a `D1Database`. `secret_key_hash` is never selected into app objects.
 - Keys: `npm run keys:create -- <slug> [--remote] [--rotate]`. It shows the secret key once, stores only its SHA-256 hash, and writes through `getPlatformProxy` so the update is a bound query.
+- Retention: raw `page_views`, `events` and `uptime_checks` are deleted after 90 days (the daily job). Roll-ups are kept.
+- The package is `"type": "module"`, so every `.js`/`.ts` file is ESM. Don't add CommonJS files. If one is ever needed, name it `.cjs`.
 - Tests: `npm test` runs Vitest inside the Workers runtime (`@cloudflare/vitest-plugin`) on a fresh D1 with every migration applied.
 - Bindings: get them with `getCloudflareContext()` from `@opennextjs/cloudflare`. Run `npm run cf-typegen` after changing `wrangler.jsonc`.
 
