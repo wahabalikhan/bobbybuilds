@@ -117,7 +117,7 @@ The reference is `marclou.pdf` (Marc Lou's indie page). Use the same structure a
 
 ## Deploying
 
-- Lives at `https://bobbybuilds.app` (a Workers custom domain on the bare domain only). workers.dev stays on only until the portfolio and job board have moved (`docs/access-setup.md`, Step 6), then `workers_dev: false`. Preview URLs stay off.
+- Lives at `https://bobbybuilds.app` (a Workers custom domain on the bare domain only). workers.dev and preview URLs are off (`workers_dev: false`, `preview_urls: false`), and a test keeps them off.
 - `npm run deploy`. Domain and Access setup steps are in `docs/access-setup.md`.
 
 ## Domain plan (bobbybuilds.app)

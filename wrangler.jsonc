@@ -44,9 +44,8 @@
 	// The site lives at the bare domain only. Never add a wildcard route (*.bobbybuilds.app/*):
 	// jobs. belongs to the job board and mail. to Resend (see "Domain plan" in CLAUDE.md).
 	"routes": [{ "pattern": "bobbybuilds.app", "custom_domain": true }],
-	// workers.dev stays on only until the portfolio and job board use bobbybuilds.app (docs/access-setup.md, Step 6).
-	// Preview URLs stay off: they would be a second, unprotected way in.
-	"workers_dev": true,
+	// No workers.dev address and no preview URLs: they would be second ways in, without Access in front.
+	"workers_dev": false,
 	"preview_urls": false,
 	"vars": {
 		// Not secret, but required: /admin refuses every request until both are set.

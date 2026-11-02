@@ -1,6 +1,6 @@
 # Protecting /admin
 
-Live address: `https://bobbybuilds.app` (Cloudflare Workers custom domain). Until Step 6 is done, the old `https://bobbybuilds.wahab-ali-khan.workers.dev` also works.
+Live address: `https://bobbybuilds.app` (Cloudflare Workers custom domain). The old workers.dev address was closed on 2 November 2026.
 
 ## How it works
 

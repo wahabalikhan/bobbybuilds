@@ -23,6 +23,7 @@ describe("wrangler.jsonc and site.url", () => {
 
 	it("serves only the bare domain, leaving subdomains (jobs., mail.) free", () => {
 		expect(config.routes).toEqual([{ pattern: "bobbybuilds.app", custom_domain: true }]);
+		expect(config.workers_dev).toBe(false);
 		expect(config.preview_urls).toBe(false);
 	});
 
