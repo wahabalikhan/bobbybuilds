@@ -15,10 +15,12 @@
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint .",
-    "verify": "npm run check-env && npm run typecheck && npm run lint",
+    "verify": "npm run check-env && npm run typecheck && npm run lint && npm test",
     "db:migrate:local": "wrangler d1 migrations apply bobbybuilds-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply bobbybuilds-db --remote",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
+    "keys:create": "node scripts/keys-create.mts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.3",
@@ -28,14 +30,16 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.12",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20.19.43",
+    "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.1",
     "tailwindcss": "^4",
     "typescript": "^5.7.4",
+    "vitest": "^4.1.12",
     "wrangler": "^4.156.1"
   }
 }

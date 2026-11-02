@@ -17,7 +17,7 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
 
 - Work in phases. Show a plan before each phase and wait for the go-ahead.
 - At the end of each phase, stop, list what to test, and wait.
-- Run `npm run verify` (check-env, typecheck, lint) before every commit.
+- Run `npm run verify` (check-env, typecheck, lint, tests) before every commit.
 
 ## Layout and conventions
 
@@ -27,6 +27,14 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
 - `src/lib/security/`: CSP and headers (`headers.ts`) and the Access JWT check (`access.ts`).
 - `migrations/`: D1 migrations (`npx wrangler d1 migrations create bobbybuilds-db <name>`). Apply with `npm run db:migrate:local` / `db:migrate:remote`.
 - D1: always `env.DB.prepare(sql).bind(...)`. Never build SQL with string concatenation or template literals containing values.
+- Schema conventions: tables are `STRICT`, and limits live in CHECK constraints as well as app validation.
+  - Timestamps are INTEGER Unix ms. Days are UTC `'YYYY-MM-DD'`, checked with `day IS date(day)`. Use `IS`, never `=`: a NULL from `date()` would pass a CHECK.
+  - Weeks start on Monday (`src/lib/days.ts`).
+  - In roll-up key columns, `''` means "none".
+  - Every new limit gets a test in `tests/schema.test.ts`.
+- Query helpers live in `src/lib/db/`, taking a `D1Database`. `secret_key_hash` is never selected into app objects.
+- Keys: `npm run keys:create -- <slug> [--remote] [--rotate]`. It shows the secret key once, stores only its SHA-256 hash, and writes through `getPlatformProxy` so the update is a bound query.
+- Tests: `npm test` runs Vitest inside the Workers runtime (`@cloudflare/vitest-plugin`) on a fresh D1 with every migration applied.
 - Bindings: get them with `getCloudflareContext()` from `@opennextjs/cloudflare`. Run `npm run cf-typegen` after changing `wrangler.jsonc`.
 
 ## Security headers and CSP
