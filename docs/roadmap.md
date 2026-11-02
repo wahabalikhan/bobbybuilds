@@ -6,7 +6,7 @@ Bobby Builds is built in phases. Each phase starts with a plan and ends with a t
 | --- | --- | --- |
 | 1 | Setup | ✅ Done (`df8e5f2`, `609e211`) |
 | 2 | Database | ✅ Done (`a4dcb67`, `62f3258`) |
-| 3 | Collector | ✅ Done (`47b8997`) |
+| 3 | Collector | ✅ Done (`47b8997`, `086c708`) |
 | 4 | Daily job | Not started |
 | 5 | Private dashboard | Not started |
 | 6 | Public indie page | Not started |
@@ -41,6 +41,7 @@ Scaffold, CLAUDE.md, D1, `lib/site.ts`, secret safety, security headers, and the
 Plus rate limiting and `test:collector`.
 
 - `47b8997`: the three endpoints, the daily visitor ID, `t.js` (SPA views, engaged time, scroll depth, Core Web Vitals, outbound clicks, downloads, 404s, `bobby.track` for custom and form events), GPC and DNT, rate limits, migration 0005 for the vitals columns, the playground, and 251 tests.
+- `086c708`: web-vitals moved into `t-vitals.js`, which loads after the page. `t.js` went from 12.2 KB to 3.8 KB (1.9 KB gzipped).
 
 ## 4. Daily job
 
