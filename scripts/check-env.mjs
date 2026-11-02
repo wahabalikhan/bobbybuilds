@@ -13,8 +13,9 @@
  * 4. wrangler.jsonc "vars" (which are committed) hold no secret-looking names.
  * 5. .dev.vars and .env files are ignored by Git and not tracked.
  * 6. The local-only admin flag (LOCAL_ADMIN_PREVIEW) lives only in .dev.vars: never in a
- *    .env file (OpenNext would bake it into the bundle) or wrangler.jsonc. With --deploy,
- *    also checks it isn't one of the Worker's deployed secrets.
+ *    .env file (OpenNext would bake it into the bundle) or wrangler.jsonc.
+ * 7. With --deploy: ROLLUP_SECRET is set on the Worker being deployed (--cron for
+ *    bobbybuilds-cron), and LOCAL_ADMIN_PREVIEW isn't one of its secrets.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -118,20 +119,35 @@ for (const file of envFiles) {
 if (existsSync(wranglerPath) && readFileSync(wranglerPath, "utf8").includes(LOCAL_ADMIN_FLAG)) {
 	problems.push(`wrangler.jsonc mentions ${LOCAL_ADMIN_FLAG}. It belongs only in .dev.vars.`);
 }
-if (process.argv.includes("--deploy")) {
-	let secrets = null;
+/** Secret names on a deployed Worker, or null if they can't be read. */
+function deployedSecrets(workerName) {
 	try {
-		const out = execFileSync("npx", ["wrangler", "secret", "list", "--format", "json"], {
-			cwd: root,
-			encoding: "utf8",
-			stdio: ["ignore", "pipe", "ignore"],
-		});
-		secrets = JSON.parse(out.slice(out.indexOf("[")));
+		const args = ["wrangler", "secret", "list", "--format", "json", ...(workerName ? ["--name", workerName] : [])];
+		const out = execFileSync("npx", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+		const parsed = JSON.parse(out.slice(out.indexOf("[")));
+		return Array.isArray(parsed) ? parsed.map((secret) => secret?.name) : null;
 	} catch {
-		problems.push("Couldn't read the Worker's secrets with `wrangler secret list`. Check you're online and logged in.");
+		return null;
 	}
-	if (Array.isArray(secrets) && secrets.some((secret) => secret?.name === LOCAL_ADMIN_FLAG)) {
-		problems.push(`${LOCAL_ADMIN_FLAG} is a deployed secret. Remove it with \`npx wrangler secret delete ${LOCAL_ADMIN_FLAG}\`.`);
+}
+
+// 7 (deploys only): required production secrets are set, and the local-only flag isn't.
+if (process.argv.includes("--deploy")) {
+	const cron = process.argv.includes("--cron");
+	const worker = cron ? "bobbybuilds-cron" : "bobbybuilds";
+	const secrets = deployedSecrets(cron ? worker : undefined);
+	if (!secrets) {
+		problems.push(`Couldn't read ${worker}'s secrets with \`wrangler secret list\`. Check you're online and logged in.`);
+	} else {
+		if (secrets.includes(LOCAL_ADMIN_FLAG)) {
+			problems.push(`${LOCAL_ADMIN_FLAG} is a deployed secret. Remove it with \`npx wrangler secret delete ${LOCAL_ADMIN_FLAG}\`.`);
+		}
+		if (!secrets.includes("ROLLUP_SECRET")) {
+			problems.push(
+				`ROLLUP_SECRET isn't set on ${worker}, so the scheduled jobs would fail. Set the same value on both Workers: ` +
+					`\`npx wrangler secret put ROLLUP_SECRET\` and \`npx wrangler secret put ROLLUP_SECRET --name bobbybuilds-cron\`.`,
+			);
+		}
 	}
 }
 

@@ -25,7 +25,9 @@
     "build:tracker": "node scripts/build-tracker.mjs",
     "predev": "npm run build:tracker",
     "test:collector": "vitest run tests/collector tests/tracker",
-    "playground": "node scripts/playground.mts"
+    "playground": "node scripts/playground.mts",
+    "deploy:cron": "node scripts/check-env.mjs --deploy --cron && wrangler deploy --config cron/wrangler.jsonc",
+    "test:rollup": "vitest run tests/jobs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.3",

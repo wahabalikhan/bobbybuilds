@@ -46,7 +46,13 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
   - **What it collects:** no cookies or storage, and it never sends the query string except `ref` and `utm_*`.
   - **Download types:** keep `DOWNLOAD_TYPES` in sync between `core.ts` and `validate.ts`.
 - Local collector testing: run `npm run preview` and `npm run playground`. The playground adds a local-only project with origin `http://localhost:5555`.
-- Retention: raw `page_views`, `events` and `uptime_checks` are deleted after 90 days (the daily job). Roll-ups are kept.
+- Scheduled jobs:
+  - **Logic:** lives in `src/lib/jobs/`, and `POST /internal/jobs` runs it (`run.ts`). The route needs `Authorization: Bearer <ROLLUP_SECRET>`, compared in constant time, and answers a plain 404 to anything else.
+  - **Cron Worker:** `cron/` (`bobbybuilds-cron`) only triggers the jobs, through a service binding. It runs `*/5` for `frequent` (uptime, plus today's roll-up every 15 minutes) and 00:10 UTC for `daily` (finalise yesterday, rotate the secret, 90-day clean-up, GitHub weekly commits).
+  - **Roll-ups** are rebuilt per day in one D1 batch, so running one again is safe. Every run is recorded in `job_runs`.
+  - **Secrets:** `ROLLUP_SECRET` must be the same on both Workers, and `npm run deploy` / `deploy:cron` refuse without it. `GITHUB_TOKEN` (read-only Contents, selected repos only) is set on `bobbybuilds` only.
+  - **Changing `ROLLUP_SECRET`:** set the new value on both Workers in one go, without printing it.
+- Retention: raw `page_views`, `events`, `uptime_checks` and `job_runs` are deleted after 90 days (a row from exactly 90 days ago stays). Roll-ups, including `daily_uptime` and the Core Web Vitals p75 columns, are kept.
 - The package is `"type": "module"`, so every `.js`/`.ts` file is ESM. Don't add CommonJS files. If one is ever needed, name it `.cjs`.
 - Tests: `npm test` runs Vitest inside the Workers runtime (`@cloudflare/vitest-plugin`) on a fresh D1 with every migration applied.
 - Bindings: get them with `getCloudflareContext()` from `@opennextjs/cloudflare`. Run `npm run cf-typegen` after changing `wrangler.jsonc`.

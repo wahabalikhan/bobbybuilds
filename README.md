@@ -12,7 +12,9 @@ npm run db:migrate:local         # apply migrations to the local D1
 npm run keys:create -- portfolio # create a project's keys (add --remote for the live database)
 npm run test:collector           # collector and tracker tests only
 npm run playground               # local test site on :5555 (run alongside npm run preview)
-npm run deploy                   # build and deploy to workers.dev
+npm run test:rollup              # daily job and cron Worker tests only
+npm run deploy                   # build and deploy to workers.dev (needs ROLLUP_SECRET set)
+npm run deploy:cron              # deploy the cron Worker (cron/)
 ```
 
 Rules and conventions: [CLAUDE.md](CLAUDE.md). Protecting /admin: [docs/access-setup.md](docs/access-setup.md).

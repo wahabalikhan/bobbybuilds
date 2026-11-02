@@ -7,8 +7,13 @@
 # Tells OpenNext which .env.* mode to use with `wrangler dev`. Not a secret.
 NEXTJS_ENV=
 
-# Phase 4: shared with the cron Worker, sent as a header to the private roll-up route.
+# Phase 4: shared with the cron Worker, sent as a header to /internal/jobs.
+# Set in production on BOTH Workers (bobbybuilds and bobbybuilds-cron).
 ROLLUP_SECRET=
+
+# Phase 4: fine-grained GitHub token, read-only Contents, limited to the projects' repos.
+# Used by the daily job to count weekly commits (needed for private repos).
+GITHUB_TOKEN=
 
 # Local only. Set to "on" in .dev.vars to open /admin at http://localhost:8787 with
 # `npm run preview` while there's no Cloudflare Access in front of it. Only works on

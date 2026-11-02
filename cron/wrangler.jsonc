@@ -1,0 +1,21 @@
+/**
+ * bobbybuilds-cron: a tiny Worker whose only job is to trigger HQ's scheduled tasks.
+ * It calls the main Worker through a service binding (no public URL) with ROLLUP_SECRET.
+ * Deploy: npm run deploy:cron. Secret: ROLLUP_SECRET (same value as on bobbybuilds).
+ */
+{
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	"name": "bobbybuilds-cron",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-11-01",
+	"triggers": {
+		// Every 5 minutes: uptime pings (and today's roll-up every 15 minutes).
+		// 00:10 UTC: daily roll-ups, secret rotation, 90-day clean-up, GitHub commits.
+		"crons": ["*/5 * * * *", "10 0 * * *"]
+	},
+	"services": [{ "binding": "HQ", "service": "bobbybuilds" }],
+	// No public address: this Worker only runs on its schedule.
+	"workers_dev": false,
+	"preview_urls": false,
+	"observability": { "enabled": true }
+}
