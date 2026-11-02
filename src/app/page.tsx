@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
 	title: { absolute: `${owner.name}: ${site.name}` },
-	description: `${owner.firstName}'s free, honest tools, built in public from ${owner.from}.`,
+	description: `${owner.firstName}'s free, honest tools, built in public.`,
 	alternates: { canonical: "/" },
 };
 

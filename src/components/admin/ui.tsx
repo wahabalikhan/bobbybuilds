@@ -155,7 +155,7 @@ export function ProjectLogo({ name, logoPath, size = 28 }: { name: string; logoP
 	if (logoPath) {
 		// A hairline ring keeps dark logos visible on dark backgrounds (and light ones on white).
 		// eslint-disable-next-line @next/next/no-img-element -- small local logos; next/image adds nothing here
-		return <img src={logoPath} alt="" width={size} height={size} className="shrink-0 rounded-lg ring-1 ring-line" style={{ width: size, height: size }} />;
+		return <img src={logoPath} alt="" width={size} height={size} className="shrink-0 rounded-lg object-cover ring-1 ring-line" style={{ width: size, height: size }} />;
 	}
 	return (
 		<span aria-hidden className="inline-flex shrink-0 items-center justify-center rounded-lg bg-ink font-semibold text-page" style={{ width: size, height: size, fontSize: size * 0.48 }}>

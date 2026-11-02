@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
 	metadataBase: new URL(site.url),
 	title: { default: `${owner.name}: ${site.name}`, template: `%s · ${site.name}` },
-	description: `${owner.firstName}'s free, honest tools, built in public from ${owner.from}.`,
+	description: `${owner.firstName}'s free, honest tools, built in public.`,
 	icons: { icon: { url: "/favicon.svg", type: "image/svg+xml" } },
 	// Search engines stay out until launch (site.indexable). Also sent as X-Robots-Tag by the middleware.
 	robots: site.indexable ? { index: true, follow: true } : { index: false, follow: false, nocache: true },
