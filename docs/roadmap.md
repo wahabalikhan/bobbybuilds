@@ -9,7 +9,7 @@ Bobby Builds is built in phases. Each phase starts with a plan and ends with a t
 | 3 | Collector | ✅ Done (`47b8997`, `086c708`) |
 | 4 | Daily job | ✅ Done (`27c3128`) |
 | 5 | Private dashboard | ✅ Done (`fcffc1c`, `169459c`, `a76d7c6`, `daef9d1`) |
-| 6 | Public indie page | Not started |
+| 6 | Public indie page | ✅ Done (`e858e83`) |
 | 7 | Connect my portfolio | Not started |
 | 8 | Connect the job board | Not started |
 | 9 | Launch | Not started |
@@ -79,12 +79,21 @@ Plus rate limiting and `test:collector`.
   - 386 tests.
   - Deployed with the restyle.
 
-## 6. Public indie page
+## 6. Public indie page ✅
 
 - **Home:** a two-column layout. On the left, a profile panel with the bio. On the right, the headline chart, project cards with a pill number and trend, and a compact list for ideas and retired projects.
 - Project pages and the journey page.
 - 10-minute caching.
 - A build-updates form that posts straight to a newsletter tool.
+
+- `e858e83`:
+  - Home (profile panel with photo and bio, headline card, project cards, compact list, latest journey entries), `/p/[slug]`, `/journey` and `/journey/[slug]`.
+  - The public snapshot in KV, written only when it changes (at most about 144 writes a day). It replaces Next.js page caching, which would have needed up to about 4,300 KV writes a day.
+  - Share images, the sitemap, and noindex until launch.
+  - Accent `#1D4ED8`.
+  - 397 tests.
+  - Deployed to workers.dev.
+- The build-updates form moved to the Backlog in CLAUDE.md, at your request.
 
 ## 7. Connect my portfolio
 
