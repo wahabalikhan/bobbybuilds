@@ -11,14 +11,16 @@ const base = {
 	images: { binding: "IMAGES" },
 	d1_databases: [{ binding: "DB", database_name: "bobbybuilds-db", database_id: "e9b730ed-b736-4006-b5d8-8059494cb6b7" }],
 	ratelimits: [{ name: "PV_LIMITER", namespace_id: "1001", simple: { limit: 60, period: 60 } }],
+	kv_namespaces: [{ binding: "PUBLIC_CACHE", id: "d905bda1b9a04f908918cd80b4cbeb64" }],
 	vars: { ACCESS_TEAM_DOMAIN: "", ACCESS_AUD: "" },
 };
 
 describe("admin:live", () => {
 	const config = adminLiveConfig(base, "/repo");
 
-	it("points only the database at the live one", () => {
+	it("points the database and the public snapshot at the live ones", () => {
 		expect(config.d1_databases).toEqual([{ binding: "DB", database_name: "bobbybuilds-db", database_id: base.d1_databases[0].database_id, remote: true }]);
+		expect(config.kv_namespaces).toEqual([{ binding: "PUBLIC_CACHE", id: "d905bda1b9a04f908918cd80b4cbeb64", remote: true }]);
 		expect(config.main).toBe("/repo/.open-next/worker.js");
 		expect(config.assets.directory).toBe("/repo/.open-next/assets");
 	});

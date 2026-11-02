@@ -30,6 +30,8 @@ export function adminLiveConfig(base, root) {
 		images: base.images,
 		services: [{ binding: "WORKER_SELF_REFERENCE", service: LIVE_ADMIN_NAME }],
 		d1_databases: [{ binding: "DB", database_name: database.database_name, database_id: database.database_id, remote: true }],
+		// The live public snapshot, so public pages render and settings saves refresh the live site.
+		kv_namespaces: (base.kv_namespaces ?? []).map((kv) => ({ binding: kv.binding, id: kv.id, remote: true })),
 		ratelimits: base.ratelimits ?? [],
 		workers_dev: false,
 		preview_urls: false,

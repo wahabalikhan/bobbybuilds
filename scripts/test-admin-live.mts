@@ -21,6 +21,7 @@ if (!process.argv.includes("--no-build")) {
 
 const config = adminLiveConfig(unstable_readConfig({ config: "wrangler.jsonc" }), root);
 config.d1_databases = config.d1_databases.map((db) => ({ ...db, remote: false }));
+config.kv_namespaces = config.kv_namespaces.map((kv: { binding: string; id: string }) => ({ ...kv, remote: false }));
 const dir = join(root, ".wrangler", "admin-live-test");
 mkdirSync(dir, { recursive: true });
 const configPath = join(dir, "wrangler.json");

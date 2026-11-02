@@ -29,6 +29,12 @@ export async function checkLiveBanner(origin, extraPaths = []) {
 		if (csp.includes("upgrade-insecure-requests")) problems.push(`${path} sends upgrade-insecure-requests on loopback, so its CSS wouldn't load.`);
 	}
 
+	// The public pages must work too (they need the KV binding).
+	for (const path of ["/", "/journey"]) {
+		const page = await get(`${origin}${path}`);
+		if (page.status !== 200) problems.push(`The public page ${path} returned ${page.status}.`);
+	}
+
 	const css = home.text.match(/href="(\/_next\/static\/[^"]+\.css)"/)?.[1];
 	if (!css) problems.push("/admin links no stylesheet.");
 	else if ((await get(`${origin}${css}`)).status !== 200) problems.push(`The stylesheet ${css} didn't load.`);
