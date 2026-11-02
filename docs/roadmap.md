@@ -12,7 +12,7 @@ Bobby Builds is built in phases. Each phase starts with a plan and ends with a t
 | 6 | Public indie page | ✅ Done (`e858e83`) |
 | 7 | Connect my portfolio | ✅ Done (portfolio `cada9b5`, `5428cdb`) |
 | 8 | Connect the job board | Not started |
-| 9 | Launch | Not started |
+| 9 | Launch | In progress: custom domain and Access done (`bae426a`, `3a4d5e1`, `ea1f04c`) |
 
 ## 1. Setup ✅
 
@@ -117,5 +117,19 @@ Done in the job board repo during its Phase 10.
 
 - README and MIT licence.
 - A check of the Git history for secrets.
-- Go public.
-- Custom domain and path-based Access for `/admin`.
+- Go public (`site.indexable: true`). Until then, noindex stays on.
+- ✅ Custom domain and path-based Access for `/admin` (2 November 2026):
+  - `bae426a`:
+    - `bobbybuilds.app` as a Workers custom domain (the bare domain only) and `site.url`.
+    - `www` redirects to it with a 301.
+    - `docs/access-setup.md` rewritten.
+    - A "Domain plan" in CLAUDE.md keeps `jobs.`, `mail.` and Email Routing clear.
+  - `3a4d5e1`: a self-hosted Access app on `bobbybuilds.app` for the paths `admin` and `admin/*`. One email address, one-time PIN, team `bobbybuilds.cloudflareaccess.com`. The JWT check still runs behind it.
+  - Portfolio `46acbe4`: the snippet, footer link and CSP moved to `bobbybuilds.app`.
+  - The job board's `HQ_URL` was switched on its Worker and in Supabase. No code changes.
+  - `ea1f04c`: workers.dev closed (error 1042). A test keeps `workers_dev` and `preview_urls` off.
+  - Tested:
+    - Public pages are open, with noindex.
+    - `/admin` asks for the email, and only that one gets in.
+    - The cron's uptime checks are up for both sites.
+    - Both sites' data arrives at the new address.
