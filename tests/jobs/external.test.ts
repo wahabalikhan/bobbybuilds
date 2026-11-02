@@ -52,8 +52,8 @@ describe("GitHub weekly commits", () => {
 			return new Response("[{}]", { headers: { Link: `<https://x/?page=${since?.startsWith("2026-11-02") ? 4 : 11}>; rel="last"` } });
 		});
 
-		const summary = await syncGithubWeekly(db, fn, "2026-11-02", "tok");
-		expect(summary["wahabalikhan/good-repo"]).toEqual({ thisWeek: 4, lastWeek: 11 });
+		const summary = await syncGithubWeekly(db, fn, "2026-11-02", "tok", Date.now(), 2);
+		expect(summary["wahabalikhan/good-repo"]).toEqual({ thisWeek: 4, lastWeek: 11, backfilled: 0 });
 		expect(summary["wahabalikhan/missing-repo"]).toEqual({ error: "GitHub 404 for wahabalikhan/missing-repo" });
 
 		const { results } = await db.prepare("SELECT week, commits FROM github_weekly WHERE project_id = ?1 ORDER BY week").bind(good).all();
@@ -63,12 +63,28 @@ describe("GitHub weekly commits", () => {
 		]);
 
 		// Running again updates rather than duplicates.
-		await syncGithubWeekly(db, fakeFetch(() => new Response("[]")).fn, "2026-11-02");
+		await syncGithubWeekly(db, fakeFetch(() => new Response("[]")).fn, "2026-11-02", undefined, Date.now(), 2);
 		const again = await db.prepare("SELECT week, commits FROM github_weekly WHERE project_id = ?1 ORDER BY week").bind(good).all();
 		expect(again.results).toEqual([
 			{ week: "2026-10-26", commits: 0 },
 			{ week: "2026-11-02", commits: 0 },
 		]);
+	});
+
+
+	it("fills in 26 weeks of history, 8 old weeks per run, then only fetches this week and last week", async () => {
+		const projectId = await createProject({ github_repo: "wahabalikhan/history-repo" });
+		const first = fakeFetch(() => new Response("[{}]"));
+		const summary = await syncGithubWeekly(db, first.fn, "2026-11-02");
+		expect(summary["wahabalikhan/history-repo"]).toEqual({ thisWeek: 1, lastWeek: 1, backfilled: 8 });
+		expect(first.calls.filter((c) => c.url.includes("history-repo"))).toHaveLength(10);
+		for (let run = 0; run < 2; run += 1) await syncGithubWeekly(db, fakeFetch(() => new Response("[{}]")).fn, "2026-11-02");
+		const stored = await db.prepare("SELECT min(week) AS first, count(*) AS n FROM github_weekly WHERE project_id = ?1").bind(projectId).first();
+		expect(stored).toEqual({ first: "2026-05-11", n: 26 });
+
+		const second = fakeFetch(() => new Response("[]"));
+		await syncGithubWeekly(db, second.fn, "2026-11-02");
+		expect(second.calls.filter((c) => c.url.includes("history-repo"))).toHaveLength(2);
 	});
 });
 

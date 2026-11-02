@@ -13,6 +13,8 @@ npm run keys:create -- portfolio # create a project's keys (add --remote for the
 npm run test:collector           # collector and tracker tests only
 npm run playground               # local test site on :5555 (run alongside npm run preview)
 npm run test:rollup              # daily job and cron Worker tests only
+npm run seed:demo                # 120 days of made-up data in the LOCAL database (for the dashboard)
+npm run admin:live               # the dashboard on 127.0.0.1:8788 against the LIVE database (red banner)
 npm run deploy                   # build and deploy to workers.dev (needs ROLLUP_SECRET set)
 npm run deploy:cron              # deploy the cron Worker (cron/)
 ```

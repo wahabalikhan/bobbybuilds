@@ -22,6 +22,8 @@ export type Project = {
 	links: ProjectLink[];
 	allowedOrigins: string[];
 	browserEvents: string[];
+	/** Raw funnel steps; use parseFunnel() from ./funnel to read them. */
+	funnel: unknown[];
 	publicKey: string | null;
 	secretKeyHint: string | null;
 	sortOrder: number;
@@ -42,6 +44,7 @@ type ProjectRow = {
 	links: string;
 	allowed_origins: string;
 	browser_events: string;
+	funnel: string;
 	public_key: string | null;
 	secret_key_hint: string | null;
 	sort_order: number;
@@ -49,7 +52,7 @@ type ProjectRow = {
 
 // secret_key_hash is deliberately never selected into a Project.
 const PROJECT_COLUMNS = `id, slug, name, tagline, description_md, status, lesson, logo_path, site_url, health_url,
-	github_repo, links, allowed_origins, browser_events, public_key, secret_key_hint, sort_order`;
+	github_repo, links, allowed_origins, browser_events, funnel, public_key, secret_key_hint, sort_order`;
 
 function parseJsonArray<T>(value: string): T[] {
 	try {
@@ -76,6 +79,7 @@ function toProject(row: ProjectRow): Project {
 		links: parseJsonArray<ProjectLink>(row.links),
 		allowedOrigins: parseJsonArray<string>(row.allowed_origins),
 		browserEvents: parseJsonArray<string>(row.browser_events),
+		funnel: parseJsonArray<unknown>(row.funnel),
 		publicKey: row.public_key,
 		secretKeyHint: row.secret_key_hint,
 		sortOrder: row.sort_order,

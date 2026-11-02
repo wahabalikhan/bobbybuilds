@@ -6,7 +6,7 @@ const alias = { "@": fileURLToPath(new URL("./src", import.meta.url)) };
 
 // Two projects:
 // - workers: runs inside the Workers runtime against a fresh local D1 with every migration applied
-// - tracker: t.js logic in Node, against happy-dom browser windows
+// - node: t.js logic against happy-dom browser windows, chart rendering, and the scripts
 export default defineConfig(async () => {
 	const migrations = await readD1Migrations(fileURLToPath(new URL("./migrations", import.meta.url)));
 	return {
@@ -27,13 +27,13 @@ export default defineConfig(async () => {
 					test: {
 						name: "workers",
 						include: ["tests/**/*.test.ts"],
-						exclude: ["tests/tracker/**"],
+						exclude: ["tests/tracker/**", "tests/node/**"],
 						setupFiles: ["./tests/apply-migrations.ts"],
 					},
 				},
 				{
 					resolve: { alias },
-					test: { name: "tracker", include: ["tests/tracker/**/*.test.ts"], environment: "node" },
+					test: { name: "node", include: ["tests/tracker/**/*.test.ts", "tests/node/**/*.test.{ts,tsx}"], environment: "node" },
 				},
 			],
 		},

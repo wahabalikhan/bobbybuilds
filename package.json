@@ -27,7 +27,9 @@
     "test:collector": "vitest run tests/collector tests/tracker",
     "playground": "node scripts/playground.mts",
     "deploy:cron": "node scripts/check-env.mjs --deploy --cron && wrangler deploy --config cron/wrangler.jsonc",
-    "test:rollup": "vitest run tests/jobs"
+    "test:rollup": "vitest run tests/jobs",
+    "seed:demo": "node scripts/seed-demo.mts",
+    "admin:live": "node scripts/admin-live.mts"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.3",

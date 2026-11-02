@@ -52,6 +52,13 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
   - **Roll-ups** are rebuilt per day in one D1 batch, so running one again is safe. Every run is recorded in `job_runs`.
   - **Secrets:** `ROLLUP_SECRET` must be the same on both Workers, and `npm run deploy` / `deploy:cron` refuse without it. `GITHUB_TOKEN` (read-only Contents, selected repos only) is set on `bobbybuilds` only.
   - **Changing `ROLLUP_SECRET`:** set the new value on both Workers in one go, without printing it.
+- Admin dashboard:
+  - **Where things live:** pages in `src/app/admin/`. Queries in `src/lib/db/dashboard.ts`, `funnel.ts` and `streak.ts`. Charts in `src/components/charts.tsx`: server-rendered SVG with no chart library, a native `<title>` hover on each mark, and a table view for every chart.
+  - **Data sources:** charts read the roll-ups. Browser, OS, screen, language, the funnel, 404s, outbound clicks, downloads, events and CSV read raw data, so the last 90 days only (`clampToRaw`).
+  - **Re-check access:** every admin server action and route calls `requireAdmin()` / `isAdminRequestFrom()` (`src/lib/admin/access.ts`), because server actions can be invoked from any page.
+  - **Local data:** `npm run seed:demo` fills the local database only, and refuses `--remote`.
+  - **Live data:** `npm run admin:live` runs the dashboard on `127.0.0.1:8788` against the live database, with a red LIVE DATA banner. It uses a throwaway config (`scripts/lib/admin-live-config.mjs`) with its own Worker name. Never bind it to anything but loopback.
+  - **Design tokens:** in `src/app/globals.css`. `--accent` is a placeholder until Phase 6, and status colours always come with an icon and a label.
 - Retention: raw `page_views`, `events`, `uptime_checks` and `job_runs` are deleted after 90 days (a row from exactly 90 days ago stays). Roll-ups, including `daily_uptime` and the Core Web Vitals p75 columns, are kept.
 - The package is `"type": "module"`, so every `.js`/`.ts` file is ESM. Don't add CommonJS files. If one is ever needed, name it `.cjs`.
 - Tests: `npm test` runs Vitest inside the Workers runtime (`@cloudflare/vitest-plugin`) on a fresh D1 with every migration applied.

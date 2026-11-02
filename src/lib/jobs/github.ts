@@ -31,35 +31,44 @@ export async function commitsInWeek(fetchFn: Fetch, repo: string, weekStart: str
 	return Array.isArray(commits) ? commits.length : 0;
 }
 
-export type GithubSummary = Record<string, { thisWeek: number; lastWeek: number } | { error: string }>;
+export type GithubSummary = Record<string, { thisWeek: number; lastWeek: number; backfilled: number } | { error: string }>;
 
-/** Updates github_weekly for this week (unfinished) and last week, for every project with a repo. */
+/**
+ * Updates github_weekly for this week (unfinished) and last week, for every project with a
+ * repo. Weeks in the last `history` weeks that have never been fetched are filled in too,
+ * at most `maxBackfill` per repo per run (Workers on the Free plan allow 50 outgoing requests
+ * per run), so the shipping streak has its full history within a few days.
+ */
 export async function syncGithubWeekly(
 	db: D1Database,
 	fetchFn: Fetch,
 	thisWeek: string,
 	token?: string,
 	now: number = Date.now(),
+	history = 26,
+	maxBackfill = 8,
 ): Promise<GithubSummary> {
 	const { results } = await db
 		.prepare("SELECT id, github_repo FROM projects WHERE github_repo IS NOT NULL")
 		.all<{ id: number; github_repo: string }>();
 	const lastWeek = addDays(thisWeek, -7);
 	const summary: GithubSummary = {};
+	const upsert = `INSERT INTO github_weekly (project_id, week, commits, updated_at) VALUES (?1, ?2, ?3, ?4)
+		ON CONFLICT (project_id, week) DO UPDATE SET commits = excluded.commits, updated_at = excluded.updated_at`;
 
 	for (const project of results) {
 		try {
-			const counts = {
-				thisWeek: await commitsInWeek(fetchFn, project.github_repo, thisWeek, token),
-				lastWeek: await commitsInWeek(fetchFn, project.github_repo, lastWeek, token),
-			};
-			const upsert = `INSERT INTO github_weekly (project_id, week, commits, updated_at) VALUES (?1, ?2, ?3, ?4)
-				ON CONFLICT (project_id, week) DO UPDATE SET commits = excluded.commits, updated_at = excluded.updated_at`;
-			await db.batch([
-				db.prepare(upsert).bind(project.id, thisWeek, counts.thisWeek, now),
-				db.prepare(upsert).bind(project.id, lastWeek, counts.lastWeek, now),
-			]);
-			summary[project.github_repo] = counts;
+			const stored = await db
+				.prepare("SELECT week FROM github_weekly WHERE project_id = ?1 AND week >= ?2")
+				.bind(project.id, addDays(thisWeek, -7 * (history - 1)))
+				.all<{ week: string }>();
+			const have = new Set(stored.results.map((r) => r.week));
+			const missing = Array.from({ length: Math.max(0, history - 2) }, (_, i) => addDays(thisWeek, -7 * (i + 2))).filter((w) => !have.has(w)).slice(0, maxBackfill);
+
+			const counts = new Map<string, number>();
+			for (const week of [thisWeek, lastWeek, ...missing]) counts.set(week, await commitsInWeek(fetchFn, project.github_repo, week, token));
+			await db.batch([...counts].map(([week, commits]) => db.prepare(upsert).bind(project.id, week, commits, now)));
+			summary[project.github_repo] = { thisWeek: counts.get(thisWeek)!, lastWeek: counts.get(lastWeek)!, backfilled: missing.length };
 		} catch (error) {
 			summary[project.github_repo] = { error: error instanceof Error ? error.message : "Unknown error" };
 		}
