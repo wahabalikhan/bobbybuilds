@@ -124,6 +124,8 @@ export type ProjectSummary = {
 	visitors30: number;
 	visitors30Previous: number;
 	sparkline: DayValue[];
+	/** Visitors per Monday-start week for the last 12 weeks; the last one is this week so far. */
+	weekly: DayValue[];
 	headline: (MetricFigure & { label: string; unit: string }) | null;
 	uptime: { lastUp: boolean | null; lastCheckedAt: number | null; uptime7: number | null };
 	commitsThisWeek: number;
@@ -132,8 +134,9 @@ export type ProjectSummary = {
 
 export async function projectSummaries(db: D1Database, today: string): Promise<ProjectSummary[]> {
 	const projects = await listProjects(db);
-	const since = addDays(today, -59);
 	const thisWeek = weekStart(today);
+	const firstWeek = addDays(thisWeek, -7 * 11);
+	const since = firstWeek < addDays(today, -59) ? firstWeek : addDays(today, -59);
 
 	const [totals, metrics, lastChecks, uptimeDays, commits] = await Promise.all([
 		db
@@ -175,6 +178,11 @@ export async function projectSummaries(db: D1Database, today: string): Promise<P
 				visitors30: window(0, 30),
 				visitors30Previous: window(30, 30),
 				sparkline: series.slice(-30),
+				weekly: Array.from({ length: 12 }, (_, i) => {
+					const week = addDays(firstWeek, 7 * i);
+					const end = addDays(week, 6);
+					return { day: week, value: series.filter((d) => d.day >= week && d.day <= end).reduce((t, d) => t + d.value, 0) };
+				}),
 				headline: headlineMetric
 					? { ...(await metricFigure(db, headlineMetric, today)), label: headlineMetric.label, unit: headlineMetric.unit }
 					: null,

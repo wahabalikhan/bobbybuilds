@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CopyButton } from "@/components/admin/copy-button";
-import { Card, Delta, Empty, RawNote, StatTile } from "@/components/admin/ui";
+import { buttonClass, Card, Delta, Empty, quietButtonClass, RawNote, StatTile } from "@/components/admin/ui";
 import { ColumnChart, FunnelChart, RankedList, StatusBadge, TimeSeriesChart, UptimeStrip, type Point, type Status } from "@/components/charts";
 import { clampToRaw, type DateRange } from "@/lib/admin/range";
 import { addDays } from "@/lib/days";
@@ -60,7 +60,7 @@ function countryName(code: string): string {
 
 // --- Traffic ---------------------------------------------------------------------------
 
-export async function TrafficTab({ db, project, range }: TabProps) {
+export async function TrafficTab({ db, project, range, today }: TabProps) {
 	const [totals, previous, visitors, previousVisitors, pages, referrers, recent, metrics] = await Promise.all([
 		rangeTotals(db, project.id, range.from, range.to),
 		rangeTotals(db, project.id, range.previousFrom, range.previousTo),
@@ -73,7 +73,7 @@ export async function TrafficTab({ db, project, range }: TabProps) {
 	]);
 	const returning = metrics.find((m) => m.key === "returning_users" && m.source === "product");
 	const returningFigure = returning ? await metricFigure(db, returning, range.to) : null;
-	const period = "the period before";
+	const period = "previous";
 
 	return (
 		<div className="space-y-6">
@@ -102,6 +102,7 @@ export async function TrafficTab({ db, project, range }: TabProps) {
 						{ label: "Previous period", points: toPoints(previousVisitors), tone: "previous" },
 					]}
 					unitLabel="visitors"
+					unfinishedLast={range.to === today}
 				/>
 			</Card>
 			<div className="grid gap-6 lg:grid-cols-2">
@@ -191,26 +192,26 @@ export async function CampaignsTab({ db, project, range, query, hrefFor }: TabPr
 					{query.range && <input type="hidden" name="range" value={query.range} />}
 					<label className="text-sm sm:col-span-2">
 						<span className="text-ink-2">Page address</span>
-						<input name="url" type="url" required defaultValue={base} className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2" />
+						<input name="url" type="url" required defaultValue={base} className="mt-1 w-full rounded-xl border border-line bg-card px-3 py-2" />
 					</label>
 					<label className="text-sm">
 						<span className="text-ink-2">Ref (e.g. linkedin-post-12)</span>
-						<input name="ref" defaultValue={query.ref ?? ""} maxLength={40} pattern="[A-Za-z0-9\-]*" className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2" />
+						<input name="ref" defaultValue={query.ref ?? ""} maxLength={40} pattern="[A-Za-z0-9\-]*" className="mt-1 w-full rounded-xl border border-line bg-card px-3 py-2" />
 					</label>
 					<label className="text-sm">
 						<span className="text-ink-2">utm_source (e.g. linkedin)</span>
-						<input name="utm_source" defaultValue={query.utm_source ?? ""} maxLength={50} className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2" />
+						<input name="utm_source" defaultValue={query.utm_source ?? ""} maxLength={50} className="mt-1 w-full rounded-xl border border-line bg-card px-3 py-2" />
 					</label>
 					<label className="text-sm">
 						<span className="text-ink-2">utm_medium (e.g. social)</span>
-						<input name="utm_medium" defaultValue={query.utm_medium ?? ""} maxLength={50} className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2" />
+						<input name="utm_medium" defaultValue={query.utm_medium ?? ""} maxLength={50} className="mt-1 w-full rounded-xl border border-line bg-card px-3 py-2" />
 					</label>
 					<label className="text-sm">
 						<span className="text-ink-2">utm_campaign (e.g. launch-week)</span>
-						<input name="utm_campaign" defaultValue={query.utm_campaign ?? ""} maxLength={50} className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2" />
+						<input name="utm_campaign" defaultValue={query.utm_campaign ?? ""} maxLength={50} className="mt-1 w-full rounded-xl border border-line bg-card px-3 py-2" />
 					</label>
 					<div className="flex items-center gap-3 sm:col-span-2">
-						<button className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white">Make link</button>
+						<button className={buttonClass}>Make link</button>
 						<Link href={hrefFor({ tab: "campaigns", build: "", url: "", ref: "", utm_source: "", utm_medium: "", utm_campaign: "" })} className="text-sm text-muted underline underline-offset-2">
 							Clear
 						</Link>
@@ -219,7 +220,7 @@ export async function CampaignsTab({ db, project, range, query, hrefFor }: TabPr
 				{problem && <p className="mt-3 text-sm text-critical">{problem}</p>}
 				{built && (
 					<div className="mt-4 flex flex-wrap items-center gap-2">
-						<input readOnly value={built} aria-label="Your tracked link" className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 font-mono text-sm" />
+						<input readOnly value={built} aria-label="Your tracked link" className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2 font-mono text-sm" />
 						<CopyButton text={built} />
 					</div>
 				)}
@@ -466,7 +467,7 @@ export async function UptimeTab({ db, project, today, now }: TabProps) {
 				<UptimeStrip days={days} />
 			</Card>
 			<Card title="Response time" note="Average of successful checks each day.">
-				<TimeSeriesChart title="Average response time per day" series={[{ label: "Response time", points: days.map((d) => ({ day: d.day, value: d.avgResponseMs })) }]} format={formatMs} axisFormat={msAxis} height={160} />
+				<TimeSeriesChart title="Average response time per day" series={[{ label: "Response time", points: days.map((d) => ({ day: d.day, value: d.avgResponseMs })) }]} format={formatMs} axisFormat={msAxis} height={160} unfinishedLast />
 			</Card>
 			<Card title="Recent outages" note="Runs of failed checks in the last 30 days.">
 				{found.length === 0 ? (
@@ -508,6 +509,7 @@ export async function ShippingTab({ db, project, today }: TabProps) {
 				<ColumnChart
 					title="Commits per week"
 					bars={weeks.map((w) => ({ label: formatDay(w.week), detail: `Week of ${formatDay(w.week, true)}`, value: w.commits }))}
+					unfinishedLast
 				/>
 			</Card>
 		</div>
@@ -516,7 +518,7 @@ export async function ShippingTab({ db, project, today }: TabProps) {
 
 // --- Product numbers -------------------------------------------------------------------
 
-export async function NumbersTab({ db, project, range }: TabProps) {
+export async function NumbersTab({ db, project, range, today }: TabProps) {
 	const metrics = await listMetrics(db, project.id);
 	if (metrics.length === 0) return <Empty>No numbers set up for this project.</Empty>;
 	const data = await Promise.all(metrics.map(async (m) => ({ metric: m, series: await metricSeries(db, m, range.from, range.to), figure: await metricFigure(db, m, range.to) })));
@@ -540,7 +542,7 @@ export async function NumbersTab({ db, project, range }: TabProps) {
 						{metric.unit && <span className="text-base font-normal text-ink-2"> {metric.unit}</span>}{" "}
 						<span className="text-sm font-normal text-muted">{metric.source === "product" ? "latest" : `in ${range.label.toLowerCase()}: ${formatCount(sum(series))}`}</span>
 					</p>
-					<TimeSeriesChart title={`${metric.label} per day`} series={[{ label: metric.label, points: toPoints(series) }]} height={140} />
+					<TimeSeriesChart title={`${metric.label} per day`} series={[{ label: metric.label, points: toPoints(series) }]} height={140} unfinishedLast={range.to === today} />
 				</Card>
 			))}
 		</div>
@@ -601,7 +603,7 @@ export async function EventsTab({ db, project, range, today, query, hrefFor }: T
 				</>
 			}
 			action={
-				<a href={`${adminHref(`/projects/${project.slug}/events.csv`)}?${csv}`} className="rounded-lg border border-line px-3 py-1.5 text-sm hover:bg-[var(--accent-wash)]" download>
+				<a href={`${adminHref(`/projects/${project.slug}/events.csv`)}?${csv}`} className={quietButtonClass} download>
 					Download CSV
 				</a>
 			}
@@ -613,7 +615,7 @@ export async function EventsTab({ db, project, range, today, query, hrefFor }: T
 				{query.to && <input type="hidden" name="to" value={query.to} />}
 				<label>
 					<span className="block text-ink-2">Event</span>
-					<select name="name" defaultValue={name ?? ""} className="mt-1 rounded-lg border border-line bg-card px-2 py-1.5">
+					<select name="name" defaultValue={name ?? ""} className="mt-1 rounded-full border border-line bg-card px-3 py-1.5">
 						<option value="">All events</option>
 						{names.map((n) => (
 							<option key={n} value={n}>{n}</option>
@@ -622,13 +624,13 @@ export async function EventsTab({ db, project, range, today, query, hrefFor }: T
 				</label>
 				<label>
 					<span className="block text-ink-2">From</span>
-					<select name="source" defaultValue={source ?? ""} className="mt-1 rounded-lg border border-line bg-card px-2 py-1.5">
+					<select name="source" defaultValue={source ?? ""} className="mt-1 rounded-full border border-line bg-card px-3 py-1.5">
 						<option value="">Browser and server</option>
 						<option value="browser">Browser</option>
 						<option value="server">Server</option>
 					</select>
 				</label>
-				<button className="rounded-lg border border-line px-3 py-1.5 hover:bg-[var(--accent-wash)]">Filter</button>
+				<button className={quietButtonClass}>Filter</button>
 			</form>
 			<EventTable rows={rows} />
 			{pages > 1 && (

@@ -64,6 +64,21 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
 - Tests: `npm test` runs Vitest inside the Workers runtime (`@cloudflare/vitest-plugin`) on a fresh D1 with every migration applied.
 - Bindings: get them with `getCloudflareContext()` from `@opennextjs/cloudflare`. Run `npm run cf-typegen` after changing `wrangler.jsonc`.
 
+## Design (every page, public and admin)
+
+The reference is `marclou.pdf` (Marc Lou's indie page). Use the same structure and feel, with our own accent colour and content, and never his brand.
+
+- **Page:** a clean white background (dark mode chosen separately), generous spacing, Geist.
+- **Cards:** white, with thin light-grey borders (`border-line`) and 16px corners (`rounded-2xl`). No heavy shadows.
+- **Section headings:** small, with a hairline underneath and a count or link on the right (`SectionHeading`).
+- **Numbers:** small rounded grey pills, e.g. "2,731 visitors" (`Pill`).
+- **Buttons:** black pills (`buttonClass`); secondary actions use `quietButtonClass`.
+- **Charts:** monochrome. Sparklines and time series have a light-grey fill and a dark line, and the latest unfinished period is dashed (`unfinishedLast`). Bars are dark, and the unfinished one is lighter.
+- **Overview pages:** start with a big full headline number plus a bar chart card, with a dropdown pill top right.
+- **Layout:** two-column card grids for projects, and a compact three-column list (icon, name, two grey lines, small pill badges) for minor items.
+- **Accent colour:** `--accent` (placeholder until Phase 6) is only for interactive states: focus, links and selection. It's never used for chart marks.
+- **Statuses:** reserved colours, always with an icon and a label.
+
 ## Security headers and CSP
 
 - Public pages are cached, so they get a fixed CSP with no nonce (`script-src 'self' 'unsafe-inline'`, plus `default-src 'self'`, `base-uri 'none'`, `object-src 'none'`, `frame-ancestors 'none'`, `form-action 'self'`, `connect-src 'self'`). Never add third-party scripts to public pages. Never render unsanitised HTML.

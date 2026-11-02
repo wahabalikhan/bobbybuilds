@@ -9,6 +9,11 @@ export function formatCount(value: number): string {
 	return Math.abs(value) < 10_000 ? whole.format(value) : compact.format(value).replace("k", "K");
 }
 
+/** The full number with separators, for the big headline figure: 10,612. */
+export function formatWhole(value: number): string {
+	return whole.format(value);
+}
+
 export function formatPercent(value: number | null, digits = 0): string {
 	if (value === null || !Number.isFinite(value)) return "–";
 	return `${(value * 100).toFixed(digits)}%`;

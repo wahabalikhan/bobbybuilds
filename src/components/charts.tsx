@@ -1,8 +1,9 @@
 /**
  * Small server-rendered SVG charts. No chart library and no client JavaScript:
  * hover tooltips are native SVG <title>s on generous hit areas, and every chart has a
- * table view. Marks: 2px lines, a 10% area wash, bars capped at 24px with 4px rounded
- * data ends, hairline gridlines. Colours come from CSS variables in globals.css.
+ * table view. Monochrome marks: a dark line over a light grey fill, dark bars capped at 24px
+ * with 4px rounded data ends, hairline gridlines. The latest, unfinished period (today, this
+ * week, this month) is drawn dashed or lighter. Colours come from CSS variables in globals.css.
  */
 import type { ReactNode } from "react";
 import { formatCount, formatDay } from "@/lib/format";
@@ -56,7 +57,7 @@ function Legend({ series }: { series: Series[] }) {
 		<ul className="mb-2 flex flex-wrap gap-4 text-sm text-ink-2">
 			{series.map((s) => (
 				<li key={s.label} className="flex items-center gap-2">
-					<span aria-hidden className="inline-block h-0.5 w-4 rounded" style={{ background: s.tone === "previous" ? "var(--previous)" : "var(--accent)" }} />
+					<span aria-hidden className="inline-block h-0.5 w-4 rounded" style={{ background: s.tone === "previous" ? "var(--previous)" : "var(--chart-line)" }} />
 					{s.label}
 				</li>
 			))}
@@ -65,7 +66,7 @@ function Legend({ series }: { series: Series[] }) {
 }
 
 /**
- * Daily values over time. The first series is the main one (accent line + wash); a
+ * Daily values over time. The first series is the main one (dark line over a grey fill); a
  * "previous" series is drawn as a quiet grey line, aligned by position (day 1 with day 1).
  * Null values leave a gap. Optional reference lines (e.g. Core Web Vitals thresholds).
  */
@@ -77,6 +78,7 @@ export function TimeSeriesChart({
 	references = [],
 	unitLabel,
 	axisFormat,
+	unfinishedLast = false,
 }: {
 	title: string;
 	series: Series[];
@@ -84,6 +86,8 @@ export function TimeSeriesChart({
 	height?: number;
 	references?: { value: number; label: string }[];
 	unitLabel?: string;
+	/** The last point is a period still in progress (e.g. today): its segment is dashed. */
+	unfinishedLast?: boolean;
 	/** Tick labels, when they need one consistent unit (defaults to `format`). Gets the axis maximum. */
 	axisFormat?: (max: number) => Format;
 }) {
@@ -148,17 +152,20 @@ export function TimeSeriesChart({
 					.map((s) => (
 						<path key={s.label} d={pathFor(s.points)} fill="none" stroke="var(--previous)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
 					))}
-				<path d={areaFor(main.points)} fill="var(--accent-wash)" />
-				<path d={pathFor(main.points)} fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-				{last && n > 0 && (
-					<circle
-						cx={x(main.points.lastIndexOf(last))}
-						cy={y(last.value!)}
-						r={4}
-						fill="var(--accent)"
-						stroke="var(--card)"
-						strokeWidth={2}
-					/>
+				<path d={areaFor(main.points)} fill="var(--chart-fill)" />
+				{unfinishedLast && n >= 2 && main.points[n - 1].value !== null && main.points[n - 2].value !== null ? (
+					<>
+						<path d={pathFor(main.points.slice(0, n - 1))} fill="none" stroke="var(--chart-line)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+						<path
+							d={`M${x(n - 2).toFixed(1)},${y(main.points[n - 2].value!).toFixed(1)}L${x(n - 1).toFixed(1)},${y(main.points[n - 1].value!).toFixed(1)}`}
+							fill="none"
+							stroke="var(--muted)"
+							strokeWidth={1.5}
+							strokeDasharray="3 3"
+						/>
+					</>
+				) : (
+					<path d={pathFor(main.points)} fill="none" stroke="var(--chart-line)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
 				)}
 				{labelIndexes.map((i) => (
 					<text key={i} x={x(i)} y={height - 6} fontSize={11} fill="var(--muted)" textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"}>
@@ -168,7 +175,7 @@ export function TimeSeriesChart({
 				{main.points.map((p, i) => (
 					<rect key={p.day} x={x(i) - hitW / 2} y={PAD.top} width={hitW} height={plotH} fill="transparent">
 						<title>
-							{`${formatDay(p.day, true)}: ${p.value === null ? "no data" : format(p.value)}${unitLabel ? ` ${unitLabel}` : ""}` +
+							{`${formatDay(p.day, true)}${unfinishedLast && i === n - 1 ? " (so far)" : ""}: ${p.value === null ? "no data" : format(p.value)}${unitLabel ? ` ${unitLabel}` : ""}` +
 								series
 									.slice(1)
 									.map((s) => {
@@ -198,13 +205,14 @@ export function ColumnChart({
 	bars,
 	format = formatCount,
 	height = 200,
-	highlightLast = false,
+	unfinishedLast = false,
 }: {
 	title: string;
 	bars: { label: string; value: number; detail?: string }[];
 	format?: Format;
 	height?: number;
-	highlightLast?: boolean;
+	/** The last bar is a period still in progress: it's drawn lighter and labelled "so far". */
+	unfinishedLast?: boolean;
 }) {
 	const ticks = niceTicks(Math.max(0, ...bars.map((b) => b.value)));
 	const yMax = ticks[ticks.length - 1];
@@ -238,17 +246,17 @@ export function ColumnChart({
 						h <= 0
 							? ""
 							: `M${left},${y(0)}V${top + r}Q${left},${top} ${left + r},${top}H${left + barW - r}Q${left + barW},${top} ${left + barW},${top + r}V${y(0)}Z`;
-					const muted = highlightLast && i !== bars.length - 1;
+					const unfinished = unfinishedLast && i === bars.length - 1;
 					return (
 						<g key={b.label}>
-							<path d={d} fill={muted ? "var(--previous)" : "var(--accent)"} />
+							<path d={d} fill={unfinished ? "var(--chart-soft)" : "var(--chart-bar)"} />
 							{i % every === 0 && (
 								<text x={cx} y={height - 6} fontSize={11} fill="var(--muted)" textAnchor="middle">
 									{b.label}
 								</text>
 							)}
 							<rect x={cx - band / 2} y={PAD.top} width={band} height={plotH} fill="transparent">
-								<title>{`${b.detail ?? b.label}: ${format(b.value)}`}</title>
+								<title>{`${b.detail ?? b.label}${unfinished ? " (so far)" : ""}: ${format(b.value)}`}</title>
 							</rect>
 						</g>
 					);
@@ -259,19 +267,38 @@ export function ColumnChart({
 	);
 }
 
-/** A tiny trend line with no axes. The label says what it shows. */
-export function Sparkline({ points, label, width = 120, height = 32 }: { points: Point[]; label: string; width?: number; height?: number }) {
+/**
+ * A small filled trend with no axes: light grey fill, dark line. When `unfinishedLast`, the
+ * final segment (the period still in progress) is dashed. Stretches to its container's width.
+ */
+export function Sparkline({
+	points,
+	label,
+	height = 56,
+	unfinishedLast = false,
+}: {
+	points: Point[];
+	label: string;
+	height?: number;
+	unfinishedLast?: boolean;
+}) {
+	const width = 300;
 	const values = points.map((p) => p.value ?? 0);
 	const max = Math.max(1, ...values);
-	const x = (i: number) => (points.length <= 1 ? width / 2 : (i / (points.length - 1)) * (width - 4) + 2);
-	const y = (v: number) => height - 3 - (v / max) * (height - 6);
-	const line = values.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
-	const area = values.length > 1 ? `${line}L${x(values.length - 1)},${height}L${x(0)},${height}Z` : "";
+	const n = values.length;
+	const x = (i: number) => (n <= 1 ? width / 2 : (i / (n - 1)) * width);
+	const y = (v: number) => height - 1 - (v / max) * (height - 6);
+	const line = (from: number, to: number) => values.slice(from, to).map((v, i) => `${i ? "L" : "M"}${x(from + i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+	const solidEnd = unfinishedLast && n >= 2 ? n - 1 : n;
+	const area = n > 1 ? `${line(0, n)}L${x(n - 1)},${height}L${x(0)},${height}Z` : "";
 	return (
-		<svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} role="img" aria-label={label}>
+		<svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="block h-auto w-full" style={{ height }} role="img" aria-label={label}>
 			<title>{label}</title>
-			<path d={area} fill="var(--accent-wash)" />
-			<path d={line} fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+			<path d={area} fill="var(--chart-fill)" />
+			<path d={line(0, solidEnd)} fill="none" stroke="var(--chart-line)" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+			{solidEnd < n && (
+				<path d={line(n - 2, n)} fill="none" stroke="var(--muted)" strokeWidth={1.25} strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+			)}
 		</svg>
 	);
 }
@@ -311,7 +338,7 @@ export function RankedList({
 				{rows.map((row) => (
 					<tr key={row.key} className="group">
 						<td className="relative py-1 pr-3">
-							<span aria-hidden className="absolute inset-y-0.5 left-0 rounded" style={{ width: `${(row.value / max) * 100}%`, background: "var(--accent-wash)" }} />
+							<span aria-hidden className="absolute inset-y-0.5 left-0 rounded" style={{ width: `${(row.value / max) * 100}%`, background: "var(--pill)" }} />
 							<span className="relative block truncate pl-2" title={row.key}>
 								{formatKey(row.key)}
 							</span>
@@ -424,8 +451,8 @@ export function FunnelChart({ steps }: { steps: { label: string; visitors: numbe
 							{step.fromPrevious !== null && <span className="text-muted"> · {Math.round(step.fromPrevious * 100)}% of the step before</span>}
 						</span>
 					</div>
-					<div className="h-3 rounded bg-[var(--grid)]" role="presentation">
-						<div className="h-3 rounded" style={{ width: `${(step.visitors / max) * 100}%`, background: "var(--accent)" }} />
+					<div className="h-3 rounded-full bg-pill" role="presentation">
+						<div className="h-3 rounded-full" style={{ width: `${(step.visitors / max) * 100}%`, background: "var(--chart-bar)" }} />
 					</div>
 				</li>
 			))}

@@ -13,7 +13,7 @@ export function CopyButton({ text, label = "Copy" }: { text: string; label?: str
 				setCopied(true);
 				setTimeout(() => setCopied(false), 2000);
 			}}
-			className="rounded-lg border border-line px-3 py-1 text-sm hover:bg-[var(--accent-wash)]"
+			className="rounded-full border border-line bg-card px-3.5 py-1.5 text-sm hover:bg-pill"
 		>
 			<span aria-live="polite">{copied ? "Copied" : label}</span>
 		</button>

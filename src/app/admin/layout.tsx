@@ -33,22 +33,24 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 					</p>
 				)
 			)}
-			<header className="border-b border-line bg-card">
-				<div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-6 py-3">
+			<header className="border-b border-line">
+				<div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-6 py-4">
 					<Link href={adminHref()} className="font-semibold tracking-tight">
 						{site.name} <span className="font-normal text-muted">HQ</span>
 					</Link>
-					<nav aria-label="Projects" className="flex flex-wrap gap-4 text-sm text-ink-2">
-						<Link href={adminHref()} className="hover:text-ink">Overview</Link>
+					<nav aria-label="Projects" className="flex flex-wrap gap-1 text-sm text-ink-2">
+						<Link href={adminHref()} className="rounded-full px-3 py-1.5 hover:bg-pill hover:text-ink">
+							Overview
+						</Link>
 						{projects.map((p) => (
-							<Link key={p.id} href={adminHref(`/projects/${p.slug}`)} className="hover:text-ink">
+							<Link key={p.id} href={adminHref(`/projects/${p.slug}`)} className="rounded-full px-3 py-1.5 hover:bg-pill hover:text-ink">
 								{p.name}
 							</Link>
 						))}
 					</nav>
 				</div>
 			</header>
-			<main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+			<main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
 		</div>
 	);
 }

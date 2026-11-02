@@ -1,10 +1,12 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
-import { RangePicker, StatusPill, Tabs } from "@/components/admin/ui";
+import { Pill, ProjectLogo, RangePicker, StatusPill, Tabs } from "@/components/admin/ui";
 import { parseRange } from "@/lib/admin/range";
 import { requestTime } from "@/lib/admin/clock";
 import { utcDay } from "@/lib/days";
+import { listMetrics, metricFigure } from "@/lib/db/dashboard";
 import { getProjectBySlug } from "@/lib/db/projects";
+import { formatCount } from "@/lib/format";
 import { adminHref } from "@/lib/site";
 import { AudienceTab, CampaignsTab, EventsTab, FunnelTab, NumbersTab, PerformanceTab, ShippingTab, TrafficTab, UptimeTab, type TabProps } from "./tabs";
 
@@ -70,30 +72,40 @@ export default async function ProjectDashboard({
 	};
 
 	const Tab = RENDER[tab];
+	const headlineMetric = (await listMetrics(env.DB, project.id)).find((m) => m.isHeadline);
+	const headline = headlineMetric ? await metricFigure(env.DB, headlineMetric, today) : null;
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-wrap items-start justify-between gap-4">
-				<div>
-					<div className="flex items-center gap-2">
+			<div>
+				<div className="flex flex-wrap items-center justify-between gap-3">
+					<div className="flex flex-wrap items-center gap-3">
+						<ProjectLogo name={project.name} logoPath={project.logoPath} size={36} />
 						<h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
 						<StatusPill status={project.status} />
 					</div>
-					<p className="text-sm text-muted">
-						{project.tagline}
-						{project.siteUrl && (
-							<>
-								{" · "}
-								<a className="underline underline-offset-2" href={project.siteUrl} rel="noopener noreferrer" target="_blank">
-									{new URL(project.siteUrl).host}
-								</a>
-							</>
-						)}
-					</p>
+					{headlineMetric && headline?.value !== null && headline && (
+						<Pill title={`${headlineMetric.label}, ${headline.period}`}>
+							{formatCount(headline.value!)} {headlineMetric.unit || headlineMetric.label.toLowerCase()} · {headline.period}
+						</Pill>
+					)}
 				</div>
+				<p className="mt-2 text-ink-2">
+					{project.tagline}
+					{project.siteUrl && (
+						<>
+							{" · "}
+							<a className="underline decoration-line underline-offset-4 hover:decoration-ink" href={project.siteUrl} rel="noopener noreferrer" target="_blank">
+								{new URL(project.siteUrl).host}
+							</a>
+						</>
+					)}
+				</p>
+			</div>
+			<div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
+				<Tabs tabs={[...TABS]} current={tab} hrefFor={(key) => hrefFor({ tab: key })} />
 				{!NO_RANGE.includes(tab) && <RangePicker range={range} hrefFor={hrefFor} hidden={{ tab }} />}
 			</div>
-			<Tabs tabs={[...TABS]} current={tab} hrefFor={(key) => hrefFor({ tab: key })} />
 			<Tab db={env.DB} project={project} range={range} today={today} now={now} query={query} hrefFor={hrefFor} />
 		</div>
 	);
