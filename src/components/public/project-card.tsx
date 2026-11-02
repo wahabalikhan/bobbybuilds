@@ -34,7 +34,7 @@ export function ProjectCard({ project }: { project: PublicProject }) {
 				</div>
 				<StatusPill status={project.status} />
 			</div>
-			<p className="mt-2 text-[13px] leading-relaxed text-ink-2">{project.tagline}</p>
+			<p className="mt-2 text-sm leading-relaxed text-ink-2">{project.tagline}</p>
 			{project.weekly && (
 				<div className="mt-auto pt-5">
 					<WeekSparkline
