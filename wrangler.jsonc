@@ -51,8 +51,8 @@
 	"vars": {
 		// Not secret, but required: /admin refuses every request until both are set.
 		// Both come from the Cloudflare Access application (see docs/access-setup.md).
-		"ACCESS_TEAM_DOMAIN": "",
-		"ACCESS_AUD": ""
+		"ACCESS_TEAM_DOMAIN": "https://bobbybuilds.cloudflareaccess.com",
+		"ACCESS_AUD": "2eec38ae917d519c2d69501343cad7344f7bea84fa5788a32d4c327ceafe5ddc"
 	},
 	"observability": {
 		"enabled": true
