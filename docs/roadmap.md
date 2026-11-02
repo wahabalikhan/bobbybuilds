@@ -8,7 +8,7 @@ Bobby Builds is built in phases. Each phase starts with a plan and ends with a t
 | 2 | Database | ✅ Done (`a4dcb67`, `62f3258`) |
 | 3 | Collector | ✅ Done (`47b8997`, `086c708`) |
 | 4 | Daily job | ✅ Done (`27c3128`) |
-| 5 | Private dashboard | Not started |
+| 5 | Private dashboard | 🚧 5a done (`fcffc1c`); 5b (settings) next |
 | 6 | Public indie page | Not started |
 | 7 | Connect my portfolio | Not started |
 | 8 | Connect the job board | Not started |
@@ -59,11 +59,18 @@ Plus rate limiting and `test:collector`.
   - Migrations 0006–0007 and 291 tests.
   - Live since 2 November 2026; the first scheduled run was at 03:30 UTC.
 
-## 5. Private dashboard
+## 5. Private dashboard 🚧
 
 - **Overview.**
 - **Project dashboards:** tracked links, campaigns, countries, Core Web Vitals, uptime, shipping streak, and an Events tab with CSV export.
 - **Settings:** projects, keys, origins, allowlists, public number switches, journey entries and milestones.
+
+- `fcffc1c` (5a):
+  - Overview and project dashboards: all tabs, including Events with CSV.
+  - `seed:demo` and `admin:live`.
+  - GitHub history backfill.
+  - 334 tests.
+- 5b (next): settings for projects, keys, origins, allowlists, funnel steps, public numbers, journey entries, milestones and system.
 
 ## 6. Public indie page
 
