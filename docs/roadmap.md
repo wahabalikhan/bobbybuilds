@@ -7,7 +7,7 @@ Bobby Builds is built in phases. Each phase starts with a plan and ends with a t
 | 1 | Setup | ✅ Done (`df8e5f2`, `609e211`) |
 | 2 | Database | ✅ Done (`a4dcb67`, `62f3258`) |
 | 3 | Collector | ✅ Done (`47b8997`, `086c708`) |
-| 4 | Daily job | Not started |
+| 4 | Daily job | ✅ Done (`27c3128`) |
 | 5 | Private dashboard | Not started |
 | 6 | Public indie page | Not started |
 | 7 | Connect my portfolio | Not started |
@@ -43,12 +43,21 @@ Plus rate limiting and `test:collector`.
 - `47b8997`: the three endpoints, the daily visitor ID, `t.js` (SPA views, engaged time, scroll depth, Core Web Vitals, outbound clicks, downloads, 404s, `bobby.track` for custom and form events), GPC and DNT, rate limits, migration 0005 for the vitals columns, the playground, and 251 tests.
 - `086c708`: web-vitals moved into `t-vitals.js`, which loads after the page. `t.js` went from 12.2 KB to 3.8 KB (1.9 KB gzipped).
 
-## 4. Daily job
+## 4. Daily job ✅
 
 - Roll-ups and daily secret rotation.
 - 90-day clean-up, including uptime checks.
 - GitHub weekly commits and 5-minute uptime pings.
 - The cron Worker, plus `test:rollup`.
+
+- `27c3128`:
+  - `/internal/jobs`, protected by `ROLLUP_SECRET`.
+  - Roll-ups, including same-day repeat visitors, Core Web Vitals p75 and daily uptime.
+  - Secret rotation and the 90-day clean-up.
+  - GitHub weekly commits and 5-minute uptime pings.
+  - `bobbybuilds-cron`, which calls the app through a service binding.
+  - Migrations 0006–0007 and 291 tests.
+  - Live since 2 November 2026; the first scheduled run was at 03:30 UTC.
 
 ## 5. Private dashboard
 
