@@ -6,7 +6,7 @@ Bobby Builds is built in phases. Each phase starts with a plan and ends with a t
 | --- | --- | --- |
 | 1 | Setup | ✅ Done (`df8e5f2`, `609e211`) |
 | 2 | Database | ✅ Done (`a4dcb67`, `62f3258`) |
-| 3 | Collector | 🚧 In progress |
+| 3 | Collector | ✅ Done (`47b8997`) |
 | 4 | Daily job | Not started |
 | 5 | Private dashboard | Not started |
 | 6 | Public indie page | Not started |
@@ -28,7 +28,7 @@ Scaffold, CLAUDE.md, D1, `lib/site.ts`, secret safety, security headers, and the
 - `a4dcb67`: migrations 0001–0003, seed for Portfolio and Job Board, `keys:create`, 113 schema and helper tests
 - `62f3258`: portfolio comment events allowed from the browser (0004); package made ESM
 
-## 3. Collector 🚧
+## 3. Collector ✅
 
 `/v1/pv`, `/v1/events`, `/v1/metrics`, daily visitor ID, and `t.js` with all the tracking extras:
 
@@ -39,6 +39,8 @@ Scaffold, CLAUDE.md, D1, `lib/site.ts`, secret safety, security headers, and the
 - form drop-off
 
 Plus rate limiting and `test:collector`.
+
+- `47b8997`: the three endpoints, the daily visitor ID, `t.js` (SPA views, engaged time, scroll depth, Core Web Vitals, outbound clicks, downloads, 404s, `bobby.track` for custom and form events), GPC and DNT, rate limits, migration 0005 for the vitals columns, the playground, and 251 tests.
 
 ## 4. Daily job
 
