@@ -95,6 +95,11 @@ The reference is `marclou.pdf` (Marc Lou's indie page). Use the same structure a
 ## Backlog
 
 - **Build-updates email form:** posts straight to a newsletter tool (such as Buttondown). HQ never stores emails. Add the tool's origin to `form-action` in the public CSP only.
+- **Add comment events after the portfolio comment fix** (the comment system is moving from session tokens to Supabase anonymous sign-in, so wait for that). In the portfolio's `components/CommentPins.jsx` (line numbers as of `origin/main` `8fa4a56`):
+  - `comments_opened` `{ page }`: the "Comment mode" button's `onClick` (about line 1801, `setMode('comment')`).
+  - `comment_posted` `{ page, kind: "comment" }`: after a successful insert in `saveDraft()` (about line 1286; insert at about 1292).
+  - `comment_posted` `{ page, kind: "reply" }`: after a successful insert in `saveReply()` (about line 1218; insert at about 1225).
+  - Use `window.bobby?.track(…)`. Never send comment text, names or emails. Both names are already on the Portfolio's browser event allowlist.
 - **Share images:** embed the Geist font so titles are bold (the built-in font has one weight).
 
 ## Security headers and CSP
