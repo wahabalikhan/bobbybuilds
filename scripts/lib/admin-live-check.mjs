@@ -17,7 +17,7 @@ export async function checkLiveBanner(origin, extraPaths = []) {
 	const home = await get(`${origin}/admin`);
 	const projectLinks = [...home.text.matchAll(/href="(\/admin\/projects\/[a-z0-9-]+)"/g)].map((m) => m[1]);
 	const first = projectLinks[0];
-	const paths = ["/admin", ...(first ? [first, ...["campaigns", "events", "uptime"].map((tab) => `${first}?tab=${tab}`)] : []), "/admin/projects/no-such-project", "/admin/does-not-exist", ...extraPaths];
+	const paths = ["/admin", ...(first ? [first, ...["campaigns", "events", "uptime"].map((tab) => `${first}?tab=${tab}`)] : []), "/admin/projects/no-such-project", "/admin/does-not-exist", "/admin/settings", "/admin/settings/journey", "/admin/settings/journey/new", "/admin/settings/system", "/admin/settings/projects/new", ...(first ? [first.replace("/admin/projects/", "/admin/settings/projects/"), `${first.replace("/admin/projects/", "/admin/settings/projects/")}?section=numbers`] : []), ...extraPaths];
 
 	for (const path of [...new Set(paths)]) {
 		const page = path === "/admin" ? home : await get(`${origin}${path}`);

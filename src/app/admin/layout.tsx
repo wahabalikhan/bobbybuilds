@@ -38,7 +38,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 					<Link href={adminHref()} className="font-semibold tracking-tight">
 						{site.name} <span className="font-normal text-muted">HQ</span>
 					</Link>
-					<nav aria-label="Projects" className="flex flex-wrap gap-1 text-sm text-ink-2">
+					<nav aria-label="Projects" className="flex flex-1 flex-wrap gap-1 text-sm text-ink-2">
 						<Link href={adminHref()} className="rounded-full px-3 py-1.5 hover:bg-pill hover:text-ink">
 							Overview
 						</Link>
@@ -48,6 +48,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 							</Link>
 						))}
 					</nav>
+					<Link href={adminHref("/settings")} className="rounded-full bg-ink px-4 py-1.5 text-sm font-medium text-page hover:opacity-85">
+						Settings
+					</Link>
 				</div>
 			</header>
 			<main className="mx-auto max-w-5xl px-6 py-10">{children}</main>

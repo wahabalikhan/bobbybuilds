@@ -59,6 +59,12 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
   - **Local data:** `npm run seed:demo` fills the local database only, and refuses `--remote`.
   - **Live data:** `npm run admin:live` runs the dashboard on `127.0.0.1:8788` against the live database, with a red LIVE DATA banner. It uses a throwaway config (`scripts/lib/admin-live-config.mjs`) with its own Worker name. Never bind it to anything but loopback.
   - **Design tokens:** in `src/app/globals.css`. `--accent` is a placeholder until Phase 6, and status colours always come with an icon and a label.
+- Settings (`/admin/settings`):
+  - **Server actions:** in `src/app/admin/settings/actions.ts`. Each one's first line is `await requireAdmin();`, and `tests/node/actions.test.ts` enforces it. A `"use server"` file may export only actions.
+  - **Logic:** in `src/lib/admin/settings-core.ts`, which takes `db` and form values, with no Next.js. Validation is in `src/lib/admin/validate.ts`, and writes in `src/lib/db/settings.ts`.
+  - **Forms:** use `<SettingsForm>` and its fields (`src/components/admin/form.tsx`), which handle field errors, keeping what was typed, and showing a new secret key once.
+  - **Logos:** image files in `public/logos/`, listed into `src/lib/logos.generated.ts` by `npm run build:logos`, which runs before dev, build and typecheck.
+  - **Markdown:** `src/lib/markdown.ts`. Raw HTML is always escaped, links are http(s), mailto or same-site paths only, and images are same-site only. Use it for journey entries and project descriptions everywhere.
 - Retention: raw `page_views`, `events`, `uptime_checks` and `job_runs` are deleted after 90 days (a row from exactly 90 days ago stays). Roll-ups, including `daily_uptime` and the Core Web Vitals p75 columns, are kept.
 - The package is `"type": "module"`, so every `.js`/`.ts` file is ESM. Don't add CommonJS files. If one is ever needed, name it `.cjs`.
 - Tests: `npm test` runs Vitest inside the Workers runtime (`@cloudflare/vitest-plugin`) on a fresh D1 with every migration applied.
