@@ -10,7 +10,7 @@ Bobby Builds is built in phases. Each phase starts with a plan and ends with a t
 | 4 | Daily job | ✅ Done (`27c3128`) |
 | 5 | Private dashboard | ✅ Done (`fcffc1c`, `169459c`, `a76d7c6`, `daef9d1`) |
 | 6 | Public indie page | ✅ Done (`e858e83`) |
-| 7 | Connect my portfolio | 🚧 Branch ready for review |
+| 7 | Connect my portfolio | ✅ Done (portfolio `cada9b5`, `5428cdb`) |
 | 8 | Connect the job board | Not started |
 | 9 | Launch | Not started |
 
@@ -95,19 +95,18 @@ Plus rate limiting and `test:collector`.
   - Deployed to workers.dev.
 - The build-updates form moved to the Backlog in CLAUDE.md, at your request.
 
-## 7. Connect my portfolio 🚧
+## 7. Connect my portfolio ✅
 
 Instructions only (t.js, `bobby.track` browser events, CSP changes, privacy note), applied in the portfolio repo.
 
 - **Instructions:** `docs/connect-portfolio.md`.
 - **Prepared branch:** `connect-bobby-builds` (commit `cada9b5`) in `~/Desktop/portfolio-bobby-builds`. It has the snippet, `case_study_read` (75% scrolled and 20 seconds), `contact_click` on the mailto links, a footer privacy note and a report-only CSP.
 - **Live settings:** the Portfolio keys and funnel (Home → read a case study → Contact) are set.
-- **Still to do (you):**
-  - review and push the branch;
-  - test on a Pages preview with its origin temporarily allowed;
-  - enforce the CSP;
-  - merge;
-  - remove the preview origin.
+- **Tested on the Pages preview:** page views, `case_study_read` and `contact_click` arrived. A report-only CSP produced no reports.
+- **Portfolio `5428cdb`:** the CSP is enforced. I re-checked all 10 pages: no violations, Supabase comments load, and live cursors connect over the websocket.
+- **Merged to `main`:** `wahabalikhan.com` serves the enforced CSP and the snippet (2 November 2026).
+- **Origins:** the preview origins were removed. Portfolio's origins are back to `wahabalikhan.com` and `www`.
+- **Clean-up:** a preview test session was deleted from the live data before the roll-up.
 - **Comment events:** deferred to the Backlog until the portfolio's comment fix.
 
 ## 8. Connect the job board
