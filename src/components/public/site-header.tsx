@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { owner, site } from "@/lib/site";
+import { AdminKeyboardShortcut } from "./admin-shortcut";
 import { Avatar } from "./profile";
 
 /** A slim header for the journey and 404 pages. */
 export function SiteHeader() {
 	return (
 		<header className="border-b border-line">
+			<AdminKeyboardShortcut />
 			<div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-6 py-4">
 				<Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
 					<Avatar size={28} />

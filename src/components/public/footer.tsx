@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AdminKeyboardShortcut, AdminTaps } from "@/components/public/admin-shortcut";
 import { owner } from "@/lib/site";
 
 // Every tool icon fills the same 16px square (no box or border around it), with the same slight rounding.
@@ -32,6 +33,7 @@ const TOOLS: { label: string; icon: ReactNode }[] = [
 export function SiteFooter({ year }: { year: number }) {
 	return (
 		<footer className="mx-auto max-w-[1040px] px-5 pb-10 sm:px-6">
+			<AdminKeyboardShortcut />
 			<div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-t border-line pt-6 text-sm text-muted">
 				<span>
 					Made with <span aria-label="love">🫶🏼</span> using
@@ -46,9 +48,9 @@ export function SiteFooter({ year }: { year: number }) {
 						</li>
 					))}
 				</ul>
-				<span>
+				<AdminTaps>
 					© {year} {owner.fullName}
-				</span>
+				</AdminTaps>
 			</div>
 		</footer>
 	);
