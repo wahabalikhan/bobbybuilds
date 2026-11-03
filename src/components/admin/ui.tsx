@@ -12,7 +12,8 @@ export const quietButtonClass = "inline-flex items-center gap-1.5 rounded-full b
 
 export function Card({ title, note, children, className = "", action }: { title?: string; note?: ReactNode; children: ReactNode; className?: string; action?: ReactNode }) {
 	return (
-		<section className={`rounded-2xl border border-line bg-card p-5 ${className}`}>
+		// min-w-0: in a grid, wide content (a table, a long URL) scrolls or truncates inside the card instead of widening the page.
+		<section className={`min-w-0 rounded-2xl border border-line bg-card p-5 ${className}`}>
 			{(title || action) && (
 				<header className="mb-4 flex items-start justify-between gap-3">
 					<div>

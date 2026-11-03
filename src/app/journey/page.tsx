@@ -5,6 +5,7 @@ import { SiteHeader, SkipLink } from "@/components/public/site-header";
 import { formatDay } from "@/lib/format";
 import { getSnapshot } from "@/lib/public/get";
 import { owner } from "@/lib/site";
+import { PAGE } from "@/lib/layout";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function JourneyPage() {
 		<>
 			<SkipLink />
 			<SiteHeader />
-			<main id="content" className="mx-auto max-w-3xl px-5 py-10 sm:px-6">
+			<main id="content" className={`${PAGE} py-10`}>
 				<h1 className="text-3xl font-bold tracking-tight">Journey</h1>
 				<p className="mt-2 text-ink-2">Building in public: what I shipped, what I learned, and what&rsquo;s next. Newest first.</p>
 				<div className="mt-10">

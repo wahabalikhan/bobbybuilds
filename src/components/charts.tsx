@@ -334,13 +334,14 @@ export function RankedList({
 	const max = Math.max(1, ...rows.map((r) => r.value));
 	const hasSecondary = rows.some((r) => r.secondary !== undefined);
 	return (
-		<table className="w-full text-sm tabular">
+		// Fixed layout: long names truncate inside the box instead of widening the page.
+		<table className="w-full table-fixed text-sm tabular">
 			<caption className="sr-only">{title}</caption>
 			<thead className="text-muted">
 				<tr>
 					<th className="pb-1 text-left font-medium">{keyLabel}</th>
-					<th className="pb-1 text-right font-medium">{valueLabel}</th>
-					{hasSecondary && <th className="pb-1 pl-3 text-right font-medium">{secondaryLabel}</th>}
+					<th className="w-24 pb-1 text-right font-medium">{valueLabel}</th>
+					{hasSecondary && <th className="w-20 pb-1 pl-3 text-right font-medium">{secondaryLabel}</th>}
 				</tr>
 			</thead>
 			<tbody>

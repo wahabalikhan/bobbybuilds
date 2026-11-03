@@ -10,6 +10,7 @@ import { attentionItems } from "@/lib/db/dashboard";
 import { isLiveData } from "@/lib/admin/access";
 import { LOCAL_ADMIN_HEADER } from "@/lib/security/local-admin";
 import { adminHref, site } from "@/lib/site";
+import { PAGE } from "@/lib/layout";
 
 export const metadata: Metadata = {
 	title: "Admin",
@@ -40,14 +41,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 			{/* Option + A (Alt + A) back to the public site. No visible link. */}
 			<AdminKeyboardShortcut to={site.url} />
 			<header className="border-b border-line">
-				<div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-6 py-4">
+				<div className={`${PAGE} flex flex-wrap items-center gap-x-4 gap-y-2 py-4`}>
 					<Link href={adminHref()} className="font-semibold tracking-tight">
 						{site.name} <span className="font-normal text-muted">HQ</span>
 					</Link>
 					<StatusMenu items={attention} />
 				</div>
 			</header>
-			<main className="mx-auto max-w-5xl px-6 pb-12 pt-6">{children}</main>
+			<main className={`${PAGE} min-w-0 pb-12 pt-6`}>{children}</main>
 		</div>
 	);
 }

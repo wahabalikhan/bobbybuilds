@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AdminKeyboardShortcut, AdminTaps } from "@/components/public/admin-shortcut";
 import { owner } from "@/lib/site";
+import { PAGE } from "@/lib/layout";
 
 // Every tool icon sits in the same 16px invisible box, in its own shape (no box, border or clipping).
 const ICON = "block h-4 w-4 object-contain";
@@ -32,7 +33,7 @@ const TOOLS: { label: string; icon: ReactNode }[] = [
 /** "Made with 🫶🏼 using" the tools, then the copyright, as on the portfolio. */
 export function SiteFooter({ year }: { year: number }) {
 	return (
-		<footer className="mx-auto max-w-[1040px] px-5 pb-10 sm:px-6">
+		<footer className={`${PAGE} pb-10`}>
 			<AdminKeyboardShortcut />
 			<div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-t border-line pt-6 text-sm text-muted">
 				<span>

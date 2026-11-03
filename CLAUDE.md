@@ -92,7 +92,7 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
 
 The reference is `marclou.pdf` (Marc Lou's indie page). Use the same structure and feel, with our own accent colour and content, and never his brand.
 
-- **Page:** a clean white background, generous spacing, Geist. The public site is light only. The admin dashboard alone has a dark version (`.admin-theme` in `globals.css`, by the system setting).
+- **Page:** a clean white background, generous spacing, Geist. Every page, public and admin (and the admin top bar), uses the one container `PAGE` (`src/lib/layout.ts`: 1040px, the same side padding and centring), so nothing shifts between them. Inner content may be narrower, never wider. Wide content (tables, code) truncates or scrolls inside its own box; `tests/node/layout.test.ts` checks the container. The public site is light only. The admin dashboard alone has a dark version (`.admin-theme` in `globals.css`, by the system setting).
 - **Cards:** white, with thin light-grey borders (`border-line`) and 16px corners (`rounded-2xl`). No heavy shadows.
 - **Section headings:** small, with a hairline underneath and a count or link on the right (`SectionHeading`).
 - **Numbers:** small rounded grey pills, e.g. "2,731 visitors" (`Pill`).

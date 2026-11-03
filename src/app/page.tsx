@@ -11,6 +11,7 @@ import { SkipLink } from "@/components/public/site-header";
 import { formatDay } from "@/lib/format";
 import { getSnapshot } from "@/lib/public/get";
 import { owner, site } from "@/lib/site";
+import { PAGE } from "@/lib/layout";
 
 // Reads the public snapshot (rebuilt from the roll-ups every 10 minutes) on each request.
 export const dynamic = "force-dynamic";
@@ -31,7 +32,7 @@ export default async function Home() {
 	return (
 		<>
 			<SkipLink />
-			<div className="mx-auto max-w-[1040px] px-5 py-8 sm:px-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10 lg:py-12">
+			<div className={`${PAGE} py-8 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10 lg:py-12`}>
 				<aside className="mb-10 lg:sticky lg:top-12 lg:mb-0 lg:self-start">
 					<ProfileCard />
 				</aside>
