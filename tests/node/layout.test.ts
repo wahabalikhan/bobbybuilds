@@ -6,7 +6,7 @@ import { PAGE } from "@/lib/layout";
 const files = (dir: string): string[] =>
 	readdirSync(dir).flatMap((name) => {
 		const path = join(dir, name);
-		return statSync(path).isDirectory() ? files(path) : /\.tsx?$/.test(name) ? [path] : [];
+		return statSync(path).isDirectory() ? files(path) : /\.(tsx?|mjs|mts|md)$/.test(name) ? [path] : [];
 	});
 
 describe("one page container, public and admin", () => {
@@ -25,5 +25,25 @@ describe("one page container, public and admin", () => {
 	it("no page or component sets its own page width (inner content may be narrower, never wider)", () => {
 		const offenders = [...files("src/app"), ...files("src/components")].filter((file) => /max-w-(5xl|6xl|7xl|screen|\[1[0-9]{3}px\])/.test(readFileSync(file, "utf8")));
 		expect(offenders).toEqual([]);
+	});
+});
+
+describe("the name", () => {
+	it("is BobbyBuilds, one word, in the code, scripts and docs (the domain and identifiers stay lower case)", async () => {
+		const { site } = await import("@/lib/site");
+		expect(site.name).toBe("BobbyBuilds");
+		const sources = [...files("src"), ...files("scripts"), ...files("docs"), "CLAUDE.md", "README.md"].filter((f) => /\.(tsx?|mjs|mts|md)$/.test(f));
+		const old = sources.filter((file) => /Bobby\s+Builds/.test(readFileSync(file, "utf8")));
+		expect(old).toEqual([]);
+	});
+});
+
+describe("tab titles", () => {
+	it("put the page first and the brand last; the home page is the brand first", async () => {
+		const { adminName, homeTitle } = await import("@/lib/site");
+		expect(homeTitle).toBe("BobbyBuilds · Wahab (Bobby) Khan");
+		expect(adminName).toBe("BobbyBuilds HQ");
+		expect(readFileSync("src/app/layout.tsx", "utf8")).toContain("title: { default: homeTitle, template: `%s · ${site.name}` }");
+		expect(readFileSync("src/app/admin/layout.tsx", "utf8")).toContain("title: { absolute: adminName, template: `%s · ${adminName}` }");
 	});
 });

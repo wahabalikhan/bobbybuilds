@@ -1,7 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonClass } from "@/components/admin/ui";
 import { SiteHeader } from "@/components/public/site-header";
 import { PAGE } from "@/lib/layout";
+
+// "Page not found · BobbyBuilds" (the layout adds the brand).
+export const metadata: Metadata = { title: "Page not found" };
 
 export default function NotFound() {
 	return (

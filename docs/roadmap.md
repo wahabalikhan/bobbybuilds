@@ -1,6 +1,6 @@
 # Roadmap
 
-Bobby Builds is built in phases. Each phase starts with a plan and ends with a test list. This file is updated at the end of every phase.
+BobbyBuilds is built in phases. Each phase starts with a plan and ends with a test list. This file is updated at the end of every phase.
 
 | # | Phase | Status |
 | --- | --- | --- |
@@ -139,11 +139,11 @@ Done in the job board repo during its Phase 10.
   - `76b3257`:
     - Admin: Home (Needs attention, the public visitors card, project cards), dashboard tabs (Traffic, Tracked links, Searches, Funnel, Product numbers, Health, Events), one Settings page per project, a three-step New project setup, test projects hidden.
     - What's public: visitors and each product number. Tech Jobs' card shows "open jobs · companies" (migration 0009).
-    - The "Bobby Builds" wordmark, and Option/Alt + A from admin back to the public site.
+    - The "BobbyBuilds" wordmark, and Option/Alt + A from admin back to the public site.
   - Tested live: the Tech Jobs card line and logo, the wordmark, the redirects, every admin tab against live data, a public-number change round trip through the admin, and both shortcuts.
 - ✅ The simplest admin, and icons in their own shape (3 November 2026):
   - `8f69c39`:
-    - Top bar: "Bobby Builds HQ" and a status pill ("Everything's running normally", or "<n> things need attention", which opens the list). No Settings link, no Needs attention block.
+    - Top bar: "BobbyBuilds HQ" and a status pill ("Everything's running normally", or "<n> things need attention", which opens the list). No Settings link, no Needs attention block.
     - Home: the chart, "My projects (<n>)" with a "+" for the New project setup, the cards, the retention line in small print.
     - A project: Overview (visitors, top pages and sources in plain words, tracked links merged with what they read, searches, the funnel and health in one line each, and "More detail" closed by default) and Settings (About this project, On your public page, Connection closed by default, Delete at the bottom). Old `/admin/settings` addresses redirect.
     - Removed: the logo picker, health address and GitHub repo fields (columns kept), commit counts and the per-repo GitHub weekly job. Uptime checks the site address.

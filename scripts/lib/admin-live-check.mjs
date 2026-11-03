@@ -61,6 +61,21 @@ export async function checkLiveBanner(origin, extraPaths = []) {
 	const journeyHidden = [307, 308].includes(journey.status) && new URL(journey.headers.get("location") ?? "", origin).pathname === "/";
 	if (journey.status !== 200 && !journeyHidden) problems.push(`The public page /journey returned ${journey.status}.`);
 
+	// Tab titles: the page's name first, then the brand.
+	const titleOf = (html) => (html.match(/<title>([^<]*)<\/title>/)?.[1] ?? "").replace(/&amp;/g, "&").replace(/&#x27;|&#39;/g, "'");
+	const expectTitle = async (path, test, wanted) => {
+		const title = titleOf((await get(`${origin}${path}`)).text);
+		if (!test(title)) problems.push(`${path} has the tab title "${title}", not ${wanted}.`);
+	};
+	await expectTitle("/admin", (t) => t === "BobbyBuilds HQ", '"BobbyBuilds HQ"');
+	await expectTitle("/admin/projects/new", (t) => t === "New project · BobbyBuilds HQ", '"New project · BobbyBuilds HQ"');
+	for (const link of projectLinks) {
+		await expectTitle(link, (t) => / · BobbyBuilds HQ$/.test(t) && !/ settings · /.test(t), '"<Project> · BobbyBuilds HQ"');
+		await expectTitle(`${link}?tab=settings`, (t) => / settings · BobbyBuilds HQ$/.test(t), '"<Project> settings · BobbyBuilds HQ"');
+	}
+	await expectTitle("/", (t) => t === "BobbyBuilds · Wahab (Bobby) Khan", '"BobbyBuilds · Wahab (Bobby) Khan"');
+	await expectTitle("/no-such-page", (t) => t === "Page not found · BobbyBuilds", '"Page not found · BobbyBuilds"');
+
 	const css = home.text.match(/href="(\/_next\/static\/[^"]+\.css)"/)?.[1];
 	if (!css) problems.push("/admin links no stylesheet.");
 	else if ((await get(`${origin}${css}`)).status !== 200) problems.push(`The stylesheet ${css} didn't load.`);

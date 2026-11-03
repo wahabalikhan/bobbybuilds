@@ -1,4 +1,4 @@
-# Bobby Builds
+# BobbyBuilds
 
 Wahab's indie page and private analytics HQ. Next.js on Cloudflare Workers (OpenNext) with D1.
 

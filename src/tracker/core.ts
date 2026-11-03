@@ -1,5 +1,5 @@
 /**
- * Bobby Builds tracker. Built into public/t.js by scripts/build-tracker.mjs.
+ * BobbyBuilds tracker. Built into public/t.js by scripts/build-tracker.mjs.
  *
  * No cookies, no localStorage, no fingerprinting. Sends nothing at all when Global Privacy
  * Control or Do Not Track is on, or in automated browsers. Sends as little as it can:

@@ -10,8 +10,8 @@ import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
 const outputs = [
-	{ entry: "src/tracker/t.ts", outfile: "public/t.js", banner: "/* Bobby Builds t.js: no cookies, no personal data. Respects GPC and Do Not Track. */" },
-	{ entry: "src/tracker/vitals.ts", outfile: "public/t-vitals.js", banner: "/* Bobby Builds t-vitals.js: Core Web Vitals for t.js (web-vitals, Apache-2.0). */" },
+	{ entry: "src/tracker/t.ts", outfile: "public/t.js", banner: "/* BobbyBuilds t.js: no cookies, no personal data. Respects GPC and Do Not Track. */" },
+	{ entry: "src/tracker/vitals.ts", outfile: "public/t-vitals.js", banner: "/* BobbyBuilds t-vitals.js: Core Web Vitals for t.js (web-vitals, Apache-2.0). */" },
 ];
 
 for (const { entry, outfile, banner } of outputs) {

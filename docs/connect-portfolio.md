@@ -2,7 +2,7 @@
 
 The changes are ready on the branch **`connect-bobby-builds`** in a fresh clone at **`~/Desktop/portfolio-bobby-builds`** (commit `cada9b5`). It's built from `origin/main`. Your own working copy at `~/Desktop/portfolio` has uncommitted changes and wasn't touched.
 
-Already done in Bobby Builds (live):
+Already done in BobbyBuilds (live):
 
 - Portfolio keys exist. Public key: `pk_ofc9Edalhytt9Qvmshz3Wan3`.
 - Origins `https://wahabalikhan.com` and `https://www.wahabalikhan.com` are registered.
@@ -18,7 +18,7 @@ Already done in Bobby Builds (live):
 | `components/CaseStudyReadTracker.jsx` (new) | Sends one `case_study_read` `{ study }` when the visitor has reached 75% of the page **and** it's been on screen for 20 seconds or more. It sends once per page load. |
 | `app/ai-workflow`, `git-diff`, `design-system`, `schemas` `/page.js` | `<CaseStudyReadTracker study="…" />` inside each page's main container. |
 | `components/PageNav.js` | `contact_click` `{ via: "email", place: "nav" \| "menu" }` on both `mailto:` links. |
-| `components/Footer.js` | A privacy note under the footer row, linking to the Portfolio's public Bobby Builds page. |
+| `components/Footer.js` | A privacy note under the footer row, linking to the Portfolio's public BobbyBuilds page. |
 | `public/_headers` | A **report-only** Content Security Policy (it logs problems but blocks nothing yet). |
 
 Recorded automatically by `t.js`, with no code:
@@ -58,7 +58,7 @@ Cloudflare Pages builds a **preview deployment** for the branch. Its address is 
 
 ### 2. Let the preview send data (temporarily)
 
-Run `npm run admin:live` in Bobby Builds. Then go to **Settings**, **Portfolio**, **Origins**, add the preview's exact origin (for example `https://connect-bobby-builds.<your-pages-project>.pages.dev`), and save. Without this, the collector refuses the preview, which is correct: it only accepts registered origins.
+Run `npm run admin:live` in BobbyBuilds. Then go to **Settings**, **Portfolio**, **Origins**, add the preview's exact origin (for example `https://connect-bobby-builds.<your-pages-project>.pages.dev`), and save. Without this, the collector refuses the preview, which is correct: it only accepts registered origins.
 
 ### 3. Check the preview
 
@@ -91,5 +91,5 @@ Merge `connect-bobby-builds` into `main`. Your `~/Desktop/portfolio` working cop
 ## Later
 
 - **Comment events** (`comments_opened`, `comment_posted`) are in the CLAUDE.md Backlog, with the exact places to add them once the comment system moves to Supabase anonymous sign-in.
-- **Custom domain:** Bobby Builds moved to `https://bobbybuilds.app`. The three portfolio changes are in `docs/access-setup.md`, Step 4. The key and origins stay the same.
+- **Custom domain:** BobbyBuilds moved to `https://bobbybuilds.app`. The three portfolio changes are in `docs/access-setup.md`, Step 4. The key and origins stay the same.
 - **A 404 page for the portfolio:** adding `data-bobby-not-found` to its 404 page would record broken links automatically.

@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
 	const { slug } = await params;
 	const entry = (await getSnapshot()).journey.find((e) => e.slug === slug);
-	if (!entry) return { title: "Not found" };
+	if (!entry) return { title: "Page not found" };
 	return { title: entry.title, description: entry.excerpt || `A journey entry by ${owner.name}.`, alternates: { canonical: `/journey/${entry.slug}` }, openGraph: { type: "article", publishedTime: new Date(entry.publishedAt).toISOString() } };
 }
 

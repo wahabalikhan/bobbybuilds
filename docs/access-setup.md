@@ -81,7 +81,7 @@ The full record list is in the "Domain plan" in CLAUDE.md.
 3. **Check the login method.** Go to **Settings**, then **Authentication**, and look under **Login methods**. **One-time PIN** should be listed. If it isn't, click **Add new**, then **One-time PIN**, then **Save**.
 4. **Start the application.** Go to **Access controls**, then **Applications**, then **Add an application**, then **Self-hosted**.
 5. **Basic information:**
-   - Application name: `Bobby Builds admin`
+   - Application name: `BobbyBuilds admin`
    - Session duration: `24 hours`
 6. Click **Add public hostname**. Leave Subdomain blank, choose Domain **bobbybuilds.app**, and set Path `admin`.
 7. Click **Add public hostname** again. Leave Subdomain blank, choose Domain **bobbybuilds.app**, and set Path `admin/*`.
@@ -96,7 +96,7 @@ The full record list is in the "Domain plan" in CLAUDE.md.
    - Tick only **One-time PIN**.
    - Turn on **Instant Auth**, so it goes straight to the email prompt.
 10. Click **Next**. Leave **Experience settings** and the cookie settings at their defaults, then click **Next** again and **Save**.
-11. **Copy the AUD tag.** Go to **Applications**, click `Bobby Builds admin`, then **Configure** (or **Overview**). Click the copy button next to **Application Audience (AUD) Tag**.
+11. **Copy the AUD tag.** Go to **Applications**, click `BobbyBuilds admin`, then **Configure** (or **Overview**). Click the copy button next to **Application Audience (AUD) Tag**.
 
 Never use a wildcard hostname (`*.bobbybuilds.app`) in this app. `techjobs.bobbybuilds.app` belongs to the job board.
 
@@ -123,7 +123,7 @@ In the portfolio repo, change three places from `https://bobbybuilds.wahab-ali-k
 | `components/Footer.js` | The privacy link: `https://bobbybuilds.app/p/portfolio` |
 | `public/_headers` | `script-src` and `connect-src` (and the comment above them) |
 
-The key and origins in Bobby Builds stay the same. The snippet and the CSP ship in the same Pages deploy, so they never disagree.
+The key and origins in BobbyBuilds stay the same. The snippet and the CSP ship in the same Pages deploy, so they never disagree.
 
 ### Step 5: Move the job board to the new address (in its own repo)
 
@@ -136,7 +136,7 @@ The job board builds its CSP (`script-src` and `connect-src`) from `HQ_URL`, so 
    ```bash
    supabase secrets set HQ_URL=https://bobbybuilds.app
    ```
-3. **The job board's CLAUDE.md:** update the address in the "Bobby Builds HQ" section.
+3. **The job board's CLAUDE.md:** update the address in the "BobbyBuilds HQ" section.
 
 The job board's registered origin stays `https://jobboard.wahab-ali-khan.workers.dev` until the job board moves to `techjobs.bobbybuilds.app`. When it does, add the new origin in Settings first, then remove the old one.
 

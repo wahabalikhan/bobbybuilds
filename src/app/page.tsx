@@ -10,14 +10,16 @@ import { ProjectCard } from "@/components/public/project-card";
 import { SkipLink } from "@/components/public/site-header";
 import { formatDay } from "@/lib/format";
 import { getSnapshot } from "@/lib/public/get";
-import { owner, site } from "@/lib/site";
+import { homeTitle, owner, site } from "@/lib/site";
 import { PAGE } from "@/lib/layout";
 
 // Reads the public snapshot (rebuilt from the roll-ups every 10 minutes) on each request.
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-	title: { absolute: `${owner.name}: ${site.name}` },
+	title: { absolute: homeTitle },
+	openGraph: { title: homeTitle },
+	twitter: { title: homeTitle },
 	description: `${owner.firstName}'s free, honest tools, built in public.`,
 	alternates: { canonical: "/" },
 };

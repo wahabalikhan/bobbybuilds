@@ -4,7 +4,7 @@
  * (If you move the site to a new domain, also update the Cloudflare Access application.)
  */
 export const site = {
-	name: "Bobby Builds",
+	name: "BobbyBuilds",
 	url: "https://bobbybuilds.app",
 	adminPath: "/admin",
 	/**
@@ -18,7 +18,7 @@ export const site = {
 
 /** The person behind the site, shown on the public pages. */
 export const owner = {
-	name: "Wahab \u201cBobby\u201d Khan",
+	name: "Wahab (Bobby) Khan",
 	firstName: "Wahab",
 	/** For the copyright line. */
 	fullName: "Wahab Ali Khan",
@@ -31,6 +31,14 @@ export const owner = {
 		{ label: "GitHub", url: "https://github.com/wahabalikhan" },
 	],
 } as const;
+
+/**
+ * Tab titles put the page first, then the brand ("Journey · BobbyBuilds"). The public layout's
+ * template adds " · BobbyBuilds" and the admin layout's " · BobbyBuilds HQ", so pages only set
+ * their own name. The home page is the brand first: "BobbyBuilds · Wahab (Bobby) Khan".
+ */
+export const homeTitle = `${site.name} · ${owner.name}`;
+export const adminName = `${site.name} HQ`;
 
 /** Builds an admin URL path, e.g. adminHref("/settings") → "/admin/settings". */
 export function adminHref(path = ""): string {

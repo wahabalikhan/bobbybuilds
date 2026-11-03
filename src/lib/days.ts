@@ -1,4 +1,4 @@
-/** Day maths. Every day in Bobby Builds is a UTC calendar day, written 'YYYY-MM-DD'. */
+/** Day maths. Every day in BobbyBuilds is a UTC calendar day, written 'YYYY-MM-DD'. */
 
 const DAY_MS = 86_400_000;
 

@@ -9,11 +9,13 @@ import { requestTime } from "@/lib/admin/clock";
 import { attentionItems } from "@/lib/db/dashboard";
 import { isLiveData } from "@/lib/admin/access";
 import { LOCAL_ADMIN_HEADER } from "@/lib/security/local-admin";
-import { adminHref, site } from "@/lib/site";
+import { adminHref, adminName, site } from "@/lib/site";
 import { PAGE } from "@/lib/layout";
 
 export const metadata: Metadata = {
-	title: "Admin",
+	// "BobbyBuilds HQ" on Home; other admin pages set only their own name ("Tech Jobs · BobbyBuilds HQ").
+	// absolute: the public layout's " · BobbyBuilds" template isn't added to the admin's own name.
+	title: { absolute: adminName, template: `%s · ${adminName}` },
 	robots: { index: false, follow: false },
 };
 

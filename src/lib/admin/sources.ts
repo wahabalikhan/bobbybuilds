@@ -19,7 +19,7 @@ const KNOWN: [RegExp, string][] = [
 	[/(^|\.)claude\.ai$|^claude$/, "Claude"],
 	[/(^|\.)bsky\.app$|^bluesky$/, "Bluesky"],
 	[/(^|\.)(mail\.google\.com|outlook\.live\.com|outlook\.office\.com)$|^(email|newsletter)$/, "Email"],
-	[/(^|\.)bobbybuilds\.app$/, "Bobby Builds"],
+	[/(^|\.)bobbybuilds\.app$/, "BobbyBuilds"],
 ];
 
 export function sourceName(value: string): string {

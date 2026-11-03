@@ -1,7 +1,7 @@
 /**
  * Local test kit for the collector. LOCAL DATABASE ONLY.
  *
- *   Terminal 1: npm run preview          (Bobby Builds on http://localhost:8787)
+ *   Terminal 1: npm run preview          (BobbyBuilds on http://localhost:8787)
  *   Terminal 2: npm run playground       (a test site on http://localhost:5555)
  *
  * Adds (or refreshes) a "playground" project in the local D1 with origin http://localhost:5555,
@@ -66,7 +66,7 @@ ${body}
 const home = page(
 	"Home",
 	`<h1>Collector playground</h1>
-<p>Every action below sends something to your local Bobby Builds. Watch it land with the commands in your terminal.</p>
+<p>Every action below sends something to your local BobbyBuilds. Watch it land with the commands in your terminal.</p>
 <p><small>If nothing arrives, check your browser hasn't got Global Privacy Control or Do Not Track switched on. The tracker respects both.</small></p>
 
 <section><h2>Links</h2>

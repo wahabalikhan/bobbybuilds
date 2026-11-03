@@ -16,7 +16,7 @@ export function Avatar({ size = 72 }: { size?: number }) {
 	);
 }
 
-/** The site's wordmark: the favicon's dark square and the name, so "by Bobby Builds" visitors know they're in the right place. */
+/** The site's wordmark: the favicon's dark square and the name, so "by BobbyBuilds" visitors know they're in the right place. */
 export function Wordmark() {
 	return (
 		<p className="mb-5 flex items-center gap-2 text-sm font-semibold tracking-tight text-ink">

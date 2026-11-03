@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { NewProjectWizard } from "@/components/admin/new-project-wizard";
 import { Breadcrumb } from "@/components/admin/ui";
 import { adminHref } from "@/lib/site";
 import { startProjectAction } from "../../settings/actions";
+
+export const metadata: Metadata = { title: "New project" };
 
 export default function NewProject() {
 	return (

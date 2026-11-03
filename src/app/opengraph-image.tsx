@@ -1,11 +1,11 @@
 import { formatWhole } from "@/lib/format";
 import { getSnapshot } from "@/lib/public/get";
 import { shareImage, shareImageSize } from "@/lib/public/share-image";
-import { owner } from "@/lib/site";
+import { homeTitle, owner } from "@/lib/site";
 
 export const size = shareImageSize;
 export const contentType = "image/png";
-export const alt = `${owner.name}: free, honest tools, built in public`;
+export const alt = homeTitle;
 export const dynamic = "force-dynamic";
 
 export default async function Image() {
