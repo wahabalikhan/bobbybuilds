@@ -133,3 +133,11 @@ Done in the job board repo during its Phase 10.
     - `/admin` asks for the email, and only that one gets in.
     - The cron's uptime checks are up for both sites.
     - Both sites' data arrives at the new address.
+- ✅ Home page refresh and a simpler admin (2–3 November 2026):
+  - `d9ff78a`, `135eba2`, `c68f407`, `d60a803`: custom dropdown and chart popovers, the GitHub contributions section (hourly, migration 0008), footer, project cards linking to each project, light mode only, project pages removed (`/p/*` → `/`), journey hidden behind `site.showJourney`.
+  - `a1a5d32`: hidden way to `/admin` (Option/Alt + A, or five taps on the copyright).
+  - `76b3257`:
+    - Admin: Home (Needs attention, the public visitors card, project cards), dashboard tabs (Traffic, Tracked links, Searches, Funnel, Product numbers, Health, Events), one Settings page per project, a three-step New project setup, test projects hidden.
+    - What's public: visitors and each product number. Tech Jobs' card shows "open jobs · companies" (migration 0009).
+    - The "Bobby Builds" wordmark, and Option/Alt + A from admin back to the public site.
+  - Tested live: the Tech Jobs card line and logo, the wordmark, the redirects, every admin tab against live data, a public-number change round trip through the admin, and both shortcuts.
