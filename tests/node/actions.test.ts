@@ -36,3 +36,35 @@ describe("logos", () => {
 		expect(LOGOS).toEqual(files);
 	});
 });
+
+/** Every route handler (route.ts) under src/app/admin. */
+function routeFiles(dir = "src/app/admin"): string[] {
+	return readdirSync(dir).flatMap((name) => {
+		const path = join(dir, name);
+		if (statSync(path).isDirectory()) return routeFiles(path);
+		return name === "route.ts" ? [path] : [];
+	});
+}
+
+describe("admin route handlers", () => {
+	it("include the first-visit check and the events CSV", () => {
+		expect(routeFiles()).toEqual(expect.arrayContaining(["src/app/admin/projects/[slug]/events.csv/route.ts", "src/app/admin/settings/projects/[slug]/first-visit/route.ts"]));
+	});
+
+	it("each check admin access before doing anything else", () => {
+		for (const file of routeFiles()) {
+			const source = readFileSync(file, "utf8");
+			const handlers = [...source.matchAll(/export async function (GET|POST|PUT|PATCH|DELETE)\([^)]*\)[^{]*\{\s*([^\n]*)/g)];
+			expect(handlers.length, file).toBeGreaterThan(0);
+			for (const [, method, firstLine] of handlers) expect(firstLine.trim(), `${file}: ${method}`).toMatch(/^if \(!\(await isAdminRequestFrom\(request\)\)\) return new Response\(/);
+		}
+	});
+});
+
+describe("hidden journey", () => {
+	it("the admin journey pages are not found until site.showJourney is true", () => {
+		for (const file of ["src/app/admin/settings/journey/page.tsx", "src/app/admin/settings/journey/new/page.tsx", "src/app/admin/settings/journey/[id]/page.tsx"]) {
+			expect(readFileSync(file, "utf8"), file).toContain("if (!site.showJourney) return <AdminNotFoundMessage />;");
+		}
+	});
+});

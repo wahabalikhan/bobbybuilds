@@ -273,3 +273,22 @@ export function validateMilestone(values: FormValues): Result<MilestoneInput> {
 	if (note.length > 500) errors.note = "Keep the note to 500 characters or fewer.";
 	return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value: { day, title, note, isPublic: values.is_public === "on" } };
 }
+
+export type NewProjectStart = { name: string; slug: string; siteUrl: string; origin: string };
+
+/**
+ * Step 1 of the new project setup: a name and the site's address. The slug is made from the name
+ * ("Tech Jobs" → tech-jobs) and the allowed origin from the address (https://example.com/a → https://example.com).
+ */
+export function validateNewProject(values: FormValues): Result<NewProjectStart> {
+	const errors: Errors = {};
+	const name = text(values.name);
+	if (!name) errors.name = "Give the project a name.";
+	else if (name.length > 60) errors.name = "Keep the name to 60 characters or fewer.";
+	const slug = slugify(name);
+	if (name && !slug) errors.name = "Use at least one letter or number in the name.";
+	const siteUrl = httpsUrl(text(values.site_url), "site_url", errors, "The site address");
+	if (!text(values.site_url)) errors.site_url = "Add the site's address, like https://example.com.";
+	if (Object.keys(errors).length || !siteUrl) return { ok: false, errors };
+	return { ok: true, value: { name, slug, siteUrl, origin: new URL(siteUrl).origin } };
+}

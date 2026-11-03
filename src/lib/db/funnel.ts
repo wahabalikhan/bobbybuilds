@@ -82,27 +82,3 @@ export async function funnel(db: D1Database, projectId: number, steps: FunnelSte
 	}
 	return countFunnel(steps, hits);
 }
-
-export type FormDropOff = { form: string; started: number; submitted: number; rate: number | null };
-
-/** form_started → form_submitted per form, per visitor, within the same day. */
-export async function formDropOff(db: D1Database, projectId: number, from: string, to: string): Promise<FormDropOff[]> {
-	const { results } = await db
-		.prepare(
-			`WITH started AS (
-			   SELECT day, visitor_id, json_extract(props, '$.form') AS form, min(ts) AS ts FROM events
-			   WHERE project_id = ?1 AND day BETWEEN ?2 AND ?3 AND name = 'form_started' AND visitor_id IS NOT NULL
-			   GROUP BY day, visitor_id, form),
-			 submitted AS (
-			   SELECT day, visitor_id, json_extract(props, '$.form') AS form, max(ts) AS ts FROM events
-			   WHERE project_id = ?1 AND day BETWEEN ?2 AND ?3 AND name = 'form_submitted' AND visitor_id IS NOT NULL
-			   GROUP BY day, visitor_id, form)
-			 SELECT s.form AS form, count(*) AS started,
-			   sum(CASE WHEN f.ts IS NOT NULL AND f.ts >= s.ts THEN 1 ELSE 0 END) AS submitted
-			 FROM started s LEFT JOIN submitted f ON f.day = s.day AND f.visitor_id = s.visitor_id AND f.form = s.form
-			 GROUP BY s.form ORDER BY started DESC`,
-		)
-		.bind(projectId, from, to)
-		.all<{ form: string; started: number; submitted: number }>();
-	return results.map((r) => ({ ...r, rate: r.started ? r.submitted / r.started : null }));
-}

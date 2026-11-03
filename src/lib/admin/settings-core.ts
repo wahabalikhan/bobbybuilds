@@ -9,10 +9,8 @@ import {
 	createProject,
 	deleteJourney,
 	deleteMetric,
-	deleteMilestone,
 	deleteProject,
 	saveJourney,
-	saveMilestone,
 	setBrowserEvents,
 	setFunnel,
 	setMetricVisibility,
@@ -21,14 +19,14 @@ import {
 	updateProjectDetails,
 } from "@/lib/db/settings";
 import { createPublicKey, createSecretKey, hashSecretKey, secretKeyHint } from "@/lib/keys";
-import { adminHref } from "@/lib/site";
+import { adminHref, site } from "@/lib/site";
 import { failed, ok, type FormState } from "./form-state";
 import {
 	validateBrowserEvents,
 	validateFunnel,
 	validateJourney,
-	validateMilestone,
 	validateNewMetric,
+	validateNewProject,
 	validateOrigins,
 	validateProjectDetails,
 	type FormValues,
@@ -49,22 +47,19 @@ const missing = (prev: FormState): ActionResult => ({ state: { status: "error", 
 
 // --- Projects ---------------------------------------------------------------------------
 
-export async function createProjectCore(db: D1Database, prev: FormState, values: FormValues, ctx: Context): Promise<ActionResult> {
-	const result = validateProjectDetails(values, ctx.logos);
-	if (!result.ok) return { state: failed(prev, values, result.errors) };
-	try {
-		await createProject(db, result.value);
-	} catch (error) {
-		if (error instanceof SlugTakenError) return { state: failed(prev, values, { slug: "Another project already uses this slug." }) };
-		throw error;
-	}
-	return { state: ok(prev, "Project created."), redirectTo: settingsHref(result.value.slug, "keys") };
-}
-
 export async function saveDetailsCore(db: D1Database, prev: FormState, values: FormValues, ctx: Context): Promise<ActionResult> {
 	const project = await projectFrom(db, values);
 	if (!project) return missing(prev);
-	const result = validateProjectDetails(values, ctx.logos);
+	// Fields the Basics form doesn't show keep their saved values (the slug, description, lesson,
+	// links and order), so saving the form never wipes or renames anything it doesn't show.
+	const kept: FormValues = {
+		slug: project.slug,
+		description_md: project.descriptionMd,
+		lesson: project.lesson ?? "",
+		links: project.links.map((l) => `${l.label} | ${l.url}`).join("\n"),
+		sort_order: String(project.sortOrder),
+	};
+	const result = validateProjectDetails({ ...kept, ...values }, ctx.logos);
 	if (!result.ok) return { state: failed(prev, values, result.errors) };
 	try {
 		await updateProjectDetails(db, project.id, result.value);
@@ -77,6 +72,41 @@ export async function saveDetailsCore(db: D1Database, prev: FormState, values: F
 		state: ok(prev, "Saved.", notes),
 		redirectTo: result.value.slug !== project.slug ? settingsHref(result.value.slug, "details") : undefined,
 	};
+}
+
+/**
+ * New project, step 1: name and site address. Makes the project (slug from the name, made unique
+ * with -2, -3… if needed), allows the site's origin, checks it for uptime, and makes its keys.
+ * Returns the snippet and the secret key (shown once) for step 2.
+ */
+export async function startProjectCore(db: D1Database, prev: FormState, values: FormValues): Promise<ActionResult> {
+	const result = validateNewProject(values);
+	if (!result.ok) return { state: failed(prev, values, result.errors) };
+	const { name, siteUrl, origin } = result.value;
+	const taken = new Set((await listProjects(db)).map((p) => p.slug));
+	let slug = result.value.slug;
+	for (let n = 2; taken.has(slug); n += 1) slug = `${result.value.slug.slice(0, 36)}-${n}`;
+
+	const id = await createProject(db, {
+		name,
+		slug,
+		tagline: "",
+		descriptionMd: "",
+		status: "building",
+		lesson: null,
+		logoPath: null,
+		siteUrl,
+		healthUrl: siteUrl,
+		githubRepo: null,
+		links: [],
+		sortOrder: 0,
+	});
+	await setOrigins(db, id, [origin]);
+	const publicKey = createPublicKey();
+	const secretKey = createSecretKey();
+	await setProjectKeys(db, slug, { publicKey, secretKeyHash: await hashSecretKey(secretKey), secretKeyHint: secretKeyHint(secretKey) });
+	const snippet = `<script defer src="${site.url}/t.js" data-key="${publicKey}"></script>`;
+	return { state: ok(prev, `${name} is set up.`, [], { secret: secretKey, setup: { slug, name, publicKey, snippet } }) };
 }
 
 export async function deleteProjectCore(db: D1Database, prev: FormState, values: FormValues): Promise<ActionResult> {
@@ -168,21 +198,6 @@ export async function deleteMetricCore(db: D1Database, prev: FormState, values: 
 	if (values.confirm !== "on") return { state: failed(prev, values, {}, "Tick the box to confirm. Its history is deleted too.") };
 	await deleteMetric(db, project.id, Number(values.metric_id));
 	return { state: ok(prev, "Number deleted.") };
-}
-
-// --- Milestones -------------------------------------------------------------------------
-
-export async function milestoneCore(db: D1Database, prev: FormState, values: FormValues): Promise<ActionResult> {
-	const project = await projectFrom(db, values);
-	if (!project) return missing(prev);
-	if (values.intent === "delete") {
-		await deleteMilestone(db, project.id, Number(values.milestone_id));
-		return { state: ok(prev, "Milestone deleted.") };
-	}
-	const result = validateMilestone(values);
-	if (!result.ok) return { state: failed(prev, values, result.errors) };
-	await saveMilestone(db, project.id, values.milestone_id ? Number(values.milestone_id) : null, result.value);
-	return { state: ok(prev, values.milestone_id ? "Milestone saved." : "Milestone added.") };
 }
 
 // --- Journey ----------------------------------------------------------------------------

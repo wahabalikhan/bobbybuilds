@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { authenticateServer } from "@/lib/collector/auth";
 import type { FormState } from "@/lib/admin/form-state";
 import * as core from "@/lib/admin/settings-core";
-import { slugify, validateBrowserEvents, validateFunnel, validateJourney, validateOrigins, validateProjectDetails } from "@/lib/admin/validate";
+import { slugify, validateBrowserEvents, validateFunnel, validateJourney, validateNewProject, validateOrigins, validateProjectDetails } from "@/lib/admin/validate";
 import { listMetrics } from "@/lib/db/dashboard";
 import { getProjectBySlug } from "@/lib/db/projects";
-import { getJourney, listMilestones } from "@/lib/db/settings";
+import { createProject, getJourney } from "@/lib/db/settings";
 import { db, insert, validPageView } from "../helpers";
 
 const idle: FormState = { status: "idle", version: 0 };
@@ -13,11 +13,19 @@ const ctx = { logos: ["/logos/portfolio.png"], now: Date.UTC(2026, 10, 2, 12) };
 let counter = 0;
 const uniqueSlug = (base: string) => `${base}-${(counter += 1)}-${crypto.randomUUID().slice(0, 6)}`;
 
-async function newProject(extra: Record<string, string> = {}) {
-	const slug = uniqueSlug("settings");
-	const result = await core.createProjectCore(db, idle, { name: "Settings test", slug, status: "building", tagline: "A test", ...extra }, ctx);
-	expect(result.state.status).toBe("ok");
+/** A project with no keys yet (made directly, not through the setup, which makes keys). */
+async function keylessProject() {
+	const slug = uniqueSlug("keyless");
+	await createProject(db, { name: "Keyless", slug, tagline: "", descriptionMd: "", status: "building", lesson: null, logoPath: null, siteUrl: null, healthUrl: null, githubRepo: null, links: [], sortOrder: 0 });
 	return (await getProjectBySlug(db, slug))!;
+}
+
+/** A new project through the setup's step 1, with a unique name. */
+async function newProject(siteUrl = "https://settings.example") {
+	const name = uniqueSlug("Settings test");
+	const result = await core.startProjectCore(db, idle, { name, site_url: siteUrl });
+	expect(result.state.status).toBe("ok");
+	return (await getProjectBySlug(db, result.state.setup!.slug))!;
 }
 
 describe("validation", () => {
@@ -64,18 +72,53 @@ describe("validation", () => {
 });
 
 describe("projects", () => {
-	it("creates a project with visitors as its public headline, and goes to its keys", async () => {
-		const slug = uniqueSlug("new");
-		const result = await core.createProjectCore(db, idle, { name: "New thing", slug, status: "idea" }, ctx);
-		expect(result.redirectTo).toBe(`/admin/settings/projects/${slug}?section=keys`);
-		const project = await getProjectBySlug(db, slug);
-		expect(project?.status).toBe("idea");
-		expect((await listMetrics(db, project!.id)).map((m) => [m.key, m.isPublic, m.isHeadline])).toEqual([["visitors", true, true]]);
+	it("works out the slug and allowed origin from the name and address", () => {
+		expect(validateNewProject({ name: "Tech Jobs", site_url: "https://techjobs.example.app/jobs?x=1" })).toEqual({
+			ok: true,
+			value: { name: "Tech Jobs", slug: "tech-jobs", siteUrl: "https://techjobs.example.app/jobs?x=1", origin: "https://techjobs.example.app" },
+		});
+		const bad = validateNewProject({ name: "", site_url: "http://insecure.example" });
+		expect(bad.ok).toBe(false);
+		if (!bad.ok) expect(Object.keys(bad.errors).sort()).toEqual(["name", "site_url"]);
+		const missing = validateNewProject({ name: "!!!" });
+		if (!missing.ok) expect(Object.keys(missing.errors).sort()).toEqual(["name", "site_url"]);
 	});
 
-	it("refuses a slug that's taken, keeping what was typed", async () => {
-		const result = await core.createProjectCore(db, idle, { name: "Clash", slug: "portfolio", status: "live" }, ctx);
-		expect(result.state).toMatchObject({ status: "error", errors: { slug: expect.stringContaining("already") }, values: { name: "Clash" } });
+	it("sets up a project in one step: origin, uptime, keys (secret shown once), visitors public, and the snippet", async () => {
+		const name = uniqueSlug("Brand New");
+		const result = await core.startProjectCore(db, idle, { name, site_url: "https://brand.example/" });
+		expect(result.state.status).toBe("ok");
+		const { setup, secret } = result.state;
+		const project = (await getProjectBySlug(db, setup!.slug))!;
+		expect(project).toMatchObject({ name, status: "building", siteUrl: "https://brand.example/", healthUrl: "https://brand.example/", allowedOrigins: ["https://brand.example"], publicKey: setup!.publicKey });
+		expect(setup!.snippet).toBe(`<script defer src="https://bobbybuilds.app/t.js" data-key="${project.publicKey}"></script>`);
+		expect(secret).toMatch(/^sk_/);
+		expect((await authenticateServer(db, new Request("https://x", { headers: { authorization: `Bearer ${secret}` } }))).ok).toBe(true);
+		expect((await listMetrics(db, project.id)).map((m) => [m.key, m.isPublic])).toEqual([["visitors", true]]);
+	});
+
+	it("makes the slug unique when another project has it", async () => {
+		const result = await core.startProjectCore(db, idle, { name: "Portfolio", site_url: "https://another.example" });
+		expect(result.state.setup?.slug).toBe("portfolio-2");
+	});
+
+	it("refuses a missing name or address, keeping what was typed", async () => {
+		const result = await core.startProjectCore(db, idle, { name: "Half done", site_url: "" });
+		expect(result.state).toMatchObject({ status: "error", errors: { site_url: expect.any(String) }, values: { name: "Half done" } });
+	});
+
+	it("keeps the slug, description, lesson, links and order when Basics (which doesn't show them) is saved", async () => {
+		const project = await newProject();
+		await core.saveDetailsCore(db, idle, { project_id: String(project.id), name: project.name, status: "live", description_md: "Kept", lesson: "Kept too", links: "Site | https://example.com", sort_order: "3" }, ctx);
+		await core.saveDetailsCore(db, idle, { project_id: String(project.id), name: "A new name", status: "live", tagline: "New tagline", site_url: "https://settings.example" }, ctx);
+		expect(await getProjectBySlug(db, project.slug)).toMatchObject({
+			name: "A new name",
+			tagline: "New tagline",
+			descriptionMd: "Kept",
+			lesson: "Kept too",
+			links: [{ label: "Site", url: "https://example.com/" }],
+			sortOrder: 3,
+		});
 	});
 
 	it("saves details and follows a slug change", async () => {
@@ -108,7 +151,7 @@ describe("projects", () => {
 
 describe("keys", () => {
 	it("creates keys once, shows the secret once, and only stores its hash", async () => {
-		const project = await newProject();
+		const project = await keylessProject();
 		const result = await core.keysCore(db, idle, { project_id: String(project.id) });
 		const secret = result.state.secret!;
 		expect(secret).toMatch(/^sk_/);
@@ -119,7 +162,7 @@ describe("keys", () => {
 	});
 
 	it("needs confirmation to rotate, keeps the public key, and stops the old secret", async () => {
-		const project = await newProject();
+		const project = await keylessProject();
 		const first = (await core.keysCore(db, idle, { project_id: String(project.id) })).state.secret!;
 		const publicKey = (await getProjectBySlug(db, project.slug))!.publicKey;
 
@@ -138,7 +181,7 @@ describe("keys", () => {
 
 describe("origins, events and funnel", () => {
 	it("saves origins and warns when the site's own origin is missing", async () => {
-		const project = await newProject({ site_url: "https://thing.example" });
+		const project = await newProject("https://thing.example");
 		const result = await core.originsCore(db, idle, { project_id: String(project.id), origins: "https://other.example" });
 		expect(result.state).toMatchObject({ status: "ok", notes: [expect.stringContaining("https://thing.example")] });
 		expect((await getProjectBySlug(db, project.slug))!.allowedOrigins).toEqual(["https://other.example"]);
@@ -187,19 +230,7 @@ describe("public numbers", () => {
 	});
 });
 
-describe("milestones and journey", () => {
-	it("adds, edits and deletes milestones", async () => {
-		const project = await newProject();
-		const id = String(project.id);
-		expect((await core.milestoneCore(db, idle, { project_id: id, day: "2026-11-02", title: "Launched", is_public: "on" })).state.status).toBe("ok");
-		const [milestone] = await listMilestones(db, project.id);
-		await core.milestoneCore(db, idle, { project_id: id, milestone_id: String(milestone.id), day: "2026-11-01", title: "Launched (soft)" });
-		expect(await listMilestones(db, project.id)).toEqual([{ id: milestone.id, projectId: project.id, day: "2026-11-01", title: "Launched (soft)", note: "", isPublic: false }]);
-		await core.milestoneCore(db, idle, { project_id: id, milestone_id: String(milestone.id), intent: "delete" });
-		expect(await listMilestones(db, project.id)).toEqual([]);
-		expect((await core.milestoneCore(db, idle, { project_id: id, day: "not a date", title: "" })).state.errors).toMatchObject({ day: expect.any(String), title: expect.any(String) });
-	});
-
+describe("journey", () => {
 	it("creates drafts, publishes, refuses taken slugs and deletes", async () => {
 		const created = await core.journeyCore(db, idle, { title: "Week one", body_md: "Hello" }, ctx);
 		const id = Number(created.redirectTo!.match(/journey\/(\d+)/)![1]);

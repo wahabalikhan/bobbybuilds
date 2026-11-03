@@ -3,7 +3,7 @@ import { hostnameFromHost, isAdminRequest } from "@/lib/admin/access";
 import { csvCell } from "@/lib/admin/csv";
 import { handleEventsCsv } from "@/lib/admin/events-csv";
 import { clampToRaw, daysBetween, parseRange } from "@/lib/admin/range";
-import { countFunnel, formDropOff, funnel, parseFunnel } from "@/lib/db/funnel";
+import { countFunnel, funnel, parseFunnel } from "@/lib/db/funnel";
 import { lastWeeks, shippingStreak } from "@/lib/db/streak";
 import { createProject, db, insert } from "../helpers";
 
@@ -82,7 +82,7 @@ describe("funnels", () => {
 		expect(parseFunnel("nope")).toEqual([]);
 	});
 
-	it("queries page views and events for the funnel and form drop-off", async () => {
+	it("queries page views and events for the funnel", async () => {
 		const id = await createProject();
 		const ts = Date.parse(`${TODAY}T10:00:00Z`);
 		const pv = (v: number, path: string, offset: number) =>
@@ -93,17 +93,8 @@ describe("funnels", () => {
 		await pv(1, "/work", 1000);
 		await ev(1, "contact_click", 2000);
 		await pv(2, "/", 0);
-		await ev(1, "form_started", 0, '{"form":"contact"}');
-		await ev(1, "form_submitted", 5000, '{"form":"contact"}');
-		await ev(2, "form_started", 0, '{"form":"contact"}');
-		await ev(3, "form_submitted", 0, '{"form":"contact"}'); // submitted without starting: not counted
-		await ev(2, "form_started", 0, '{"form":"alerts"}');
 
 		expect((await funnel(db, id, steps, TODAY, TODAY)).map((r) => r.visitors)).toEqual([2, 1, 1]);
-		expect(await formDropOff(db, id, TODAY, TODAY)).toEqual([
-			{ form: "contact", started: 2, submitted: 1, rate: 0.5 },
-			{ form: "alerts", started: 1, submitted: 0, rate: 0 },
-		]);
 		expect(await funnel(db, id, [], TODAY, TODAY)).toEqual([]);
 	});
 });

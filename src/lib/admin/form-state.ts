@@ -12,6 +12,8 @@ export type FormState = {
 	values?: FormValues;
 	/** A new secret key, shown once. */
 	secret?: string;
+	/** After step 1 of a new project: what step 2 shows (the snippet) and step 3 waits on. */
+	setup?: { slug: string; name: string; publicKey: string; snippet: string };
 };
 
 export function ok(previous: FormState, message: string, notes: string[] = [], extra: Partial<FormState> = {}): FormState {

@@ -10,14 +10,14 @@
  */
 import { addDays, weekStart } from "@/lib/days";
 import { listMetrics, metricSeries, type Metric } from "@/lib/db/dashboard";
-import { listProjects, type ProjectLink, type ProjectStatus } from "@/lib/db/projects";
+import { listRealProjects, type ProjectLink, type ProjectStatus } from "@/lib/db/projects";
 import { sha256Hex } from "@/lib/keys";
-import { LOGOS } from "@/lib/logos.generated";
 import { renderMarkdown } from "@/lib/markdown";
+import { logoFor } from "@/lib/project-logo";
 import { owner } from "@/lib/site";
 
 export const SNAPSHOT_KEY = "public-snapshot";
-export const SNAPSHOT_VERSION = 2;
+export const SNAPSHOT_VERSION = 3;
 
 export type Point = { day: string; value: number };
 export type Month = { month: string; value: number };
@@ -29,6 +29,8 @@ export type PublicNumber = {
 	kind: "count" | "latest";
 	/** 30-day total for counts, latest value for product numbers. */
 	figure: number | null;
+	/** The day of the latest value (product numbers), so stale ones can be hidden. */
+	latestDay: string | null;
 	period: string;
 	/** Weekly totals for 12 weeks (counts), or daily values for 90 days (product numbers). */
 	series: Point[];
@@ -117,10 +119,10 @@ async function publicNumber(db: D1Database, metric: Metric, today: string): Prom
 	if (metric.source === "product") {
 		const series = await metricSeries(db, metric, addDays(today, -89), today);
 		const latest = await db
-			.prepare("SELECT value FROM metric_values WHERE metric_id = ?1 AND day <= ?2 ORDER BY day DESC LIMIT 1")
+			.prepare("SELECT value, day FROM metric_values WHERE metric_id = ?1 AND day <= ?2 ORDER BY day DESC LIMIT 1")
 			.bind(metric.id, today)
-			.first<{ value: number }>();
-		return { key: metric.key, label: metric.label, unit: metric.unit, kind: "latest", figure: latest?.value ?? null, period: "latest", series, seriesKind: "daily" };
+			.first<{ value: number; day: string }>();
+		return { key: metric.key, label: metric.label, unit: metric.unit, kind: "latest", figure: latest?.value ?? null, latestDay: latest?.day ?? null, period: "latest", series, seriesKind: "daily" };
 	}
 	const daily = await metricSeries(db, metric, addDays(weekStart(today), -7 * 11), today);
 	return {
@@ -129,6 +131,7 @@ async function publicNumber(db: D1Database, metric: Metric, today: string): Prom
 		unit: metric.unit,
 		kind: "count",
 		figure: sum(daily.filter((d) => d.day >= addDays(today, -29))),
+		latestDay: null,
 		period: "last 30 days",
 		series: toWeeks(daily, today),
 		seriesKind: "weekly",
@@ -137,7 +140,7 @@ async function publicNumber(db: D1Database, metric: Metric, today: string): Prom
 
 /** Builds the snapshot from the roll-ups and public settings only. */
 export async function buildSnapshot(db: D1Database, today: string, now: number = Date.now()): Promise<PublicSnapshot> {
-	const [projects, metrics] = await Promise.all([listProjects(db), listMetrics(db)]);
+	const [projects, metrics] = await Promise.all([listRealProjects(db), listMetrics(db)]);
 	const firstMonthDay = `${months(today)[0]}-01`;
 
 	const publicProjects: PublicProject[] = [];
@@ -160,8 +163,7 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			tagline: project.tagline,
 			status: project.status,
 			lesson: project.lesson,
-			// The logo chosen in Settings, or public/logos/<slug>.* when none is chosen.
-			logoPath: project.logoPath ?? LOGOS.find((path) => path.replace(/\.[a-z]+$/, "") === `/logos/${project.slug}`) ?? null,
+			logoPath: logoFor(project),
 			siteUrl: project.siteUrl,
 			links: project.links,
 			descriptionHtml: renderMarkdown(project.descriptionMd),

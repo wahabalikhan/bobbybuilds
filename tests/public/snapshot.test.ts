@@ -132,10 +132,10 @@ describe("public snapshot", () => {
 	});
 
 	it("uses public/logos/<slug>.* as a project's logo when none is chosen in Settings", async () => {
-		// "job-board" comes from the seed migration, with no logo chosen.
+		await project("tech-jobs");
 		await project("pub-no-logo-file");
 		const snapshot = await buildSnapshot(db, TODAY, NOW);
-		expect(snapshot.projects.find((p) => p.slug === "job-board")!.logoPath).toBe("/logos/job-board.svg");
+		expect(snapshot.projects.find((p) => p.slug === "tech-jobs")!.logoPath).toBe("/logos/tech-jobs.svg");
 		expect(snapshot.projects.find((p) => p.slug === "pub-no-logo-file")!.logoPath).toBeNull();
 	});
 

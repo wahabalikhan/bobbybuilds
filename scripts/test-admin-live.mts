@@ -7,6 +7,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { unstable_readConfig } from "wrangler";
+import { clickThrough } from "./lib/admin-click-through.mjs";
 import { checkLiveBanner } from "./lib/admin-live-check.mjs";
 import { adminLiveConfig, LIVE_ADMIN_IP } from "./lib/admin-live-config.mjs";
 
@@ -49,5 +50,12 @@ for (let attempt = 0; ; attempt += 1) {
 	}
 }
 const problems = await checkLiveBanner(origin);
+const browser = await clickThrough(origin);
+problems.push(...browser.problems);
 if (problems.length) finish(1, `✋ test:admin-live failed:\n${problems.map((p) => `  • ${p}`).join("\n")}`);
-finish(0, "✓ test:admin-live: every admin page served with the live config shows the pinned LIVE DATA banner, and its CSS loads.");
+finish(
+	0,
+	`✓ test:admin-live: every admin page served with the live config shows the pinned LIVE DATA banner, and its CSS loads. ${
+		browser.skipped ? "(Chrome isn't installed, so the click-through was skipped.)" : `Clicked through ${browser.visited} pages in Chrome with no errors.`
+	}`,
+);

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdminKeyboardShortcut } from "@/components/public/admin-shortcut";
 import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { LiveDataBanner } from "@/components/admin/live-banner";
 import { isLiveData } from "@/lib/admin/access";
-import { listProjects } from "@/lib/db/projects";
 import { LOCAL_ADMIN_HEADER } from "@/lib/security/local-admin";
 import { adminHref, site } from "@/lib/site";
 
@@ -20,7 +20,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 	const { env } = await getCloudflareContext({ async: true });
 	// Whenever the live database is connected, the banner shows. No other condition.
 	const live = isLiveData(env as unknown as Record<string, unknown>);
-	const projects = await listProjects(env.DB);
 
 	return (
 		<div className="admin-theme min-h-screen bg-page text-ink">
@@ -33,21 +32,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 					</p>
 				)
 			)}
+			{/* Option + A (Alt + A) back to the public site. No visible link. */}
+			<AdminKeyboardShortcut to={site.url} />
 			<header className="border-b border-line">
-				<div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-6 py-4">
+				<div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-4">
 					<Link href={adminHref()} className="font-semibold tracking-tight">
 						{site.name} <span className="font-normal text-muted">HQ</span>
 					</Link>
-					<nav aria-label="Projects" className="flex flex-1 flex-wrap gap-1 text-sm text-ink-2">
-						<Link href={adminHref()} className="rounded-full px-3 py-1.5 hover:bg-pill hover:text-ink">
-							Overview
-						</Link>
-						{projects.map((p) => (
-							<Link key={p.id} href={adminHref(`/projects/${p.slug}`)} className="rounded-full px-3 py-1.5 hover:bg-pill hover:text-ink">
-								{p.name}
-							</Link>
-						))}
-					</nav>
 					<Link href={adminHref("/settings")} className="rounded-full bg-ink px-4 py-1.5 text-sm font-medium text-page hover:opacity-85">
 						Settings
 					</Link>

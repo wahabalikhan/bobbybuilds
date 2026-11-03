@@ -1,22 +1,21 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { createTapCounter, isAdminShortcut } from "@/lib/public/admin-shortcut";
+import { createTapCounter, handleShortcut } from "@/lib/public/admin-shortcut";
 import { adminHref } from "@/lib/site";
 
 const openAdmin = () => window.location.assign(adminHref());
 
-/** Option + A (Alt + A) anywhere on the page opens the admin dashboard. Renders nothing. */
-export function AdminKeyboardShortcut() {
+/**
+ * Option + A (Alt + A) anywhere on the page goes to `to` in the same tab: the admin from the
+ * public site, and the public site from the admin. Same rules both ways (isAdminShortcut). Renders nothing.
+ */
+export function AdminKeyboardShortcut({ to }: { to?: string } = {}) {
 	useEffect(() => {
-		const onKey = (event: KeyboardEvent) => {
-			if (!isAdminShortcut(event)) return;
-			event.preventDefault();
-			openAdmin();
-		};
+		const onKey = (event: KeyboardEvent) => handleShortcut(event, () => (to ? window.location.assign(to) : openAdmin()));
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
-	}, []);
+	}, [to]);
 	return null;
 }
 

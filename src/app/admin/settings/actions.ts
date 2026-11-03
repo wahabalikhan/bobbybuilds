@@ -37,9 +37,10 @@ async function run(prev: FormState, form: FormData, fn: Core): Promise<FormState
 	return result.state;
 }
 
-export async function createProjectAction(prev: FormState, form: FormData) {
+/** New project, step 1 (name and address): makes the project, its origin and its keys. */
+export async function startProjectAction(prev: FormState, form: FormData) {
 	await requireAdmin();
-	return run(prev, form, core.createProjectCore);
+	return run(prev, form, core.startProjectCore);
 }
 
 export async function saveDetailsAction(prev: FormState, form: FormData) {
@@ -85,11 +86,6 @@ export async function addMetricAction(prev: FormState, form: FormData) {
 export async function deleteMetricAction(prev: FormState, form: FormData) {
 	await requireAdmin();
 	return run(prev, form, core.deleteMetricCore);
-}
-
-export async function milestoneAction(prev: FormState, form: FormData) {
-	await requireAdmin();
-	return run(prev, form, core.milestoneCore);
 }
 
 export async function journeyAction(prev: FormState, form: FormData) {

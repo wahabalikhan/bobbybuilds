@@ -2,8 +2,9 @@ import { Window } from "happy-dom";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { SiteFooter } from "@/components/public/footer";
-import { createTapCounter, isAdminShortcut, TAP_GAP_MS } from "@/lib/public/admin-shortcut";
-import { adminHref } from "@/lib/site";
+import { createTapCounter, handleShortcut, isAdminShortcut, TAP_GAP_MS } from "@/lib/public/admin-shortcut";
+import { readFileSync } from "node:fs";
+import { adminHref, site } from "@/lib/site";
 
 const window = new Window();
 const document = window.document;
@@ -13,7 +14,7 @@ type KeyInit = { code?: string; key?: string; altKey?: boolean; ctrlKey?: boolea
 
 function key(init: KeyInit & { target?: Element } = {}) {
 	const { target = document.body, ...rest } = init;
-	const event = new window.KeyboardEvent("keydown", { code: "KeyA", key: "å", altKey: true, bubbles: true, ...rest });
+	const event = new window.KeyboardEvent("keydown", { code: "KeyA", key: "å", altKey: true, bubbles: true, cancelable: true, ...rest });
 	Object.defineProperty(event, "target", { value: target });
 	return event as unknown as KeyboardEvent;
 }
@@ -89,5 +90,33 @@ describe("no visible admin link", () => {
 		expect(html).toContain("© 2026 Wahab Ali Khan");
 		expect(html).not.toContain(adminHref());
 		expect(html).not.toMatch(/role="button"|cursor-pointer|tabindex/);
+	});
+});
+
+describe("the reverse shortcut, admin → public site", () => {
+	/** Runs the shared handler and reports where it went, if anywhere, and whether the key was stopped. */
+	const press = (to: string, init: Parameters<typeof key>[0] = {}) => {
+		const event = key(init);
+		let went: string | null = null;
+		handleShortcut(event, () => (went = to));
+		return { went, prevented: event.defaultPrevented };
+	};
+
+	it("Option/Alt + A goes to the public site, and the å isn't typed", () => {
+		expect(press(site.url)).toEqual({ went: "https://bobbybuilds.app", prevented: true });
+	});
+
+	it("does nothing with other modifiers, on repeat, while composing, or while typing", () => {
+		const field = document.createElement("textarea");
+		document.body.appendChild(field);
+		for (const init of [{ shiftKey: true }, { ctrlKey: true }, { metaKey: true }, { repeat: true }, { isComposing: true }, { altKey: false }, { target: field as unknown as Element }]) {
+			expect(press(site.url, init), JSON.stringify(Object.keys(init))).toEqual({ went: null, prevented: false });
+		}
+	});
+
+	it("is on every admin page (the admin layout) with no visible link", () => {
+		const layout = readFileSync("src/app/admin/layout.tsx", "utf8");
+		expect(layout).toContain("<AdminKeyboardShortcut to={site.url} />");
+		expect(layout).not.toMatch(/href=\{site\.url\}|href="https:\/\/bobbybuilds\.app/);
 	});
 });

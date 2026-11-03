@@ -4,9 +4,13 @@ import { buttonClass, Empty, Pill } from "@/components/admin/ui";
 import { listProjects } from "@/lib/db/projects";
 import { listJourney } from "@/lib/db/settings";
 import { formatDay } from "@/lib/format";
-import { adminHref } from "@/lib/site";
+import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
+import { adminHref, site } from "@/lib/site";
 
 export default async function JourneyList({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+	// Hidden until the journey comes back (site.showJourney); the code and table stay. Shown as
+	// "not found" inside the admin layout, like any unknown admin address.
+	if (!site.showJourney) return <AdminNotFoundMessage />;
 	const { env } = await getCloudflareContext({ async: true });
 	const [entries, projects, params] = await Promise.all([listJourney(env.DB), listProjects(env.DB), searchParams]);
 	const projectName = new Map(projects.map((p) => [p.id, p.name]));

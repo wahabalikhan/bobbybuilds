@@ -6,9 +6,8 @@
  */
 import { daysBetween } from "@/lib/admin/range";
 import { addDays, weekStart } from "@/lib/days";
-import { percentile } from "@/lib/jobs/rollup";
-import { listProjects, type Project } from "./projects";
-import { lastWeeks, shippingStreak, type WeekCommits } from "./streak";
+import { listRealProjects, type Project } from "./projects";
+import { shippingStreak, type WeekCommits } from "./streak";
 
 export type DayValue = { day: string; value: number };
 export type Ranked = { key: string; pageviews: number; visitors: number };
@@ -133,7 +132,7 @@ export type ProjectSummary = {
 };
 
 export async function projectSummaries(db: D1Database, today: string): Promise<ProjectSummary[]> {
-	const projects = await listProjects(db);
+	const projects = await listRealProjects(db);
 	const thisWeek = weekStart(today);
 	const firstWeek = addDays(thisWeek, -7 * 11);
 	const since = firstWeek < addDays(today, -59) ? firstWeek : addDays(today, -59);
@@ -219,7 +218,7 @@ export type Attention = { level: "critical" | "serious" | "warning"; message: st
 /** Things worth looking at now, most serious first. */
 export async function attentionItems(db: D1Database, now: number): Promise<Attention[]> {
 	const items: Attention[] = [];
-	const projects = await listProjects(db);
+	const projects = await listRealProjects(db);
 
 	const recentChecks = await db
 		.prepare(
@@ -260,12 +259,29 @@ export async function attentionItems(db: D1Database, now: number): Promise<Atten
 	if (!jobs.lastDaily || now - jobs.lastDaily.startedAt > 26 * 3_600_000) {
 		items.push({ level: "serious", message: "The daily job hasn't run in the last 26 hours." });
 	}
-	if (jobs.lastFrequent?.ok === false || jobs.lastDaily?.ok === false) {
-		items.push({ level: "serious", message: "The most recent job run failed. See job health below." });
+	// Failed runs in the last 24 hours, newest first, with the start of the error.
+	for (const run of jobs.failures.filter((r) => r.startedAt >= now - 24 * 3_600_000).slice(0, 3)) {
+		const when = new Date(run.startedAt).toISOString().slice(11, 16);
+		const detail = failureDetail(run.summary);
+		items.push({ level: "serious", message: `The ${run.task === "daily" ? "daily" : "5-minute"} job failed at ${when} UTC${detail ? `: ${detail}` : "."}` });
 	}
 
 	const order = { critical: 0, serious: 1, warning: 2 };
 	return items.sort((a, b) => order[a.level] - order[b.level]);
+}
+
+/** The error from a failed run's summary, shortened for one line. */
+export function failureDetail(summary: string): string {
+	let text = summary;
+	try {
+		const parsed = JSON.parse(summary) as { error?: unknown };
+		if (typeof parsed.error === "string") text = parsed.error;
+	} catch {
+		// Not JSON: use it as it is.
+	}
+	text = text.replace(/\s+/g, " ").trim();
+	if (!text || text === "{}") return "";
+	return text.length > 120 ? `${text.slice(0, 119)}…` : text;
 }
 
 export type JobRun = { id: number; task: string; startedAt: number; finishedAt: number | null; ok: boolean | null; summary: string };
@@ -367,22 +383,6 @@ export async function campaigns(db: D1Database, projectId: number, from: string,
 	return results;
 }
 
-const RAW_COLUMNS = ["browser", "os", "screen", "language"] as const;
-export type RawColumn = (typeof RAW_COLUMNS)[number];
-
-/** Browser, OS, screen or language from raw page views (last 90 days only). */
-export async function rawBreakdown(db: D1Database, projectId: number, column: RawColumn, from: string, to: string, limit = 10): Promise<Ranked[]> {
-	if (!RAW_COLUMNS.includes(column)) throw new Error("Unknown column");
-	const { results } = await db
-		.prepare(
-			`SELECT COALESCE(${column}, '') AS key, count(*) AS pageviews, count(DISTINCT visitor_id) AS visitors FROM page_views
-			 WHERE project_id = ?1 AND day BETWEEN ?2 AND ?3 GROUP BY key ORDER BY visitors DESC, key LIMIT ?4`,
-		)
-		.bind(projectId, from, to, limit)
-		.all<Ranked>();
-	return results;
-}
-
 /** Built-in events ranked by one prop or the path (raw, last 90 days). */
 const EVENT_KEYS = {
 	not_found: "path",
@@ -400,38 +400,6 @@ export async function eventBreakdown(db: D1Database, projectId: number, name: ke
 		.bind(projectId, name, from, to, limit)
 		.all<{ key: string; count: number; visitors: number }>();
 	return results;
-}
-
-export type VitalsDay = { day: string; lcp: number | null; cls: number | null; inp: number | null; samples: number };
-
-export async function vitalsSeries(db: D1Database, projectId: number, from: string, to: string): Promise<VitalsDay[]> {
-	const { results } = await db
-		.prepare(
-			`SELECT day, lcp_p75_ms AS lcp, cls_p75_milli AS cls, inp_p75_ms AS inp, vitals_samples AS samples
-			 FROM daily_totals WHERE project_id = ?1 AND day BETWEEN ?2 AND ?3`,
-		)
-		.bind(projectId, from, to)
-		.all<VitalsDay>();
-	const byDay = new Map(results.map((r) => [r.day, r]));
-	return daysBetween(from, to).map((day) => byDay.get(day) ?? { day, lcp: null, cls: null, inp: null, samples: 0 });
-}
-
-/** 75th percentile across the whole range, from raw page views (last 90 days only). */
-export async function vitalsSummary(db: D1Database, projectId: number, from: string, to: string) {
-	const { results } = await db
-		.prepare(
-			`SELECT lcp_ms, cls_milli, inp_ms FROM page_views WHERE project_id = ?1 AND day BETWEEN ?2 AND ?3
-			 AND (lcp_ms IS NOT NULL OR cls_milli IS NOT NULL OR inp_ms IS NOT NULL)`,
-		)
-		.bind(projectId, from, to)
-		.all<{ lcp_ms: number | null; cls_milli: number | null; inp_ms: number | null }>();
-	const p75 = (values: (number | null)[]) => percentile(values.filter((v): v is number => v !== null).sort((a, b) => a - b), 0.75);
-	return {
-		lcp: p75(results.map((r) => r.lcp_ms)),
-		cls: p75(results.map((r) => r.cls_milli)),
-		inp: p75(results.map((r) => r.inp_ms)),
-		samples: results.length,
-	};
 }
 
 export type UptimeDay = { day: string; checks: number; up: number; avgResponseMs: number | null };
@@ -474,14 +442,6 @@ export function outages(checks: Check[]): Outage[] {
 	return found.reverse();
 }
 
-export async function shipping(db: D1Database, projectId: number, today: string) {
-	const { results } = await db
-		.prepare("SELECT week, commits FROM github_weekly WHERE project_id = ?1")
-		.bind(projectId)
-		.all<WeekCommits>();
-	const thisWeek = weekStart(today);
-	return { weeks: lastWeeks(results, thisWeek, 26), streak: shippingStreak(results, thisWeek), synced: results.length > 0 };
-}
 
 // ---------------------------------------------------------------------------------------
 // Events
@@ -546,4 +506,68 @@ export async function eventNames(db: D1Database, projectId: number, from: string
 		.bind(projectId, from)
 		.all<{ name: string }>();
 	return results.map((r) => r.name);
+}
+
+// ---------------------------------------------------------------------------------------
+// Tracked links, searches and product numbers
+// ---------------------------------------------------------------------------------------
+
+/** The pages visitors who arrived with ?ref=<ref> viewed (raw page views, so the last 90 days). */
+export async function refPages(db: D1Database, projectId: number, ref: string, from: string, to: string, limit = 10): Promise<Ranked[]> {
+	const { results } = await db
+		.prepare(
+			`SELECT path AS key, count(*) AS pageviews, count(DISTINCT visitor_id) AS visitors FROM page_views
+			 WHERE project_id = ?1 AND ref = ?2 AND day BETWEEN ?3 AND ?4 GROUP BY path ORDER BY visitors DESC, pageviews DESC, path LIMIT ?5`,
+		)
+		.bind(projectId, ref, from, to, limit)
+		.all<Ranked>();
+	return results;
+}
+
+export type SearchTerm = { words: string; count: number };
+
+/** The most common search words from `search` or `search_no_results` events (raw, last 90 days). "" means filters only. */
+export async function searchTerms(db: D1Database, projectId: number, name: "search" | "search_no_results", from: string, to: string, limit = 20): Promise<SearchTerm[]> {
+	const { results } = await db
+		.prepare(
+			`SELECT lower(trim(COALESCE(json_extract(props, '$.words'), ''))) AS words, count(*) AS count FROM events
+			 WHERE project_id = ?1 AND name = ?2 AND day BETWEEN ?3 AND ?4 GROUP BY words ORDER BY count DESC, words LIMIT ?5`,
+		)
+		.bind(projectId, name, from, to, limit)
+		.all<SearchTerm>();
+	return results;
+}
+
+/** True when the project sent this event in the date range. */
+export async function hasEvent(db: D1Database, projectId: number, name: string, from: string, to: string): Promise<boolean> {
+	const row = await db
+		.prepare("SELECT 1 AS found FROM events WHERE project_id = ?1 AND name = ?2 AND day BETWEEN ?3 AND ?4 LIMIT 1")
+		.bind(projectId, name, from, to)
+		.first<{ found: number }>();
+	return Boolean(row);
+}
+
+/** How many searches, and how many found nothing, in the range. */
+export async function searchCounts(db: D1Database, projectId: number, from: string, to: string): Promise<{ searches: number; noResults: number }> {
+	const row = await db
+		.prepare(
+			`SELECT sum(CASE WHEN name = 'search' THEN 1 ELSE 0 END) AS searches, sum(CASE WHEN name = 'search_no_results' THEN 1 ELSE 0 END) AS no_results
+			 FROM events WHERE project_id = ?1 AND name IN ('search', 'search_no_results') AND day BETWEEN ?2 AND ?3`,
+		)
+		.bind(projectId, from, to)
+		.first<{ searches: number | null; no_results: number | null }>();
+	return { searches: row?.searches ?? 0, noResults: row?.no_results ?? 0 };
+}
+
+/** Each public product number's latest daily value, for the "1,240 open jobs · 300 companies" line. */
+export async function publicProductNumbers(db: D1Database, projectId: number, today: string): Promise<{ kind: "latest"; label: string; figure: number | null; latestDay: string | null }[]> {
+	const { results } = await db
+		.prepare(
+			`SELECT m.label, v.value, v.day FROM metrics m
+			 LEFT JOIN metric_values v ON v.metric_id = m.id AND v.day = (SELECT max(day) FROM metric_values WHERE metric_id = m.id AND day <= ?2)
+			 WHERE m.project_id = ?1 AND m.source = 'product' AND m.is_public = 1 ORDER BY m.sort_order, m.id`,
+		)
+		.bind(projectId, today)
+		.all<{ label: string; value: number | null; day: string | null }>();
+	return results.map((r) => ({ kind: "latest", label: r.label, figure: r.value, latestDay: r.day }));
 }

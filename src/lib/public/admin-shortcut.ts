@@ -1,7 +1,7 @@
 /**
- * The hidden ways to reach the admin dashboard from the public site (no visible link anywhere):
- * - Option + A on a Mac, Alt + A on Windows and Linux;
- * - five quick taps on the footer's copyright line (phones).
+ * The hidden ways between the public site and the admin dashboard (no visible link anywhere):
+ * - Option + A on a Mac, Alt + A on Windows and Linux: public site → admin, and admin → public site;
+ * - five quick taps on the footer's copyright line (phones): public site → admin.
  * They only navigate. Cloudflare Access and the JWT check in middleware stay the real protection.
  */
 
@@ -29,6 +29,17 @@ export function isAdminShortcut(event: ShortcutEvent): boolean {
 		!event.isComposing &&
 		!isTyping(event.target)
 	);
+}
+
+/**
+ * The keydown handler for both directions: on Option/Alt + A (by the rules above), stops the key
+ * doing anything else and calls `go` (which navigates). Returns whether it did.
+ */
+export function handleShortcut(event: ShortcutEvent & Pick<KeyboardEvent, "preventDefault">, go: () => void): boolean {
+	if (!isAdminShortcut(event)) return false;
+	event.preventDefault();
+	go();
+	return true;
 }
 
 export const TAPS_NEEDED = 5;

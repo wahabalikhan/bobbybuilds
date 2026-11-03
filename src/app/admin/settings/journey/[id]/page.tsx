@@ -5,10 +5,13 @@ import { JourneyForm } from "@/components/admin/journey-form";
 import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
 import { listProjects } from "@/lib/db/projects";
 import { getJourney } from "@/lib/db/settings";
-import { adminHref } from "@/lib/site";
+import { adminHref, site } from "@/lib/site";
 import { journeyAction } from "../../actions";
 
 export default async function EditJourneyEntry({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
+	// Hidden until the journey comes back (site.showJourney); the code and table stay. Shown as
+	// "not found" inside the admin layout, like any unknown admin address.
+	if (!site.showJourney) return <AdminNotFoundMessage />;
 	const { id } = await params;
 	const query = await searchParams;
 	const { env } = await getCloudflareContext({ async: true });

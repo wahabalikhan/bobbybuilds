@@ -93,6 +93,32 @@ export async function listProjects(db: D1Database): Promise<Project[]> {
 	return results.map(toProject);
 }
 
+/**
+ * A test project (like the local Playground) only accepts loopback origins. Test projects are
+ * hidden from the admin lists, Needs attention and the public page.
+ */
+export function isTestProject(project: Pick<Project, "allowedOrigins">): boolean {
+	return project.allowedOrigins.length > 0 && project.allowedOrigins.every((origin) => /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(origin));
+}
+
+/** Every project except test projects, in display order. */
+export async function listRealProjects(db: D1Database): Promise<Project[]> {
+	return (await listProjects(db)).filter((p) => !isTestProject(p));
+}
+
+/** Ids of projects that have had at least one page view ever (today's raw views or any roll-up). */
+export async function projectsWithVisits(db: D1Database): Promise<Set<number>> {
+	const { results } = await db
+		.prepare("SELECT project_id FROM daily_totals WHERE pageviews > 0 UNION SELECT DISTINCT project_id FROM page_views")
+		.all<{ project_id: number }>();
+	return new Set(results.map((r) => r.project_id));
+}
+
+/** Connected: it has keys and data has arrived. */
+export function isConnected(project: Pick<Project, "id" | "publicKey">, withVisits: Set<number>): boolean {
+	return Boolean(project.publicKey) && withVisits.has(project.id);
+}
+
 export async function getProjectBySlug(db: D1Database, slug: string): Promise<Project | null> {
 	const row = await db.prepare(`SELECT ${PROJECT_COLUMNS} FROM projects WHERE slug = ?1`).bind(slug).first<ProjectRow>();
 	return row ? toProject(row) : null;

@@ -14,7 +14,7 @@ export type { FormState } from "@/lib/admin/form-state";
 
 const StateContext = createContext<FormState>({ status: "idle", version: 0 });
 
-const inputClass =
+export const inputClass =
 	"mt-1.5 w-full rounded-xl border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-muted aria-[invalid=true]:border-critical";
 
 function SubmitButton({ label, danger }: { label: string; danger?: boolean }) {

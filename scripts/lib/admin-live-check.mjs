@@ -15,9 +15,19 @@ async function get(url) {
 export async function checkLiveBanner(origin, extraPaths = []) {
 	const problems = [];
 	const home = await get(`${origin}/admin`);
-	const projectLinks = [...home.text.matchAll(/href="(\/admin\/projects\/[a-z0-9-]+)"/g)].map((m) => m[1]);
-	const first = projectLinks[0];
-	const paths = ["/admin", ...(first ? [first, ...["campaigns", "events", "uptime"].map((tab) => `${first}?tab=${tab}`)] : []), "/admin/projects/no-such-project", "/admin/does-not-exist", "/admin/settings", "/admin/settings/journey", "/admin/settings/journey/new", "/admin/settings/system", "/admin/settings/projects/new", ...(first ? [first.replace("/admin/projects/", "/admin/settings/projects/"), `${first.replace("/admin/projects/", "/admin/settings/projects/")}?section=numbers`] : []), ...extraPaths];
+	const projectLinks = [...new Set([...home.text.matchAll(/href="(\/admin\/projects\/[a-z0-9-]+)"/g)].map((m) => m[1]))];
+	// Every project's dashboard on every tab (tabs a project doesn't have fall back to Traffic), and its settings.
+	const tabs = ["traffic", "links", "searches", "funnel", "numbers", "health", "events"];
+	const paths = [
+		"/admin",
+		...projectLinks.flatMap((link) => [link, ...tabs.map((tab) => `${link}?tab=${tab}`), link.replace("/admin/projects/", "/admin/settings/projects/")]),
+		"/admin/projects/no-such-project",
+		"/admin/does-not-exist",
+		"/admin/settings",
+		"/admin/settings/projects/new",
+		"/admin/settings/journey",
+		...extraPaths,
+	];
 
 	for (const path of [...new Set(paths)]) {
 		const page = path === "/admin" ? home : await get(`${origin}${path}`);
@@ -25,6 +35,7 @@ export async function checkLiveBanner(origin, extraPaths = []) {
 		else if (!/data-live-data-banner="on"style="[^"]*position:sticky[^"]*background:#b42318/.test(page.text.replace(/\s/g, ""))) {
 			problems.push(`${path} has the banner but not its pinned, inline red style.`);
 		}
+		if (/something went wrong/i.test(page.text)) problems.push(`${path} shows "Something went wrong".`);
 		const csp = page.headers.get("content-security-policy") ?? "";
 		if (csp.includes("upgrade-insecure-requests")) problems.push(`${path} sends upgrade-insecure-requests on loopback, so its CSS wouldn't load.`);
 	}

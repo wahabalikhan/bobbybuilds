@@ -16,9 +16,7 @@ import {
 	projectSummaries,
 	ranked,
 	rangeTotals,
-	rawBreakdown,
 	uptimeDays,
-	vitalsSummary,
 	type Check,
 } from "@/lib/db/dashboard";
 import { rollupDay } from "@/lib/jobs/rollup";
@@ -80,18 +78,6 @@ describe("project dashboard queries", () => {
 		expect(await ranked(db, "pages", id, "2026-11-01", TODAY, 1)).toHaveLength(1);
 	});
 
-	it("reads browsers, systems, screens and languages from raw data", async () => {
-		const id = await createProject();
-		await views(id, "2026-11-01", 3, { browser: "safari", os: "ios", screen: "small", language: "en" });
-		await views(id, "2026-11-02", 1, { browser: "firefox", os: "linux", screen: "large", language: null });
-		expect(await rawBreakdown(db, id, "browser", "2026-11-01", TODAY)).toEqual([
-			{ key: "safari", pageviews: 3, visitors: 3 },
-			{ key: "firefox", pageviews: 1, visitors: 1 },
-		]);
-		expect((await rawBreakdown(db, id, "language", "2026-11-01", TODAY)).map((r) => r.key)).toEqual(["en", ""]);
-		await expect(rawBreakdown(db, id, "visitor_id" as never, "2026-11-01", TODAY)).rejects.toThrow("Unknown column");
-	});
-
 	it("ranks 404s by path, outbound clicks by domain and downloads by file", async () => {
 		const id = await createProject();
 		await event(id, TODAY, "not_found", { path: "/old" });
@@ -101,14 +87,6 @@ describe("project dashboard queries", () => {
 		expect(await eventBreakdown(db, id, "not_found", TODAY, TODAY)).toEqual([{ key: "/old", count: 2, visitors: 1 }]);
 		expect((await eventBreakdown(db, id, "outbound_click", TODAY, TODAY))[0].key).toBe("github.com");
 		expect((await eventBreakdown(db, id, "file_download", TODAY, TODAY))[0].key).toBe("cv.pdf");
-	});
-
-	it("works out the range's Core Web Vitals at the 75th percentile", async () => {
-		const id = await createProject();
-		for (const [i, lcp] of [1000, 2000, 3000, 4000].entries()) {
-			await insert("page_views", validPageView(id, { day: TODAY, ts: tsOn(TODAY) + i, visitor_id: visitor(i + 1), lcp_ms: lcp, cls_milli: null, inp_ms: null }));
-		}
-		expect(await vitalsSummary(db, id, TODAY, TODAY)).toEqual({ lcp: 3000, cls: null, inp: null, samples: 4 });
 	});
 
 	it("fills uptime days and finds outages", async () => {

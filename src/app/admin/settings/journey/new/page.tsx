@@ -2,9 +2,13 @@ import Link from "next/link";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { JourneyForm } from "@/components/admin/journey-form";
 import { listProjects } from "@/lib/db/projects";
-import { adminHref } from "@/lib/site";
+import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
+import { adminHref, site } from "@/lib/site";
 
 export default async function NewJourneyEntry() {
+	// Hidden until the journey comes back (site.showJourney); the code and table stay. Shown as
+	// "not found" inside the admin layout, like any unknown admin address.
+	if (!site.showJourney) return <AdminNotFoundMessage />;
 	const { env } = await getCloudflareContext({ async: true });
 	const projects = await listProjects(env.DB);
 	return (

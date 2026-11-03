@@ -3,6 +3,7 @@ import { ProjectLogo, StatusPill } from "@/components/admin/ui";
 import { WeekSparkline } from "@/components/public/charts";
 import { ArrowIcon } from "@/components/public/icons";
 import { formatCount } from "@/lib/format";
+import { productLine } from "@/lib/public/product-line";
 import type { PublicProject } from "@/lib/public/snapshot";
 
 /** Opens the project's own site in a new tab; without a site URL, it isn't a link. */
@@ -15,8 +16,9 @@ function ProjectLink({ project, className, children }: { project: PublicProject;
 	);
 }
 
-/** Logo and name (↗ when it links out) with the status on the right, the tagline, and a 12-week sparkline pinned to the bottom. */
-export function ProjectCard({ project }: { project: PublicProject }) {
+/** Logo and name (↗ when it links out) with the status on the right, the tagline, any public product numbers, and a 12-week sparkline pinned to the bottom. */
+export function ProjectCard({ project, today }: { project: PublicProject; today: string }) {
+	const numbers = productLine(project.numbers, today);
 	return (
 		<ProjectLink project={project} className="group flex h-full flex-col rounded-2xl border border-line bg-card p-5 transition-colors hover:border-[var(--axis)]">
 			<div className="flex items-center justify-between gap-3">
@@ -35,6 +37,7 @@ export function ProjectCard({ project }: { project: PublicProject }) {
 				<StatusPill status={project.status} />
 			</div>
 			<p className="mt-2 text-sm leading-relaxed text-ink-2">{project.tagline}</p>
+			{numbers && <p className="mt-1.5 text-sm font-medium tabular text-ink">{numbers}</p>}
 			{project.weekly && (
 				<div className="mt-auto pt-5">
 					<WeekSparkline

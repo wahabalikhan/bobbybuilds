@@ -1,43 +1,28 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
-import { Pill, ProjectLogo, RangePicker, StatusPill, Tabs } from "@/components/admin/ui";
+import { Breadcrumb, Pill, ProjectLogo, RangePicker, StatusPill, Tabs } from "@/components/admin/ui";
+import { ArrowIcon } from "@/components/public/icons";
 import { parseRange } from "@/lib/admin/range";
 import { requestTime } from "@/lib/admin/clock";
-import { utcDay } from "@/lib/days";
-import { listMetrics, metricFigure } from "@/lib/db/dashboard";
+import { addDays, utcDay } from "@/lib/days";
+import { hasEvent, listMetrics, publicProductNumbers } from "@/lib/db/dashboard";
+import { parseFunnel } from "@/lib/db/funnel";
 import { getProjectBySlug } from "@/lib/db/projects";
-import { formatCount } from "@/lib/format";
+import { logoFor } from "@/lib/project-logo";
+import { productLine } from "@/lib/public/product-line";
 import { adminHref } from "@/lib/site";
-import { AudienceTab, CampaignsTab, EventsTab, FunnelTab, NumbersTab, PerformanceTab, ShippingTab, TrafficTab, UptimeTab, type TabProps } from "./tabs";
-
-const TABS = [
-	{ key: "traffic", label: "Traffic" },
-	{ key: "campaigns", label: "Campaigns" },
-	{ key: "audience", label: "Audience" },
-	{ key: "funnel", label: "Funnel" },
-	{ key: "performance", label: "Performance" },
-	{ key: "uptime", label: "Uptime" },
-	{ key: "shipping", label: "Shipping" },
-	{ key: "numbers", label: "Product numbers" },
-	{ key: "events", label: "Events" },
-] as const;
-
-type TabKey = (typeof TABS)[number]["key"];
+import { availableTabs, type TabKey } from "./tab-list";
+import { EventsTab, FunnelTab, HealthTab, NumbersTab, SearchesTab, TrackedLinksTab, TrafficTab, type TabProps } from "./tabs";
 
 const RENDER: Record<TabKey, (props: TabProps) => Promise<React.ReactNode>> = {
 	traffic: TrafficTab,
-	campaigns: CampaignsTab,
-	audience: AudienceTab,
+	links: TrackedLinksTab,
+	searches: SearchesTab,
 	funnel: FunnelTab,
-	performance: PerformanceTab,
-	uptime: UptimeTab,
-	shipping: ShippingTab,
 	numbers: NumbersTab,
+	health: HealthTab,
 	events: EventsTab,
 };
-
-// Tabs whose content doesn't depend on the date range.
-const NO_RANGE: TabKey[] = ["uptime", "shipping"];
 
 export default async function ProjectDashboard({
 	params,
@@ -58,7 +43,15 @@ export default async function ProjectDashboard({
 	const now = requestTime();
 	const today = utcDay(now);
 	const range = parseRange(query, today);
-	const tab: TabKey = TABS.some((t) => t.key === query.tab) ? (query.tab as TabKey) : "traffic";
+	const metrics = await listMetrics(env.DB, project.id);
+	const tabs = availableTabs({
+		hasSearches: await hasEvent(env.DB, project.id, "search", addDays(today, -90), today),
+		hasFunnel: parseFunnel(project.funnel).length > 0,
+		hasProductNumbers: metrics.some((m) => m.source === "product"),
+	});
+	// Old tab names from bookmarks land on their new home.
+	const requested = ({ campaigns: "links", uptime: "health", performance: "health" } as Record<string, string>)[query.tab] ?? query.tab;
+	const tab: TabKey = tabs.some((t) => t.key === requested) ? (requested as TabKey) : "traffic";
 
 	const base = adminHref(`/projects/${project.slug}`);
 	const hrefFor = (changes: Record<string, string>) => {
@@ -68,43 +61,35 @@ export default async function ProjectDashboard({
 			next.delete("to");
 		}
 		if (!("page" in changes)) next.delete("page");
+		for (const [key, value] of [...next]) if (value === "") next.delete(key);
 		return `${base}?${next}`;
 	};
 
 	const Tab = RENDER[tab];
-	const headlineMetric = (await listMetrics(env.DB, project.id)).find((m) => m.isHeadline);
-	const headline = headlineMetric ? await metricFigure(env.DB, headlineMetric, today) : null;
+	const numbers = productLine(await publicProductNumbers(env.DB, project.id, today), today);
 
 	return (
 		<div className="space-y-6">
-			<div>
+			<div className="space-y-3">
+				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: project.name }]} />
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="flex flex-wrap items-center gap-3">
-						<ProjectLogo name={project.name} logoPath={project.logoPath} size={36} />
+						<ProjectLogo name={project.name} logoPath={logoFor(project)} size={36} />
 						<h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
 						<StatusPill status={project.status} />
-					</div>
-					{headlineMetric && headline?.value !== null && headline && (
-						<Pill title={`${headlineMetric.label}, ${headline.period}`}>
-							{formatCount(headline.value!)} {headlineMetric.unit || headlineMetric.label.toLowerCase()} · {headline.period}
-						</Pill>
-					)}
-				</div>
-				<p className="mt-2 text-ink-2">
-					{project.tagline}
-					{project.siteUrl && (
-						<>
-							{" · "}
-							<a className="underline decoration-line underline-offset-4 hover:decoration-ink" href={project.siteUrl} rel="noopener noreferrer" target="_blank">
-								{new URL(project.siteUrl).host}
+						{project.siteUrl && (
+							<a href={project.siteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
+								Visit site <ArrowIcon />
+								<span className="sr-only">(opens in a new tab)</span>
 							</a>
-						</>
-					)}
-				</p>
+						)}
+					</div>
+					{numbers && <Pill title="Its public numbers, as the public card shows them">{numbers}</Pill>}
+				</div>
 			</div>
 			<div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
-				<Tabs tabs={[...TABS]} current={tab} hrefFor={(key) => hrefFor({ tab: key })} />
-				{!NO_RANGE.includes(tab) && <RangePicker range={range} hrefFor={hrefFor} hidden={{ tab }} />}
+				<Tabs tabs={tabs} current={tab} hrefFor={(key) => hrefFor({ tab: key })} />
+				<RangePicker range={range} hrefFor={hrefFor} hidden={{ tab }} />
 			</div>
 			<Tab db={env.DB} project={project} range={range} today={today} now={now} query={query} hrefFor={hrefFor} />
 		</div>
