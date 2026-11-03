@@ -177,9 +177,10 @@ export function StatusPill({ status }: { status: string }) {
 /** The project's logo from public/logos, or its first letter on a dark rounded square. */
 export function ProjectLogo({ name, logoPath, size = 28 }: { name: string; logoPath: string | null; size?: number }) {
 	if (logoPath) {
-		// A hairline ring keeps dark logos visible on dark backgrounds (and light ones on white).
+		// No container: the logo keeps its own shape (a circle, a rounded square…), fitted inside a
+		// fixed, invisible box so every logo lines up at the same size. Files are 2× or more, so they stay sharp.
 		// eslint-disable-next-line @next/next/no-img-element -- small local logos; next/image adds nothing here
-		return <img src={logoPath} alt="" width={size} height={size} className="shrink-0 rounded-lg object-cover ring-1 ring-line" style={{ width: size, height: size }} />;
+		return <img src={logoPath} alt="" width={size} height={size} className="block shrink-0 object-contain" style={{ width: size, height: size }} />;
 	}
 	return (
 		<span aria-hidden className="inline-flex shrink-0 items-center justify-center rounded-lg bg-ink font-semibold text-page" style={{ width: size, height: size, fontSize: size * 0.48 }}>

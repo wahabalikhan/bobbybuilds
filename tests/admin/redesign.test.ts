@@ -3,7 +3,7 @@ import { attentionItems, failureDetail, hasEvent, projectSummaries, publicProduc
 import { getProjectBySlug, isConnected, isTestProject, listRealProjects, projectsWithVisits } from "@/lib/db/projects";
 import { productLine } from "@/lib/public/product-line";
 import { buildSnapshot } from "@/lib/public/snapshot";
-import { availableTabs } from "@/app/admin/projects/[slug]/tab-list";
+import { tabFor } from "@/app/admin/projects/[slug]/tabs";
 import { createProject, db, insert, validPageView } from "../helpers";
 
 const TODAY = "2026-11-02";
@@ -74,10 +74,11 @@ describe("searches", () => {
 	});
 });
 
-describe("dashboard tabs", () => {
-	it("are in order, with Searches, Funnel and Product numbers only when there's something to show", () => {
-		expect(availableTabs({ hasSearches: false, hasFunnel: false, hasProductNumbers: false }).map((t) => t.label)).toEqual(["Traffic", "Tracked links", "Health", "Events"]);
-		expect(availableTabs({ hasSearches: true, hasFunnel: true, hasProductNumbers: true }).map((t) => t.label)).toEqual(["Traffic", "Tracked links", "Searches", "Funnel", "Product numbers", "Health", "Events"]);
+describe("project tabs", () => {
+	it("are Overview and Settings; old ?tab= values (Traffic, Health…) land on the Overview", () => {
+		expect(tabFor(undefined)).toBe("overview");
+		expect(tabFor("settings")).toBe("settings");
+		for (const old of ["traffic", "links", "campaigns", "searches", "funnel", "numbers", "health", "uptime", "events", "nonsense"]) expect(tabFor(old)).toBe("overview");
 	});
 });
 
@@ -115,5 +116,37 @@ describe("public product numbers", () => {
 			{ kind: "latest", label: "Companies", figure: 300, latestDay: "2026-10-30" },
 		]);
 		expect(productLine(numbers, TODAY)).toBe("1,240 open jobs · 300 companies");
+	});
+});
+
+describe("tracked links, merged", () => {
+	it("lists ?ref= links and UTM-tagged links together, in plain words, with what they read", async () => {
+		const { trackedLinks, brokenLinks } = await import("@/lib/db/dashboard");
+		const id = await createProject();
+		await insert("daily_refs", { project_id: id, day: TODAY, ref: "cv-download", pageviews: 3, visitors: 2 });
+		await insert("daily_campaigns", { project_id: id, day: TODAY, utm_source: "linkedin", utm_medium: "social", utm_campaign: "launch-post", pageviews: 9, visitors: 5 });
+		await insert("page_views", validPageView(id, { ref: "cv-download", utm_source: null, utm_medium: null, utm_campaign: null, path: "/cv", visitor_id: visitor(1) }));
+		await insert("page_views", validPageView(id, { ref: null, utm_source: "linkedin", utm_medium: "social", utm_campaign: "launch-post", path: "/case-studies/git-diff", visitor_id: visitor(2), ts: NOW + 1 }));
+		const links = await trackedLinks(db, id, TODAY, TODAY, TODAY, TODAY);
+		expect(links).toEqual([
+			{ label: "LinkedIn · launch-post", kind: "utm", visitors: 5, read: ["/case-studies/git-diff"] },
+			{ label: "cv-download", kind: "ref", visitors: 2, read: ["/cv"] },
+		]);
+		expect(JSON.stringify(links)).not.toMatch(/campaign/i);
+
+		await insert("events", { project_id: id, ts: NOW, day: TODAY, source: "browser", visitor_id: visitor(1), name: "not_found", path: "/old-post", props: "{}" });
+		await insert("events", { project_id: id, ts: NOW + 1, day: TODAY, source: "browser", visitor_id: visitor(2), name: "not_found", path: "/old-post", props: "{}" });
+		await insert("events", { project_id: id, ts: NOW + 2, day: TODAY, source: "browser", visitor_id: visitor(2), name: "not_found", path: "/gone", props: "{}" });
+		expect(await brokenLinks(db, id, TODAY, TODAY)).toBe(2);
+	});
+});
+
+describe("About this project", () => {
+	it("keeps the logo, health address and GitHub repo it no longer shows", async () => {
+		const core = await import("@/lib/admin/settings-core");
+		const id = await createProject({ slug: "keeps-hidden-fields", logo_path: "/logos/gone.png", health_url: "https://health.example/", github_repo: "me/repo" });
+		const result = await core.saveDetailsCore(db, { status: "idle", version: 0 }, { project_id: String(id), name: "Renamed", status: "live", tagline: "Hi", site_url: "https://site.example" }, { logos: [], now: NOW });
+		expect(result.state.status).toBe("ok");
+		expect(await getProjectBySlug(db, "keeps-hidden-fields")).toMatchObject({ name: "Renamed", logoPath: "/logos/gone.png", healthUrl: "https://health.example/", githubRepo: "me/repo", siteUrl: "https://site.example/" });
 	});
 });

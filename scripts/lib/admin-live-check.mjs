@@ -15,19 +15,32 @@ async function get(url) {
 export async function checkLiveBanner(origin, extraPaths = []) {
 	const problems = [];
 	const home = await get(`${origin}/admin`);
-	const projectLinks = [...new Set([...home.text.matchAll(/href="(\/admin\/projects\/[a-z0-9-]+)"/g)].map((m) => m[1]))];
-	// Every project's dashboard on every tab (tabs a project doesn't have fall back to Traffic), and its settings.
-	const tabs = ["traffic", "links", "searches", "funnel", "numbers", "health", "events"];
+	const projectLinks = [...new Set([...home.text.matchAll(/href="(\/admin\/projects\/[a-z0-9-]+)"/g)].map((m) => m[1]))].filter((link) => link !== "/admin/projects/new");
+	// Every project's Overview and Settings tabs, the New project page, and the not-found pages.
 	const paths = [
 		"/admin",
-		...projectLinks.flatMap((link) => [link, ...tabs.map((tab) => `${link}?tab=${tab}`), link.replace("/admin/projects/", "/admin/settings/projects/")]),
+		...projectLinks.flatMap((link) => [link, `${link}?tab=settings`, `${link}?tab=traffic`]),
+		"/admin/projects/new",
 		"/admin/projects/no-such-project",
 		"/admin/does-not-exist",
-		"/admin/settings",
-		"/admin/settings/projects/new",
 		"/admin/settings/journey",
 		...extraPaths,
 	];
+
+	// The old Settings addresses redirect to their new homes.
+	const first = projectLinks[0];
+	const redirects = [
+		["/admin/settings", "/admin"],
+		["/admin/settings/projects/new", "/admin/projects/new"],
+		...(first ? [[first.replace("/admin/projects/", "/admin/settings/projects/"), `${first}?tab=settings`]] : []),
+	];
+	for (const [from, to] of redirects) {
+		const response = await fetch(`${origin}${from}`, { redirect: "manual" });
+		const location = response.headers.get("location") ?? "";
+		if (response.status < 300 || response.status >= 400 || new URL(location, origin).pathname + new URL(location, origin).search !== to) {
+			problems.push(`${from} should redirect to ${to} (got ${response.status} ${location}).`);
+		}
+	}
 
 	for (const path of [...new Set(paths)]) {
 		const page = path === "/admin" ? home : await get(`${origin}${path}`);

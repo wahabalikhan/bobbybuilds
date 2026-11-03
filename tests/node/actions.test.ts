@@ -48,7 +48,7 @@ function routeFiles(dir = "src/app/admin"): string[] {
 
 describe("admin route handlers", () => {
 	it("include the first-visit check and the events CSV", () => {
-		expect(routeFiles()).toEqual(expect.arrayContaining(["src/app/admin/projects/[slug]/events.csv/route.ts", "src/app/admin/settings/projects/[slug]/first-visit/route.ts"]));
+		expect(routeFiles()).toEqual(expect.arrayContaining(["src/app/admin/projects/[slug]/events.csv/route.ts", "src/app/admin/projects/[slug]/first-visit/route.ts"]));
 	});
 
 	it("each check admin access before doing anything else", () => {

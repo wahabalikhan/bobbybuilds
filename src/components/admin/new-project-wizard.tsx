@@ -11,8 +11,9 @@ import { adminHref } from "@/lib/site";
 type Action = (state: FormState, form: FormData) => Promise<FormState>;
 
 /**
- * New project in three steps: (1) name and site address, (2) the keys are made and the snippet
- * shown to copy (and the secret key, once), (3) "Waiting for your first visit…" until one arrives.
+ * New project in three steps: (1) name and site address, (2) the snippet to copy (the keys are made
+ * automatically; a secret key for server events can be made later under Settings → Connection),
+ * (3) "Waiting for your first visit…" until one arrives.
  */
 export function NewProjectWizard({ action }: { action: Action }) {
 	const [state, formAction, pending] = useActionState(action, { status: "idle", version: 0 } satisfies FormState);
@@ -51,16 +52,6 @@ export function NewProjectWizard({ action }: { action: Action }) {
 						</p>
 						<pre className="overflow-x-auto rounded-xl bg-surface p-3 text-xs">{setup.snippet}</pre>
 						<CopyButton text={setup.snippet} label="Copy snippet" />
-						{state.secret && (
-							<div className="rounded-xl border border-line p-4 text-sm">
-								<p className="font-medium">Secret key, for the product&rsquo;s server (shown once)</p>
-								<p className="mt-1 text-ink-2">Only needed to send server events or product numbers. Put it in the product&rsquo;s own secrets, never in browser code or Git.</p>
-								<div className="mt-3 flex flex-wrap items-center gap-2">
-									<input readOnly value={state.secret} aria-label="Secret key" className={`${inputClass} mt-0 min-w-0 flex-1 font-mono`} />
-									<CopyButton text={state.secret} label="Copy secret key" />
-								</div>
-							</div>
-						)}
 					</div>
 				) : (
 					<p className="text-sm text-muted">The keys are made automatically after step 1.</p>
@@ -120,7 +111,7 @@ function WaitForFirstVisit({ slug }: { slug: string }) {
 		let stopped = false;
 		const check = async () => {
 			try {
-				const response = await fetch(adminHref(`/settings/projects/${slug}/first-visit`), { cache: "no-store" });
+				const response = await fetch(adminHref(`/projects/${slug}/first-visit`), { cache: "no-store" });
 				const body = (await response.json()) as { arrived?: boolean };
 				if (!stopped && body.arrived) setArrived(true);
 			} catch {
@@ -144,7 +135,7 @@ function WaitForFirstVisit({ slug }: { slug: string }) {
 				<Link href={adminHref(`/projects/${slug}`)} className={buttonClass}>
 					Open its dashboard
 				</Link>
-				<Link href={adminHref(`/settings/projects/${slug}`)} className="self-center text-muted underline underline-offset-4 hover:text-ink">
+				<Link href={adminHref(`/projects/${slug}?tab=settings`)} className="self-center text-muted underline underline-offset-4 hover:text-ink">
 					Its settings
 				</Link>
 			</div>

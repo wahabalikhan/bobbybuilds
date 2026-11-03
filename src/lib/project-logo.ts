@@ -1,6 +1,9 @@
 import { LOGOS } from "@/lib/logos.generated";
 
-/** The logo chosen in Settings, or public/logos/<slug>.* when none is chosen (else null: the initial is shown). */
+/**
+ * A project's logo comes automatically from public/logos/<slug>.* (any shape: a circle, a rounded
+ * square…). The old logo_path column is only a fallback. Null: the initial is shown.
+ */
 export function logoFor(project: { slug: string; logoPath: string | null }): string | null {
-	return project.logoPath ?? LOGOS.find((path) => path.replace(/\.[a-z]+$/, "") === `/logos/${project.slug}`) ?? null;
+	return LOGOS.find((path) => path.replace(/\.[a-z]+$/, "") === `/logos/${project.slug}`) ?? project.logoPath ?? null;
 }

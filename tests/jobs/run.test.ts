@@ -51,7 +51,7 @@ describe("/internal/jobs", () => {
 		expect(result.ok).toBe(true);
 		expect(result.summary).toHaveProperty("rollups");
 		expect(result.summary).toHaveProperty("cleanup");
-		expect(result.summary).toHaveProperty("github");
+		expect(result.summary).not.toHaveProperty("github"); // the per-repo weekly commits job was removed
 
 		const totals = await db.prepare("SELECT pageviews FROM daily_totals WHERE project_id = ?1 AND day = '2026-12-06'").bind(projectId).first();
 		expect(totals).toEqual({ pageviews: 1 });

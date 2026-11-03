@@ -4,6 +4,9 @@ import { AdminKeyboardShortcut } from "@/components/public/admin-shortcut";
 import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { LiveDataBanner } from "@/components/admin/live-banner";
+import { StatusMenu } from "@/components/admin/status-menu";
+import { requestTime } from "@/lib/admin/clock";
+import { attentionItems } from "@/lib/db/dashboard";
 import { isLiveData } from "@/lib/admin/access";
 import { LOCAL_ADMIN_HEADER } from "@/lib/security/local-admin";
 import { adminHref, site } from "@/lib/site";
@@ -20,6 +23,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 	const { env } = await getCloudflareContext({ async: true });
 	// Whenever the live database is connected, the banner shows. No other condition.
 	const live = isLiveData(env as unknown as Record<string, unknown>);
+	// "Is everything OK?" for every admin page: the pill next to the name.
+	const attention = await attentionItems(env.DB, requestTime());
 
 	return (
 		<div className="admin-theme min-h-screen bg-page text-ink">
@@ -35,16 +40,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 			{/* Option + A (Alt + A) back to the public site. No visible link. */}
 			<AdminKeyboardShortcut to={site.url} />
 			<header className="border-b border-line">
-				<div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-4">
+				<div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-6 py-4">
 					<Link href={adminHref()} className="font-semibold tracking-tight">
 						{site.name} <span className="font-normal text-muted">HQ</span>
 					</Link>
-					<Link href={adminHref("/settings")} className="rounded-full bg-ink px-4 py-1.5 text-sm font-medium text-page hover:opacity-85">
-						Settings
-					</Link>
+					<StatusMenu items={attention} />
 				</div>
 			</header>
-			<main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
+			<main className="mx-auto max-w-5xl px-6 pb-12 pt-6">{children}</main>
 		</div>
 	);
 }

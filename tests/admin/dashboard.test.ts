@@ -136,8 +136,6 @@ describe("overview", () => {
 		await views(id, "2026-10-20", 3);
 		await views(id, "2026-09-25", 2); // in the 30 days before
 		for (const day of [TODAY, "2026-10-20", "2026-09-25"]) await rollupDay(db, day);
-		await insert("github_weekly", { project_id: id, week: "2026-11-02", commits: 3 });
-		await insert("github_weekly", { project_id: id, week: "2026-10-26", commits: 1 });
 		await insert("uptime_checks", { project_id: id, checked_at: tsOn(TODAY, 3), up: 1 });
 
 		const summary = (await projectSummaries(db, TODAY)).find((s) => s.project.slug === "summary-test")!;
@@ -146,8 +144,6 @@ describe("overview", () => {
 			visitors7: 5,
 			visitors30: 8,
 			visitors30Previous: 2,
-			commitsThisWeek: 3,
-			streak: { current: 2, longest: 2 },
 			uptime: { lastUp: true },
 		});
 		expect(summary.sparkline).toHaveLength(30);

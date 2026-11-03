@@ -35,7 +35,7 @@ import {
 export type ActionResult = { state: FormState; redirectTo?: string };
 type Context = { logos: string[]; now: number };
 
-const settingsHref = (slug: string, section = "details") => adminHref(`/settings/projects/${slug}?section=${section}`);
+const settingsHref = (slug: string) => adminHref(`/projects/${slug}?tab=settings`);
 
 async function projectFrom(db: D1Database, values: FormValues): Promise<Project | null> {
 	const id = Number(values.project_id);
@@ -50,16 +50,20 @@ const missing = (prev: FormState): ActionResult => ({ state: { status: "error", 
 export async function saveDetailsCore(db: D1Database, prev: FormState, values: FormValues, ctx: Context): Promise<ActionResult> {
 	const project = await projectFrom(db, values);
 	if (!project) return missing(prev);
-	// Fields the Basics form doesn't show keep their saved values (the slug, description, lesson,
-	// links and order), so saving the form never wipes or renames anything it doesn't show.
+	// Fields "About this project" doesn't show keep their saved values (slug, description, lesson,
+	// links, order, logo, health address, GitHub repo), so saving never wipes or renames them.
 	const kept: FormValues = {
 		slug: project.slug,
 		description_md: project.descriptionMd,
 		lesson: project.lesson ?? "",
 		links: project.links.map((l) => `${l.label} | ${l.url}`).join("\n"),
 		sort_order: String(project.sortOrder),
+		logo_path: project.logoPath ?? "",
+		health_url: project.healthUrl ?? "",
+		github_repo: project.githubRepo ?? "",
 	};
-	const result = validateProjectDetails({ ...kept, ...values }, ctx.logos);
+	// A saved logo path stays valid even if its file has since gone (logos are automatic now).
+	const result = validateProjectDetails({ ...kept, ...values }, project.logoPath ? [...ctx.logos, project.logoPath] : ctx.logos);
 	if (!result.ok) return { state: failed(prev, values, result.errors) };
 	try {
 		await updateProjectDetails(db, project.id, result.value);
@@ -70,20 +74,21 @@ export async function saveDetailsCore(db: D1Database, prev: FormState, values: F
 	const notes = result.value.slug !== project.slug ? ["The slug changed, so this page's address changed too."] : [];
 	return {
 		state: ok(prev, "Saved.", notes),
-		redirectTo: result.value.slug !== project.slug ? settingsHref(result.value.slug, "details") : undefined,
+		redirectTo: result.value.slug !== project.slug ? settingsHref(result.value.slug) : undefined,
 	};
 }
 
 /**
  * New project, step 1: name and site address. Makes the project (slug from the name, made unique
  * with -2, -3… if needed), allows the site's origin, checks it for uptime, and makes its keys.
- * Returns the snippet and the secret key (shown once) for step 2.
+ * Returns the snippet for step 2.
  */
 export async function startProjectCore(db: D1Database, prev: FormState, values: FormValues): Promise<ActionResult> {
 	const result = validateNewProject(values);
 	if (!result.ok) return { state: failed(prev, values, result.errors) };
 	const { name, siteUrl, origin } = result.value;
-	const taken = new Set((await listProjects(db)).map((p) => p.slug));
+	// "new" is taken by the New project page's own address.
+	const taken = new Set(["new", ...(await listProjects(db)).map((p) => p.slug)]);
 	let slug = result.value.slug;
 	for (let n = 2; taken.has(slug); n += 1) slug = `${result.value.slug.slice(0, 36)}-${n}`;
 
@@ -106,7 +111,8 @@ export async function startProjectCore(db: D1Database, prev: FormState, values: 
 	const secretKey = createSecretKey();
 	await setProjectKeys(db, slug, { publicKey, secretKeyHash: await hashSecretKey(secretKey), secretKeyHint: secretKeyHint(secretKey) });
 	const snippet = `<script defer src="${site.url}/t.js" data-key="${publicKey}"></script>`;
-	return { state: ok(prev, `${name} is set up.`, [], { secret: secretKey, setup: { slug, name, publicKey, snippet } }) };
+	// The secret key isn't shown (only its hash is kept): one for server events is made later under Connection.
+	return { state: ok(prev, `${name} is set up.`, [], { setup: { slug, name, publicKey, snippet } }) };
 }
 
 export async function deleteProjectCore(db: D1Database, prev: FormState, values: FormValues): Promise<ActionResult> {
@@ -116,7 +122,7 @@ export async function deleteProjectCore(db: D1Database, prev: FormState, values:
 		return { state: failed(prev, values, { confirm_slug: `Type ${project.slug} to confirm.` }, "Nothing was deleted.") };
 	}
 	await deleteProject(db, project.id);
-	return { state: ok(prev, `${project.name} was deleted.`), redirectTo: adminHref("/settings?deleted=1") };
+	return { state: ok(prev, `${project.name} was deleted.`), redirectTo: adminHref() };
 }
 
 // --- Keys -------------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 /**
  * Clicks through the admin in real Chrome (headless, via the DevTools protocol), the way a person
- * moves around: Home → each project card → every tab → its settings → "Open dashboard". Fails on
+ * moves around: Home (and the status pill) → each project card → Overview and "More detail" →
+ * the Settings tab and "Connection" → the breadcrumb back Home → the "+" New project page. Fails on
  * "Something went wrong" or an uncaught page error. Client-side navigation is what plain fetches
  * can't check. Used by `npm run test:admin-live`; skipped (with a note) when Chrome isn't installed.
  */
@@ -50,11 +51,14 @@ export async function clickThrough(origin) {
 		};
 		const click = (selector, text) => evaluate(`(() => { const el = [...document.querySelectorAll(${JSON.stringify(selector)})].find((a) => ${text ? `a.textContent.trim() === ${JSON.stringify(text)}` : "true"}); if (!el) return false; el.click(); return true; })()`);
 
+		const open = (selector) => evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; el.open = true; return true; })()`);
+
 		await send("Runtime.enable");
 		await send("Page.navigate", { url: `${origin}/admin` });
 		await settle();
 		await check("Home");
-		const projects = await evaluate(`[...new Set([...document.querySelectorAll('main a[href^="/admin/projects/"]')].map((a) => a.getAttribute("href")))]`);
+		if (await open("header details")) await check("Home, status pill open");
+		const projects = await evaluate(`[...new Set([...document.querySelectorAll('main a[href^="/admin/projects/"]')].map((a) => a.getAttribute("href")))].filter((h) => h !== "/admin/projects/new")`);
 		for (const href of projects ?? []) {
 			await send("Page.navigate", { url: `${origin}/admin` });
 			await settle();
@@ -63,20 +67,25 @@ export async function clickThrough(origin) {
 				continue;
 			}
 			await settle();
-			await check(`${href} from its card`);
-			const tabs = await evaluate(`[...document.querySelectorAll('nav a[href*="tab="]')].map((a) => a.textContent.trim())`);
-			for (const tab of tabs ?? []) {
-				await click('nav a[href*="tab="]', tab);
-				await settle();
-				await check(`${href}, ${tab} tab`);
-			}
-			await send("Page.navigate", { url: `${origin}${href.replace("/admin/projects/", "/admin/settings/projects/")}` });
+			await check(`${href} Overview`);
+			if (!(await open("main details"))) problems.push(`${href} Overview has no "More detail" section.`);
+			await sleep(300);
+			await check(`${href} Overview, More detail open`);
+			if (!(await click('nav[aria-label="Sections"] a', "Settings"))) problems.push(`${href} has no Settings tab.`);
 			await settle();
-			await check(`${href} settings`);
-			if (!(await click("a", "Open dashboard"))) problems.push(`${href} settings has no "Open dashboard" link.`);
+			await check(`${href} Settings`);
+			if (!(await open("main details"))) problems.push(`${href} Settings has no "Connection" section.`);
+			await sleep(300);
+			await check(`${href} Settings, Connection open`);
+			if (!(await click('nav[aria-label="Breadcrumb"] a', "Home"))) problems.push(`${href} has no breadcrumb back to Home.`);
 			await settle();
-			await check(`${href} via "Open dashboard"`);
+			await check(`${href} breadcrumb → Home`);
 		}
+		await send("Page.navigate", { url: `${origin}/admin` });
+		await settle();
+		if (!(await click('a[aria-label="New project"]'))) problems.push('Home has no "+" New project button.');
+		await settle();
+		await check("New project");
 		ws.close();
 	} finally {
 		// Wait for Chrome to exit (it writes to its profile as it closes), then tidy up.

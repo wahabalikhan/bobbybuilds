@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { AdminKeyboardShortcut, AdminTaps } from "@/components/public/admin-shortcut";
 import { owner } from "@/lib/site";
 
-// Every tool icon fills the same 16px square (no box or border around it), with the same slight rounding.
-const ICON = "block h-4 w-4 rounded-[3px] object-cover";
+// Every tool icon sits in the same 16px invisible box, in its own shape (no box, border or clipping).
+const ICON = "block h-4 w-4 object-contain";
 
 const icon = (src: string, alt: string) => (
 	// eslint-disable-next-line @next/next/no-img-element -- tiny local icons

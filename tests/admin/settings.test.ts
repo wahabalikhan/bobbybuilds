@@ -84,22 +84,23 @@ describe("projects", () => {
 		if (!missing.ok) expect(Object.keys(missing.errors).sort()).toEqual(["name", "site_url"]);
 	});
 
-	it("sets up a project in one step: origin, uptime, keys (secret shown once), visitors public, and the snippet", async () => {
+	it("sets up a project in one step: origin, uptime, keys, visitors public, and the snippet (no secret sent back)", async () => {
 		const name = uniqueSlug("Brand New");
 		const result = await core.startProjectCore(db, idle, { name, site_url: "https://brand.example/" });
 		expect(result.state.status).toBe("ok");
 		const { setup, secret } = result.state;
+		expect(secret).toBeUndefined();
 		const project = (await getProjectBySlug(db, setup!.slug))!;
 		expect(project).toMatchObject({ name, status: "building", siteUrl: "https://brand.example/", healthUrl: "https://brand.example/", allowedOrigins: ["https://brand.example"], publicKey: setup!.publicKey });
 		expect(setup!.snippet).toBe(`<script defer src="https://bobbybuilds.app/t.js" data-key="${project.publicKey}"></script>`);
-		expect(secret).toMatch(/^sk_/);
-		expect((await authenticateServer(db, new Request("https://x", { headers: { authorization: `Bearer ${secret}` } }))).ok).toBe(true);
+		expect(project.secretKeyHint).toHaveLength(4);
 		expect((await listMetrics(db, project.id)).map((m) => [m.key, m.isPublic])).toEqual([["visitors", true]]);
 	});
 
-	it("makes the slug unique when another project has it", async () => {
+	it("makes the slug unique when another project has it, and never uses new (the New project page's address)", async () => {
 		const result = await core.startProjectCore(db, idle, { name: "Portfolio", site_url: "https://another.example" });
 		expect(result.state.setup?.slug).toBe("portfolio-2");
+		expect((await core.startProjectCore(db, idle, { name: "New", site_url: "https://new.example" })).state.setup?.slug).toBe("new-2");
 	});
 
 	it("refuses a missing name or address, keeping what was typed", async () => {
@@ -125,7 +126,7 @@ describe("projects", () => {
 		const project = await newProject();
 		const newSlug = uniqueSlug("renamed");
 		const result = await core.saveDetailsCore(db, idle, { project_id: String(project.id), name: "Renamed", slug: newSlug, status: "live", logo_path: "/logos/portfolio.png" }, ctx);
-		expect(result.redirectTo).toBe(`/admin/settings/projects/${newSlug}?section=details`);
+		expect(result.redirectTo).toBe(`/admin/projects/${newSlug}?tab=settings`);
 		expect(await getProjectBySlug(db, newSlug)).toMatchObject({ name: "Renamed", logoPath: "/logos/portfolio.png" });
 	});
 
@@ -142,7 +143,7 @@ describe("projects", () => {
 		expect(await getProjectBySlug(db, project.slug)).not.toBeNull();
 
 		const deleted = await core.deleteProjectCore(db, idle, { project_id: String(project.id), confirm_slug: project.slug });
-		expect(deleted.redirectTo).toBe("/admin/settings?deleted=1");
+		expect(deleted.redirectTo).toBe("/admin");
 		expect(await getProjectBySlug(db, project.slug)).toBeNull();
 		const left = await db.prepare("SELECT count(*) AS n FROM page_views WHERE project_id = ?1").bind(project.id).first<{ n: number }>();
 		expect(left?.n).toBe(0);

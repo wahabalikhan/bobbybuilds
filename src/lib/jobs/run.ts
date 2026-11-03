@@ -1,6 +1,6 @@
-import { addDays, utcDay, weekStart } from "@/lib/days";
+import { addDays, utcDay } from "@/lib/days";
 import { sha256Hex } from "@/lib/keys";
-import { type Fetch, syncGithubContributions, syncGithubWeekly } from "./github";
+import { type Fetch, syncGithubContributions } from "./github";
 import { cleanUp, rotateDailySecret } from "./maintenance";
 import { rollupDay } from "./rollup";
 import { pingAll } from "./uptime";
@@ -13,7 +13,7 @@ import { owner } from "@/lib/site";
  *   public snapshot (written to KV only if it changed); hourly (on the hour, before that
  *   snapshot), the GitHub contribution calendar
  * - daily (00:10 UTC): finalise yesterday's roll-up, refresh today's, rotate the daily
- *   secret, 90-day clean-up, GitHub weekly commits, public snapshot
+ *   secret, 90-day clean-up, public snapshot
  */
 
 export const TASKS = ["daily", "frequent"] as const;
@@ -46,7 +46,6 @@ async function daily(deps: JobDeps, at: number) {
 		rollups: [await rollupDay(deps.db, addDays(today, -1), at), await rollupDay(deps.db, today, at)],
 		secret: await rotateDailySecret(deps.db, today),
 		cleanup: await cleanUp(deps.db, today),
-		github: await syncGithubWeekly(deps.db, deps.fetch, weekStart(today), deps.githubToken, at),
 	};
 	if (deps.kv) {
 		const { written, bytes } = await publishSnapshot(deps.db, deps.kv, today, at);

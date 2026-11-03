@@ -21,14 +21,14 @@ export async function checkOnce(fetchFn: Fetch, url: string, now: () => number =
 	}
 }
 
-/** Pings every project with a health URL and records the results. */
+/** Pings every project's site address and records the results. (The old health_url column isn't used.) */
 export async function pingAll(db: D1Database, fetchFn: Fetch, checkedAt: number = Date.now()): Promise<UptimeResult[]> {
 	const { results } = await db
-		.prepare("SELECT id, health_url FROM projects WHERE health_url IS NOT NULL")
-		.all<{ id: number; health_url: string }>();
+		.prepare("SELECT id, site_url FROM projects WHERE site_url IS NOT NULL")
+		.all<{ id: number; site_url: string }>();
 
 	const checks = await Promise.all(
-		results.map(async (project) => ({ projectId: project.id, ...(await checkOnce(fetchFn, project.health_url)) })),
+		results.map(async (project) => ({ projectId: project.id, ...(await checkOnce(fetchFn, project.site_url)) })),
 	);
 	if (checks.length) {
 		await db.batch(

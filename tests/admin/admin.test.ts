@@ -4,7 +4,6 @@ import { csvCell } from "@/lib/admin/csv";
 import { handleEventsCsv } from "@/lib/admin/events-csv";
 import { clampToRaw, daysBetween, parseRange } from "@/lib/admin/range";
 import { countFunnel, funnel, parseFunnel } from "@/lib/db/funnel";
-import { lastWeeks, shippingStreak } from "@/lib/db/streak";
 import { createProject, db, insert } from "../helpers";
 
 const TODAY = "2026-11-02";
@@ -29,30 +28,6 @@ describe("date ranges", () => {
 		expect(daysBetween("2026-10-30", "2026-11-01")).toEqual(["2026-10-30", "2026-10-31", "2026-11-01"]);
 		expect(clampToRaw(parseRange({ range: "12m" }, TODAY), TODAY)).toEqual({ from: "2026-08-04", to: TODAY, clipped: true });
 		expect(clampToRaw(parseRange({ range: "30d" }, TODAY), TODAY).clipped).toBe(false);
-	});
-});
-
-describe("shipping streak", () => {
-	const weeks = (pairs: [string, number][]) => pairs.map(([week, commits]) => ({ week, commits }));
-
-	it("counts back from this week, or from last week if nothing's shipped yet this week", () => {
-		const data = weeks([["2026-10-12", 2], ["2026-10-19", 1], ["2026-10-26", 4], ["2026-11-02", 0]]);
-		expect(shippingStreak(data, "2026-11-02")).toEqual({ current: 3, longest: 3 });
-		const shippedThisWeek = weeks([["2026-10-12", 2], ["2026-10-19", 1], ["2026-10-26", 4], ["2026-11-02", 1]]);
-		expect(shippingStreak(shippedThisWeek, "2026-11-02")).toEqual({ current: 4, longest: 4 });
-	});
-
-	it("is broken by a week with no commits, or a missing week", () => {
-		expect(shippingStreak(weeks([["2026-10-12", 5], ["2026-10-26", 1], ["2026-11-02", 2]]), "2026-11-02")).toEqual({ current: 2, longest: 2 });
-		expect(shippingStreak(weeks([["2026-09-07", 1], ["2026-09-14", 1], ["2026-09-21", 1], ["2026-09-28", 1], ["2026-11-02", 1]]), "2026-11-02")).toEqual({ current: 1, longest: 4 });
-		expect(shippingStreak([], "2026-11-02")).toEqual({ current: 0, longest: 0 });
-	});
-
-	it("fills the last 26 weeks with zeros", () => {
-		const filled = lastWeeks(weeks([["2026-11-02", 3]]), "2026-11-02", 26);
-		expect(filled).toHaveLength(26);
-		expect(filled[0]).toEqual({ week: "2026-05-11", commits: 0 });
-		expect(filled[25]).toEqual({ week: "2026-11-02", commits: 3 });
 	});
 });
 

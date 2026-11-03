@@ -1,30 +1,21 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
-import { Breadcrumb, Pill, ProjectLogo, RangePicker, StatusPill, Tabs } from "@/components/admin/ui";
+import { Breadcrumb, Pill, ProjectLogo, StatusPill, Tabs } from "@/components/admin/ui";
 import { ArrowIcon } from "@/components/public/icons";
 import { parseRange } from "@/lib/admin/range";
 import { requestTime } from "@/lib/admin/clock";
-import { addDays, utcDay } from "@/lib/days";
-import { hasEvent, listMetrics, publicProductNumbers } from "@/lib/db/dashboard";
-import { parseFunnel } from "@/lib/db/funnel";
+import { utcDay } from "@/lib/days";
+import { publicProductNumbers } from "@/lib/db/dashboard";
 import { getProjectBySlug } from "@/lib/db/projects";
 import { logoFor } from "@/lib/project-logo";
 import { productLine } from "@/lib/public/product-line";
 import { adminHref } from "@/lib/site";
-import { availableTabs, type TabKey } from "./tab-list";
-import { EventsTab, FunnelTab, HealthTab, NumbersTab, SearchesTab, TrackedLinksTab, TrafficTab, type TabProps } from "./tabs";
+import { Overview } from "./overview";
+import { ProjectSettingsTab } from "./settings";
+import { PROJECT_TABS, tabFor } from "./tabs";
 
-const RENDER: Record<TabKey, (props: TabProps) => Promise<React.ReactNode>> = {
-	traffic: TrafficTab,
-	links: TrackedLinksTab,
-	searches: SearchesTab,
-	funnel: FunnelTab,
-	numbers: NumbersTab,
-	health: HealthTab,
-	events: EventsTab,
-};
-
-export default async function ProjectDashboard({
+/** A project: Overview (at a glance, with detail tucked away) and Settings. */
+export default async function ProjectPage({
 	params,
 	searchParams,
 }: {
@@ -42,17 +33,7 @@ export default async function ProjectDashboard({
 
 	const now = requestTime();
 	const today = utcDay(now);
-	const range = parseRange(query, today);
-	const metrics = await listMetrics(env.DB, project.id);
-	const tabs = availableTabs({
-		hasSearches: await hasEvent(env.DB, project.id, "search", addDays(today, -90), today),
-		hasFunnel: parseFunnel(project.funnel).length > 0,
-		hasProductNumbers: metrics.some((m) => m.source === "product"),
-	});
-	// Old tab names from bookmarks land on their new home.
-	const requested = ({ campaigns: "links", uptime: "health", performance: "health" } as Record<string, string>)[query.tab] ?? query.tab;
-	const tab: TabKey = tabs.some((t) => t.key === requested) ? (requested as TabKey) : "traffic";
-
+	const tab = tabFor(query.tab);
 	const base = adminHref(`/projects/${project.slug}`);
 	const hrefFor = (changes: Record<string, string>) => {
 		const next = new URLSearchParams({ ...query, ...changes });
@@ -61,11 +42,11 @@ export default async function ProjectDashboard({
 			next.delete("to");
 		}
 		if (!("page" in changes)) next.delete("page");
+		next.delete("tab");
 		for (const [key, value] of [...next]) if (value === "") next.delete(key);
-		return `${base}?${next}`;
+		const search = next.toString();
+		return search ? `${base}?${search}` : base;
 	};
-
-	const Tab = RENDER[tab];
 	const numbers = productLine(await publicProductNumbers(env.DB, project.id, today), today);
 
 	return (
@@ -87,11 +68,14 @@ export default async function ProjectDashboard({
 					{numbers && <Pill title="Its public numbers, as the public card shows them">{numbers}</Pill>}
 				</div>
 			</div>
-			<div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
-				<Tabs tabs={tabs} current={tab} hrefFor={(key) => hrefFor({ tab: key })} />
-				<RangePicker range={range} hrefFor={hrefFor} hidden={{ tab }} />
+			<div className="border-b border-line pb-4">
+				<Tabs tabs={[...PROJECT_TABS]} current={tab} hrefFor={(key) => (key === "settings" ? `${base}?tab=settings` : base)} />
 			</div>
-			<Tab db={env.DB} project={project} range={range} today={today} now={now} query={query} hrefFor={hrefFor} />
+			{tab === "settings" ? (
+				<ProjectSettingsTab db={env.DB} project={project} />
+			) : (
+				<Overview db={env.DB} project={project} range={parseRange(query, today)} today={today} now={now} query={query} hrefFor={hrefFor} />
+			)}
 		</div>
 	);
 }

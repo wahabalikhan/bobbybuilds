@@ -5,9 +5,9 @@
  * fixed lists in this file.
  */
 import { daysBetween } from "@/lib/admin/range";
+import { sourceName } from "@/lib/admin/sources";
 import { addDays, weekStart } from "@/lib/days";
 import { listRealProjects, type Project } from "./projects";
-import { shippingStreak, type WeekCommits } from "./streak";
 
 export type DayValue = { day: string; value: number };
 export type Ranked = { key: string; pageviews: number; visitors: number };
@@ -127,8 +127,6 @@ export type ProjectSummary = {
 	weekly: DayValue[];
 	headline: (MetricFigure & { label: string; unit: string }) | null;
 	uptime: { lastUp: boolean | null; lastCheckedAt: number | null; uptime7: number | null };
-	commitsThisWeek: number;
-	streak: { current: number; longest: number };
 };
 
 export async function projectSummaries(db: D1Database, today: string): Promise<ProjectSummary[]> {
@@ -137,7 +135,7 @@ export async function projectSummaries(db: D1Database, today: string): Promise<P
 	const firstWeek = addDays(thisWeek, -7 * 11);
 	const since = firstWeek < addDays(today, -59) ? firstWeek : addDays(today, -59);
 
-	const [totals, metrics, lastChecks, uptimeDays, commits] = await Promise.all([
+	const [totals, metrics, lastChecks, uptimeDays] = await Promise.all([
 		db
 			.prepare("SELECT project_id, day, visitors FROM daily_totals WHERE day BETWEEN ?1 AND ?2")
 			.bind(since, today)
@@ -156,7 +154,6 @@ export async function projectSummaries(db: D1Database, today: string): Promise<P
 			.prepare("SELECT project_id, sum(checks) AS checks, sum(up_checks) AS up FROM daily_uptime WHERE day BETWEEN ?1 AND ?2 GROUP BY project_id")
 			.bind(addDays(today, -6), today)
 			.all<{ project_id: number; checks: number; up: number }>(),
-		db.prepare("SELECT project_id, week, commits FROM github_weekly").all<{ project_id: number; week: string; commits: number }>(),
 	]);
 
 	return Promise.all(
@@ -167,7 +164,6 @@ export async function projectSummaries(db: D1Database, today: string): Promise<P
 			const headlineMetric = metrics.find((m) => m.projectId === project.id && m.isHeadline);
 			const lastCheck = lastChecks.results.find((r) => r.project_id === project.id);
 			const uptime = uptimeDays.results.find((r) => r.project_id === project.id);
-			const weeks: WeekCommits[] = commits.results.filter((r) => r.project_id === project.id);
 
 			return {
 				project,
@@ -190,8 +186,6 @@ export async function projectSummaries(db: D1Database, today: string): Promise<P
 					lastCheckedAt: lastCheck?.checked_at ?? null,
 					uptime7: uptime && uptime.checks > 0 ? uptime.up / uptime.checks : null,
 				},
-				commitsThisWeek: weeks.find((w) => w.week === thisWeek)?.commits ?? 0,
-				streak: shippingStreak(weeks, thisWeek),
 			};
 		}),
 	);
@@ -570,4 +564,66 @@ export async function publicProductNumbers(db: D1Database, projectId: number, to
 		.bind(projectId, today)
 		.all<{ label: string; value: number | null; day: string | null }>();
 	return results.map((r) => ({ kind: "latest", label: r.label, figure: r.value, latestDay: r.day }));
+}
+
+export type TrackedLink = {
+	/** "linkedin-post-12" for a ?ref= link, or "LinkedIn · launch-post" for a UTM-tagged one. */
+	label: string;
+	kind: "ref" | "utm";
+	visitors: number;
+	/** The pages its visitors read most (raw page views, so from the last 90 days). */
+	read: string[];
+};
+
+/**
+ * One list of tracked links: ?ref= links and UTM-tagged links together, most visitors first.
+ * Visitors come from the roll-ups (the whole range); what they read from raw page views
+ * (`readFrom`/`readTo`, at most the last 90 days).
+ */
+export async function trackedLinks(db: D1Database, projectId: number, from: string, to: string, readFrom: string, readTo: string, limit = 20): Promise<TrackedLink[]> {
+	const [refs, utm, refReads, utmReads] = await Promise.all([
+		ranked(db, "refs", projectId, from, to, limit),
+		db
+			.prepare(
+				`SELECT utm_source AS source, utm_campaign AS campaign, sum(visitors) AS visitors FROM daily_campaigns
+				 WHERE project_id = ?1 AND day BETWEEN ?2 AND ?3 GROUP BY utm_source, utm_campaign ORDER BY visitors DESC LIMIT ?4`,
+			)
+			.bind(projectId, from, to, limit)
+			.all<{ source: string; campaign: string; visitors: number }>(),
+		db
+			.prepare(
+				`SELECT ref AS key, path, count(DISTINCT visitor_id) AS visitors FROM page_views
+				 WHERE project_id = ?1 AND ref IS NOT NULL AND day BETWEEN ?2 AND ?3 GROUP BY ref, path ORDER BY visitors DESC, path`,
+			)
+			.bind(projectId, readFrom, readTo)
+			.all<{ key: string; path: string; visitors: number }>(),
+		db
+			.prepare(
+				`SELECT COALESCE(utm_source, '') || '|' || COALESCE(utm_campaign, '') AS key, path, count(DISTINCT visitor_id) AS visitors FROM page_views
+				 WHERE project_id = ?1 AND (utm_source IS NOT NULL OR utm_campaign IS NOT NULL) AND day BETWEEN ?2 AND ?3
+				 GROUP BY key, path ORDER BY visitors DESC, path`,
+			)
+			.bind(projectId, readFrom, readTo)
+			.all<{ key: string; path: string; visitors: number }>(),
+	]);
+	const topPages = (rows: { key: string; path: string }[], key: string) => rows.filter((r) => r.key === key).slice(0, 3).map((r) => r.path);
+	const links: TrackedLink[] = [
+		...refs.map((r) => ({ label: r.key, kind: "ref" as const, visitors: r.visitors, read: topPages(refReads.results, r.key) })),
+		...utm.results.map((u) => ({
+			label: [u.source ? sourceName(u.source) : "", u.campaign].filter(Boolean).join(" · ") || "Tagged link",
+			kind: "utm" as const,
+			visitors: u.visitors,
+			read: topPages(utmReads.results, `${u.source}|${u.campaign}`),
+		})),
+	];
+	return links.sort((a, b) => b.visitors - a.visitors || a.label.localeCompare(b.label)).slice(0, limit);
+}
+
+/** How many different paths visitors hit a 404 on (raw events, so at most the last 90 days). */
+export async function brokenLinks(db: D1Database, projectId: number, from: string, to: string): Promise<number> {
+	const row = await db
+		.prepare("SELECT count(DISTINCT path) AS n FROM events WHERE project_id = ?1 AND name = 'not_found' AND day BETWEEN ?2 AND ?3")
+		.bind(projectId, from, to)
+		.first<{ n: number }>();
+	return row?.n ?? 0;
 }
