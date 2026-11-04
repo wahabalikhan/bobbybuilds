@@ -1,8 +1,9 @@
 /**
  * Clicks through the admin in real Chrome (headless, via the DevTools protocol), the way a person
  * moves around: Home (and the status pill) → each project card → Overview and "More detail" →
- * the Settings tab and "Connection" → the breadcrumb back Home → the "+" New project page. Fails on
- * "Something went wrong" or an uncaught page error. Client-side navigation is what plain fetches
+ * the Settings tab and "Connection" → the breadcrumb back Home → the "+" New project page, and the
+ * public home page (with its dropdown open) and 404. Fails on "Something went wrong", an uncaught
+ * page error, or a wrong cursor (CURSOR_CHECK). Client-side navigation is what plain fetches
  * can't check. Used by `npm run test:admin-live`; skipped (with a note) when Chrome isn't installed.
  */
 import { spawn } from "node:child_process";
@@ -12,6 +13,41 @@ import { join } from "node:path";
 
 const CHROME = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/usr/bin/google-chrome", "/usr/bin/chromium"].find((path) => existsSync(path));
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** What's clickable: the same list as the cursor rules in src/app/globals.css. */
+const CLICKABLE = [
+	"a[href]",
+	"button",
+	"summary",
+	"select",
+	...["button", "tab", "option", "switch", "menuitem", "checkbox", "radio"].map((role) => `[role="${role}"]`),
+	'input:is([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="reset"], [type="file"], [type="range"], [type="color"])',
+	'label:has(input:is([type="checkbox"], [type="radio"]))',
+].join(", ");
+
+/**
+ * Run in the page: everything clickable shows the hand (not-allowed when disabled), nothing else
+ * does, and the footer's hidden five-tap © line keeps the normal cursor. Returns the problems.
+ */
+const CURSOR_CHECK = `(() => {
+	const clickable = ${JSON.stringify(CLICKABLE)};
+	const name = (el) => el.tagName.toLowerCase() + (el.getAttribute("role") ? '[role="' + el.getAttribute("role") + '"]' : "") + ' "' + (el.getAttribute("aria-label") || el.textContent || "").trim().replace(/\\s+/g, " ").slice(0, 40) + '"';
+	const problems = [];
+	for (const el of document.querySelectorAll(clickable)) {
+		const disabled = el.matches(':disabled, [aria-disabled="true"], label:has(input:disabled)');
+		const want = disabled ? "not-allowed" : "pointer";
+		const cursor = getComputedStyle(el).cursor;
+		if (cursor !== want) problems.push(name(el) + " has the " + cursor + " cursor, not " + want);
+	}
+	for (const el of document.body.querySelectorAll("*")) {
+		if (getComputedStyle(el).cursor === "pointer" && !el.closest(clickable)) problems.push(name(el) + " has the hand but isn't clickable");
+	}
+	for (const el of document.querySelectorAll("footer span.select-none")) {
+		const cursor = getComputedStyle(el).cursor;
+		if (cursor !== "auto" && cursor !== "text") problems.push("the footer's © line has the " + cursor + " cursor, not the normal one");
+	}
+	return problems.slice(0, 8);
+})()`;
 
 /** @returns {Promise<{ skipped: boolean, problems: string[], visited: number }>} */
 export async function clickThrough(origin) {
@@ -48,12 +84,24 @@ export async function clickThrough(origin) {
 			const broken = await evaluate(`document.body.innerText.toLowerCase().includes("something went wrong")`);
 			if (broken) problems.push(`${label} (${await evaluate("location.pathname + location.search")}) shows "Something went wrong".`);
 			for (const error of errors.splice(0)) problems.push(`${label}: page error: ${String(error).split("\n")[0].slice(0, 160)}`);
+			for (const problem of (await evaluate(CURSOR_CHECK)) ?? []) problems.push(`${label}: ${problem}.`);
 		};
 		const click = (selector, text) => evaluate(`(() => { const el = [...document.querySelectorAll(${JSON.stringify(selector)})].find((a) => ${text ? `a.textContent.trim() === ${JSON.stringify(text)}` : "true"}); if (!el) return false; el.click(); return true; })()`);
 
 		const open = (selector) => evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; el.open = true; return true; })()`);
 
 		await send("Runtime.enable");
+		await send("Page.navigate", { url: `${origin}/` });
+		await settle();
+		await check("Public home");
+		if (!(await evaluate(`!!document.querySelector("footer span.select-none")`))) problems.push("Public home has no five-tap © line in the footer.");
+		if (await click('button[aria-haspopup="listbox"]')) {
+			await sleep(300);
+			await check("Public home, project dropdown open");
+		}
+		await send("Page.navigate", { url: `${origin}/no-such-page` });
+		await settle();
+		await check("Public 404");
 		await send("Page.navigate", { url: `${origin}/admin` });
 		await settle();
 		await check("Home");

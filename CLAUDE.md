@@ -108,6 +108,7 @@ Inspired by Marc Lou's indie page: a similar structure and feel, with our own ac
 - **Layout:** two-column card grids for projects. (Ideas and retired projects aren't shown on the public page for now.)
 - **Accent colour:** `--accent` (placeholder until Phase 6) is only for interactive states: focus, links and selection. It's never used for chart marks.
 - **Statuses:** reserved colours, always with an icon and a label.
+- **Cursors:** the hand on everything clickable and not-allowed when disabled, from the base layer in `globals.css`. Nothing else gets the hand, and the footer's five-tap © line keeps the normal cursor. The Chrome click-through (`scripts/lib/admin-click-through.mjs`, whose `CLICKABLE` list matches the CSS) checks every page.
 
 ## Backlog
 
