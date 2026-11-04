@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { RANGE_PRESETS, type DateRange } from "@/lib/admin/range";
 import { formatChange } from "@/lib/format";
+import { logoScale } from "@/lib/project-logo";
 
 export const buttonClass = "inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-sm font-medium text-page hover:opacity-85";
 export const quietButtonClass = "inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3.5 py-1.5 text-sm text-ink hover:bg-pill";
@@ -180,8 +181,10 @@ export function ProjectLogo({ name, logoPath, size = 28 }: { name: string; logoP
 	if (logoPath) {
 		// No container: the logo keeps its own shape (a circle, a rounded square…), fitted inside a
 		// fixed, invisible box so every logo lines up at the same size. Files are 2× or more, so they stay sharp.
+		// Round logos are drawn a little bigger inside that box (logoScale), so they look the same size.
+		const scale = logoScale(logoPath);
 		// eslint-disable-next-line @next/next/no-img-element -- small local logos; next/image adds nothing here
-		return <img src={logoPath} alt="" width={size} height={size} className="block shrink-0 object-contain" style={{ width: size, height: size }} />;
+		return <img src={logoPath} alt="" width={size} height={size} className="block shrink-0 object-contain" style={{ width: size, height: size, ...(scale !== 1 && { transform: `scale(${scale})` }) }} />;
 	}
 	return (
 		<span aria-hidden className="inline-flex shrink-0 items-center justify-center rounded-lg bg-ink font-semibold text-page" style={{ width: size, height: size, fontSize: size * 0.48 }}>

@@ -5,7 +5,7 @@ import { statusText, statusTone } from "@/components/admin/status-menu";
 import { ProjectLogo } from "@/components/admin/ui";
 import { SiteFooter } from "@/components/public/footer";
 import { sourceName } from "@/lib/admin/sources";
-import { logoFor } from "@/lib/project-logo";
+import { logoFor, ROUND_LOGOS } from "@/lib/project-logo";
 
 describe("sources in plain words", () => {
 	it("names well-known referrers and utm_source values", () => {
@@ -48,6 +48,17 @@ describe("project icons", () => {
 		expect(html).toContain("object-contain");
 		expect(html).toMatch(/width:28px;height:28px/);
 		expect(html).not.toMatch(/rounded|ring-|border|bg-|object-cover/);
+	});
+
+	it("round ones (Portfolio) are drawn 1.1× inside the same box at every size, so they look as big as square ones", () => {
+		for (const size of [16, 18, 20, 28, 36]) {
+			const round = renderToStaticMarkup(<ProjectLogo name="Portfolio" logoPath="/logos/portfolio.png" size={size} />);
+			expect(round).toContain(`width:${size}px;height:${size}px;transform:scale(1.1)`);
+			const square = renderToStaticMarkup(<ProjectLogo name="Tech Jobs" logoPath="/logos/tech-jobs.svg" size={size} />);
+			expect(square).toContain(`width:${size}px;height:${size}px"`);
+			expect(square).not.toContain("transform");
+		}
+		for (const path of ROUND_LOGOS) expect(readFileSync(`public${path}`).length, path).toBeGreaterThan(0);
 	});
 
 	it("the footer's tool icons too", () => {
