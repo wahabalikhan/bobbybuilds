@@ -2,8 +2,9 @@
  * Clicks through the admin in real Chrome (headless, via the DevTools protocol), the way a person
  * moves around: Home (and the status pill) → each project card → Overview and "More detail" →
  * the Settings tab and "Connection" → the breadcrumb back Home → the "+" New project page, and the
- * public home page (with its dropdown open) and 404. Fails on "Something went wrong", an uncaught
- * page error, or a wrong cursor (CURSOR_CHECK). Client-side navigation is what plain fetches
+ * public home page (with its dropdown open) and 404, in a full desktop window (1440 × 900). Fails on
+ * "Something went wrong", an uncaught page error, a wrong cursor (CURSOR_CHECK), or project cards
+ * of different heights on the same page (CARD_CHECK). Client-side navigation is what plain fetches
  * can't check. Used by `npm run test:admin-live`; skipped (with a note) when Chrome isn't installed.
  */
 import { spawn } from "node:child_process";
@@ -24,6 +25,21 @@ const CLICKABLE = [
 	'input:is([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="reset"], [type="file"], [type="range"], [type="color"])',
 	'label:has(input:is([type="checkbox"], [type="radio"]))',
 ].join(", ");
+
+/**
+ * Run in the page: every project card ([data-project-card]) is the same height, and a tagline cut
+ * to two lines keeps its full text on hover (title). Returns the problems.
+ */
+const CARD_CHECK = `(() => {
+	const cards = [...document.querySelectorAll("[data-project-card]")];
+	const heights = cards.map((c) => Math.round(c.getBoundingClientRect().height));
+	const problems = [];
+	if (new Set(heights).size > 1) problems.push("project cards have different heights: " + cards.map((c, i) => c.innerText.split("\\n")[0] + " " + heights[i] + "px").join(", "));
+	for (const p of document.querySelectorAll("[data-project-card] p.line-clamp-2")) {
+		if (p.scrollHeight > p.clientHeight + 1 && p.title !== p.textContent.trim()) problems.push("a cut tagline has no full text on hover: " + p.textContent.trim().slice(0, 40));
+	}
+	return problems;
+})()`;
 
 /**
  * Run in the page: everything clickable shows the hand (not-allowed when disabled), nothing else
@@ -85,12 +101,14 @@ export async function clickThrough(origin) {
 			if (broken) problems.push(`${label} (${await evaluate("location.pathname + location.search")}) shows "Something went wrong".`);
 			for (const error of errors.splice(0)) problems.push(`${label}: page error: ${String(error).split("\n")[0].slice(0, 160)}`);
 			for (const problem of (await evaluate(CURSOR_CHECK)) ?? []) problems.push(`${label}: ${problem}.`);
+			for (const problem of (await evaluate(CARD_CHECK)) ?? []) problems.push(`${label}: ${problem}.`);
 		};
 		const click = (selector, text) => evaluate(`(() => { const el = [...document.querySelectorAll(${JSON.stringify(selector)})].find((a) => ${text ? `a.textContent.trim() === ${JSON.stringify(text)}` : "true"}); if (!el) return false; el.click(); return true; })()`);
 
 		const open = (selector) => evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; el.open = true; return true; })()`);
 
 		await send("Runtime.enable");
+		await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
 		await send("Page.navigate", { url: `${origin}/` });
 		await settle();
 		await check("Public home");

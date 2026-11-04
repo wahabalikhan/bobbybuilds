@@ -11,7 +11,10 @@ export type Project = {
 	id: number;
 	slug: string;
 	name: string;
+	/** May hold {key} placeholders for public product numbers (see fillTagline). */
 	tagline: string;
+	/** Shown instead when the tagline's placeholders can't be filled. */
+	taglineFallback: string;
 	descriptionMd: string;
 	status: ProjectStatus;
 	lesson: string | null;
@@ -36,6 +39,7 @@ type ProjectRow = {
 	slug: string;
 	name: string;
 	tagline: string;
+	tagline_fallback: string;
 	description_md: string;
 	status: ProjectStatus;
 	lesson: string | null;
@@ -54,7 +58,7 @@ type ProjectRow = {
 };
 
 // secret_key_hash is deliberately never selected into a Project.
-const PROJECT_COLUMNS = `id, slug, name, tagline, description_md, status, lesson, logo_path, site_url, health_url,
+const PROJECT_COLUMNS = `id, slug, name, tagline, tagline_fallback, description_md, status, lesson, logo_path, site_url, health_url,
 	github_repo, links, allowed_origins, browser_events, funnel, public_key, secret_key_hint, sort_order, show_public`;
 
 function parseJsonArray<T>(value: string): T[] {
@@ -72,6 +76,7 @@ function toProject(row: ProjectRow): Project {
 		slug: row.slug,
 		name: row.name,
 		tagline: row.tagline,
+		taglineFallback: row.tagline_fallback,
 		descriptionMd: row.description_md,
 		status: row.status,
 		lesson: row.lesson,

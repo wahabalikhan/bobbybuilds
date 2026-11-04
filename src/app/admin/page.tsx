@@ -63,12 +63,12 @@ export default async function AdminHome() {
 	);
 }
 
-/** Visitors and change, the public numbers, a sparkline and uptime. Opens the project. */
+/** Visitors and change with the public numbers on the same line, a sparkline and uptime. Opens the project. */
 function ProjectCard({ summary: s, numbers }: { summary: ProjectSummary; numbers: string | null }) {
 	const uptime: Status = s.uptime.lastUp === null ? "none" : s.uptime.lastUp ? "good" : "critical";
 	const project = { slug: s.project.slug, name: s.project.name, logoPath: logoFor(s.project) };
 	return (
-		<Link href={adminHref(`/projects/${s.project.slug}`)} className="group flex h-full flex-col rounded-2xl border border-line bg-card p-5 transition-colors hover:border-[var(--axis)]">
+		<Link href={adminHref(`/projects/${s.project.slug}`)} data-project-card className="group flex h-full flex-col rounded-2xl border border-line bg-card p-5 transition-colors hover:border-[var(--axis)]">
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex min-w-0 items-center gap-2.5">
 					<ProjectLogo name={project.name} logoPath={project.logoPath} />
@@ -79,14 +79,20 @@ function ProjectCard({ summary: s, numbers }: { summary: ProjectSummary; numbers
 					<StatusPill status={s.project.status} />
 				</span>
 			</div>
-			<p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-sm text-ink-2">
+			{/* One line, so every card is the same height: the public numbers follow the visitors and are cut with "…" if there's no room (full text on hover). */}
+			<p className="mt-3 flex items-baseline gap-x-2 whitespace-nowrap text-sm text-ink-2">
 				<span className="text-xl font-semibold tracking-tight tabular text-ink">{formatCount(s.visitors30)}</span>
-				visitors in 30 days
-				<span className="[&>span]:text-xs">
+				<span className="shrink-0">visitors in 30 days</span>
+				<span className="shrink-0 [&>span]:text-xs">
 					<Delta value={change(s.visitors30, s.visitors30Previous)} />
 				</span>
+				{numbers && (
+					<span className="min-w-0 truncate font-medium tabular text-ink" title={numbers}>
+						<span aria-hidden className="mr-2 font-normal text-muted">·</span>
+						{numbers}
+					</span>
+				)}
 			</p>
-			{numbers && <p className="mt-1 text-sm font-medium tabular text-ink">{numbers}</p>}
 			<div className="mt-auto pt-5">
 				<WeekSparkline
 					project={project}

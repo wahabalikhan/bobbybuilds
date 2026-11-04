@@ -17,3 +17,44 @@ export function productLine(numbers: Pick<PublicNumber, "kind" | "label" | "figu
 		.map((n) => `${formatWhole(n.figure!)} ${n.label.toLowerCase()}`);
 	return parts.length ? parts.join(" · ") : null;
 }
+
+/** {key} placeholders in a tagline, e.g. {open_jobs}. */
+export const PLACEHOLDER = /\{([a-z0-9_]+)\}/g;
+
+/** The keys a tagline's placeholders use, in order. */
+export function taglineKeys(tagline: string): string[] {
+	return [...tagline.matchAll(PLACEHOLDER)].map((m) => m[1]);
+}
+
+/** A piece of a filled-in tagline: plain text, or a number (shown in bold). */
+export type TaglinePart = { text: string; number?: true };
+
+/**
+ * The tagline as the public card shows it, in pieces: each {key} replaced by that public product
+ * number's latest daily value, with commas, marked as a number ("4,868" real tech jobs, straight
+ * from "838" companies). If any placeholder can't be filled (not a public number, no value, or
+ * over RECENT_DAYS old), the fallback is shown instead, so a half-filled or stale tagline never appears.
+ */
+export function fillTaglineParts(tagline: string, fallback: string, numbers: Pick<PublicNumber, "key" | "kind" | "figure" | "latestDay">[], today: string): TaglinePart[] {
+	const earliest = addDays(today, -RECENT_DAYS);
+	const values = new Map(
+		numbers.filter((n) => n.kind === "latest" && n.figure !== null && n.latestDay !== null && n.latestDay >= earliest).map((n) => [n.key, formatWhole(n.figure!)]),
+	);
+	if (!taglineKeys(tagline).every((key) => values.has(key))) return fallback ? [{ text: fallback }] : [];
+	const parts: TaglinePart[] = [];
+	let last = 0;
+	for (const match of tagline.matchAll(PLACEHOLDER)) {
+		if (match.index > last) parts.push({ text: tagline.slice(last, match.index) });
+		parts.push({ text: values.get(match[1])!, number: true });
+		last = match.index + match[0].length;
+	}
+	if (last < tagline.length) parts.push({ text: tagline.slice(last) });
+	return parts;
+}
+
+/** The filled-in tagline as plain text ("4,868 real tech jobs, straight from 838 companies"). */
+export function fillTagline(tagline: string, fallback: string, numbers: Pick<PublicNumber, "key" | "kind" | "figure" | "latestDay">[], today: string): string {
+	return fillTaglineParts(tagline, fallback, numbers, today)
+		.map((p) => p.text)
+		.join("");
+}

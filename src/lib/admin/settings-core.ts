@@ -3,7 +3,9 @@
  * form state and the submitted values, and returns the new state (and sometimes where to go next).
  * src/app/admin/settings/actions.ts wraps these, checking admin access first.
  */
+import { listMetrics } from "@/lib/db/dashboard";
 import { listProjects, setProjectKeys, type Project } from "@/lib/db/projects";
+import { taglineKeys } from "@/lib/public/product-line";
 import {
 	addMetric,
 	createProject,
@@ -66,6 +68,18 @@ export async function saveDetailsCore(db: D1Database, prev: FormState, values: F
 	// A saved logo path stays valid even if its file has since gone (logos are automatic now).
 	const result = validateProjectDetails({ ...kept, ...values }, project.logoPath ? [...ctx.logos, project.logoPath] : ctx.logos);
 	if (!result.ok) return { state: failed(prev, values, result.errors) };
+	// Tagline placeholders must be this project's product numbers; private ones never fill in public.
+	const products = (await listMetrics(db, project.id)).filter((m) => m.source === "product");
+	const keys = taglineKeys(result.value.tagline);
+	const unknown = keys.filter((key) => !products.some((m) => m.key === key));
+	if (unknown.length) {
+		const known = products.map((m) => `{${m.key}}`).join(", ");
+		return { state: failed(prev, values, { tagline: `{${unknown[0]}} isn't one of ${project.name}'s product numbers${known ? ` (it has ${known})` : ""}.` }) };
+	}
+	if (keys.length && !result.value.taglineFallback) {
+		return { state: failed(prev, values, { tagline_fallback: "Add a fallback tagline, shown when the numbers can't be filled in." }) };
+	}
+	const privateKeys = keys.filter((key) => !products.find((m) => m.key === key)!.isPublic);
 	try {
 		await updateProjectDetails(db, project.id, result.value);
 	} catch (error) {
@@ -73,6 +87,7 @@ export async function saveDetailsCore(db: D1Database, prev: FormState, values: F
 		throw error;
 	}
 	const notes = result.value.slug !== project.slug ? ["The slug changed, so this page's address changed too."] : [];
+	if (privateKeys.length) notes.push(`{${privateKeys[0]}} isn't public, so your public page shows the fallback tagline until it is (under On your public page).`);
 	return {
 		state: ok(prev, "Saved.", notes),
 		redirectTo: result.value.slug !== project.slug ? settingsHref(result.value.slug) : undefined,
@@ -98,6 +113,7 @@ export async function startProjectCore(db: D1Database, prev: FormState, values: 
 		name,
 		slug,
 		tagline: "",
+		taglineFallback: "",
 		descriptionMd: "",
 		status: "building",
 		lesson: null,

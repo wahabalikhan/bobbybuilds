@@ -3,22 +3,30 @@ import { ProjectLogo, StatusPill } from "@/components/admin/ui";
 import { WeekSparkline } from "@/components/public/charts";
 import { ArrowIcon } from "@/components/public/icons";
 import { formatCount } from "@/lib/format";
-import { productLine } from "@/lib/public/product-line";
 import type { PublicProject } from "@/lib/public/snapshot";
 
 /** Opens the project's own site in a new tab; without a site URL, it isn't a link. */
 function ProjectLink({ project, className, children }: { project: PublicProject; className: string; children: ReactNode }) {
-	if (!project.siteUrl) return <div className={className}>{children}</div>;
+	if (!project.siteUrl)
+		return (
+			<div data-project-card className={className}>
+				{children}
+			</div>
+		);
 	return (
-		<a href={project.siteUrl} target="_blank" rel="noopener noreferrer" className={className}>
+		<a href={project.siteUrl} target="_blank" rel="noopener noreferrer" data-project-card className={className}>
 			{children}
 		</a>
 	);
 }
 
-/** Logo and name (↗ when it links out) with the status on the right, the tagline, any public product numbers, and a 12-week sparkline pinned to the bottom. */
-export function ProjectCard({ project, today }: { project: PublicProject; today: string }) {
-	const numbers = productLine(project.numbers, today);
+/**
+ * Logo and name (↗ when it links out) with the status on the right, the tagline (with any public
+ * numbers already filled in by the snapshot), and a 12-week sparkline pinned to the bottom.
+ * Every card is the same height: the tagline always takes exactly two lines (cut with "…", the
+ * full text on hover and for screen readers), and a card without a sparkline keeps its space.
+ */
+export function ProjectCard({ project }: { project: PublicProject }) {
 	return (
 		<ProjectLink project={project} className="group flex h-full flex-col rounded-2xl border border-line bg-card p-5 transition-colors hover:border-[var(--axis)]">
 			<div className="flex items-center justify-between gap-3">
@@ -36,15 +44,28 @@ export function ProjectCard({ project, today }: { project: PublicProject; today:
 				</div>
 				<StatusPill status={project.status} />
 			</div>
-			<p className="mt-2 text-sm leading-relaxed text-ink-2">{project.tagline}</p>
-			{numbers && <p className="mt-1.5 text-sm font-medium tabular text-ink">{numbers}</p>}
-			{project.weekly && (
+			<p className="mt-2 line-clamp-2 h-[2lh] text-sm leading-relaxed text-ink-2" title={project.tagline || undefined}>
+				{project.taglineParts.map((part, i) =>
+					part.number ? (
+						<strong key={i} className="font-semibold tabular text-ink">
+							{part.text}
+						</strong>
+					) : (
+						part.text
+					),
+				)}
+			</p>
+			{project.weekly ? (
 				<div className="mt-auto pt-5">
 					<WeekSparkline
 						project={project}
 						weeks={project.weekly}
 						label={`${project.name}: visitors per week for the last 12 weeks, ${formatCount(project.weekly.reduce((t, w) => t + w.value, 0))} in total. This week so far is dashed.`}
 					/>
+				</div>
+			) : (
+				<div aria-hidden className="mt-auto pt-5">
+					<div className="h-14" />
 				</div>
 			)}
 		</ProjectLink>

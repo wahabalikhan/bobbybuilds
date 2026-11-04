@@ -47,3 +47,31 @@ describe("tab titles", () => {
 		expect(readFileSync("src/app/admin/layout.tsx", "utf8")).toContain("title: { absolute: adminName, template: `%s · ${adminName}` }");
 	});
 });
+
+describe("the wordmark", () => {
+	it("is the site's name in two halves, both semibold, the second in the accent blue", async () => {
+		const { renderToStaticMarkup } = await import("react-dom/server");
+		const { createElement } = await import("react");
+		const { Wordmark } = await import("@/components/wordmark");
+		const { site } = await import("@/lib/site");
+		expect(site.wordmark.join("")).toBe(site.name);
+		const html = renderToStaticMarkup(createElement(Wordmark));
+		expect(html).toContain('<span class="font-semibold text-ink">Bobby</span><span class="font-semibold text-accent">Builds</span>');
+		expect(html).not.toMatch(/bg-|15171C/);
+	});
+
+	it("reads \"BobbyBuilds HQ\" in the admin, with HQ in muted grey", async () => {
+		const { renderToStaticMarkup } = await import("react-dom/server");
+		const { createElement } = await import("react");
+		const { Wordmark } = await import("@/components/wordmark");
+		const html = renderToStaticMarkup(createElement(Wordmark, { suffix: "HQ" }));
+		expect(html.replace(/<[^>]+>/g, "")).toBe("BobbyBuilds HQ");
+		expect(html).toContain('<span class="font-normal text-muted">HQ</span>');
+	});
+
+	it("is in the profile panel and the admin top bar, and the old dark square is gone", () => {
+		expect(readFileSync("src/components/public/profile.tsx", "utf8")).toMatch(/<Wordmark \/>/);
+		expect(readFileSync("src/app/admin/layout.tsx", "utf8")).toMatch(/<Wordmark suffix="HQ" \/>/);
+		expect(readFileSync("src/components/public/profile.tsx", "utf8")).not.toMatch(/15171C/);
+	});
+});

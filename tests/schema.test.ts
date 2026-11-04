@@ -21,7 +21,8 @@ describe("seed", () => {
 				slug: "job-board",
 				name: "Job Board",
 				status: "building",
-				tagline: "Only real tech jobs, straight from the company.",
+				// Set by migration 0011 (numbers filled in on the public page, with a fallback).
+				tagline: "{open_jobs} real tech jobs, straight from {active_companies} companies",
 				allowed_origins: '["https://jobboard.wahab-ali-khan.workers.dev"]',
 				public_key: null,
 				secret_key_hash: null,
@@ -62,6 +63,7 @@ describe("projects", () => {
 		["an upper-case slug", { slug: "Portfolio-2" }],
 		["a slug with spaces", { slug: "my project" }],
 		["a tagline over 120 characters", { tagline: "x".repeat(121) }],
+		["a fallback tagline over 120 characters", { tagline_fallback: "x".repeat(121) }],
 		["a site URL that isn't https", { site_url: "http://example.com" }],
 		["a health URL that isn't https", { health_url: "http://example.com/health" }],
 		["a GitHub repo without an owner", { github_repo: "bobbybuilds" }],

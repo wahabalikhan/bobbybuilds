@@ -5,6 +5,8 @@
  */
 export const site = {
 	name: "BobbyBuilds",
+	/** The wordmark's two halves, both semibold: the first in ink, the second in the accent blue. Joined, they're `name`. */
+	wordmark: ["Bobby", "Builds"],
 	url: "https://bobbybuilds.app",
 	adminPath: "/admin",
 	/**

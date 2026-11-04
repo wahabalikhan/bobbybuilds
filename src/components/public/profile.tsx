@@ -1,5 +1,6 @@
 import { PROFILE_PHOTO } from "@/lib/logos.generated";
-import { owner, site } from "@/lib/site";
+import { owner } from "@/lib/site";
+import { Wordmark } from "@/components/wordmark";
 import { GitHubIcon, LinkedInIcon } from "./icons";
 
 const ICONS: Record<string, typeof LinkedInIcon> = { LinkedIn: LinkedInIcon, GitHub: GitHubIcon };
@@ -16,21 +17,13 @@ export function Avatar({ size = 72 }: { size?: number }) {
 	);
 }
 
-/** The site's wordmark: the favicon's dark square and the name, so "by BobbyBuilds" visitors know they're in the right place. */
-export function Wordmark() {
-	return (
-		<p className="mb-5 flex items-center gap-2 text-sm font-semibold tracking-tight text-ink">
-			<span aria-hidden className="h-3.5 w-3.5 rounded-[3px] bg-[#15171C]" />
-			{site.name}
-		</p>
-	);
-}
-
-/** The profile panel: wordmark, photo, name, bio and social links. */
+/** The profile panel: the wordmark (so "by BobbyBuilds" visitors know they're in the right place), photo, name, bio and social links. */
 export function ProfileCard() {
 	return (
 		<section aria-labelledby="profile-name" className="rounded-2xl border border-line bg-card p-6">
-			<Wordmark />
+			<p className="mb-5">
+				<Wordmark />
+			</p>
 			<Avatar />
 			<h1 id="profile-name" className="mt-4 text-2xl font-bold tracking-tight">
 				{owner.name}

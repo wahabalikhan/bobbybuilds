@@ -35,7 +35,20 @@ export async function ProjectSettingsTab({ db, project }: { db: D1Database; proj
 							]}
 						/>
 					</div>
-					<TextField name="tagline" label="Tagline" defaultValue={project.tagline} maxLength={120} hint="One line, shown on your public page." />
+					<TextField
+						name="tagline"
+						label="Tagline"
+						defaultValue={project.tagline}
+						maxLength={120}
+						hint="Shown on your public page, up to two lines. Public product numbers can go in it, like {open_jobs}, filled in with the latest value."
+					/>
+					<TextField
+						name="tagline_fallback"
+						label="Fallback tagline"
+						defaultValue={project.taglineFallback}
+						maxLength={120}
+						hint="Shown instead when a number in the tagline is over a week old or isn't public. Only needed with numbers in the tagline."
+					/>
 					<TextField type="url" name="site_url" label="Site address" defaultValue={project.siteUrl ?? ""} placeholder="https://" hint="Where the public card links to. It's also checked every 5 minutes for uptime." />
 					<div className="sm:w-40">
 						<TextField type="number" name="sort_order" label="Order" defaultValue={String(project.sortOrder)} hint="1 comes first, here and on your public page." />

@@ -57,6 +57,7 @@ export type ProjectDetails = {
 	name: string;
 	slug: string;
 	tagline: string;
+	taglineFallback: string;
 	descriptionMd: string;
 	status: ProjectStatus;
 	lesson: string | null;
@@ -104,6 +105,9 @@ export function validateProjectDetails(values: FormValues, logos: string[]): Res
 	const tagline = text(values.tagline);
 	if (tagline.length > 120) errors.tagline = `Keep the tagline to one line: 120 characters or fewer (this is ${tagline.length}).`;
 
+	const taglineFallback = text(values.tagline_fallback);
+	if (taglineFallback.length > 120) errors.tagline_fallback = `Keep the fallback tagline to 120 characters or fewer (this is ${taglineFallback.length}).`;
+
 	const descriptionMd = text(values.description_md);
 	if (descriptionMd.length > 20_000) errors.description_md = "The description must be 20,000 characters or fewer.";
 
@@ -126,6 +130,7 @@ export function validateProjectDetails(values: FormValues, logos: string[]): Res
 		name,
 		slug,
 		tagline,
+		taglineFallback,
 		descriptionMd,
 		status,
 		lesson: lesson || null,

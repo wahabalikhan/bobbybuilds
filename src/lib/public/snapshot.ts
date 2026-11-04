@@ -17,9 +17,10 @@ import { sha256Hex } from "@/lib/keys";
 import { renderMarkdown } from "@/lib/markdown";
 import { logoFor } from "@/lib/project-logo";
 import { owner } from "@/lib/site";
+import { fillTaglineParts, type TaglinePart } from "./product-line";
 
 export const SNAPSHOT_KEY = "public-snapshot";
-export const SNAPSHOT_VERSION = 3;
+export const SNAPSHOT_VERSION = 4;
 
 export type Point = { day: string; value: number };
 export type Month = { month: string; value: number };
@@ -42,7 +43,10 @@ export type PublicNumber = {
 export type PublicProject = {
 	slug: string;
 	name: string;
+	/** The tagline as plain text, with any numbers filled in. */
 	tagline: string;
+	/** The same, in pieces, so the card can show the numbers in bold. */
+	taglineParts: TaglinePart[];
 	status: ProjectStatus;
 	lesson: string | null;
 	logoPath: string | null;
@@ -152,6 +156,8 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 		const visitorsDaily = visitorsMetric ? await metricSeries(db, visitorsMetric, firstMonthDay, today) : null;
 		const numbers = await Promise.all(own.map((m) => publicNumber(db, m, today)));
 		const headline = own.find((m) => m.isHeadline);
+		// Filled in here, so the public page only ever sees the finished text, never {placeholders}.
+		const taglineParts = fillTaglineParts(project.tagline, project.taglineFallback, numbers, today);
 		const headlineNumber = headline ? numbers[own.indexOf(headline)] : null;
 
 		const { results: milestones } = await db
@@ -162,7 +168,8 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 		publicProjects.push({
 			slug: project.slug,
 			name: project.name,
-			tagline: project.tagline,
+			tagline: taglineParts.map((p) => p.text).join(""),
+			taglineParts,
 			status: project.status,
 			lesson: project.lesson,
 			logoPath: logoFor(project),

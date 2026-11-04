@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { LiveDataBanner } from "@/components/admin/live-banner";
 import { StatusMenu } from "@/components/admin/status-menu";
+import { Wordmark } from "@/components/wordmark";
 import { requestTime } from "@/lib/admin/clock";
 import { attentionItems } from "@/lib/db/dashboard";
 import { isLiveData } from "@/lib/admin/access";
@@ -44,8 +45,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 			<AdminKeyboardShortcut to={site.url} />
 			<header className="border-b border-line">
 				<div className={`${PAGE} flex flex-wrap items-center gap-x-4 gap-y-2 py-4`}>
-					<Link href={adminHref()} className="font-semibold tracking-tight">
-						{site.name} <span className="font-normal text-muted">HQ</span>
+					<Link href={adminHref()}>
+						<Wordmark suffix="HQ" />
 					</Link>
 					<StatusMenu items={attention} />
 				</div>
