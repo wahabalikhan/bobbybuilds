@@ -156,3 +156,9 @@ Done in the job board repo during its Phase 10.
   - Settings: "Show on my public page" (off: in nothing public, still everywhere in the admin) and Order. New projects go last.
   - "Don't count my visits": a switch at the bottom of admin Home for bobbybuilds.app, and a `#bobby-ignore` link to open once on each other site (`#bobby-count` to undo). t.js then sends nothing from that browser.
   - Tested live: migration applied first, then deployed. The public page and snapshot have only Portfolio and Tech Jobs, and t.js is on the public pages. Admin Home lists BobbyBuilds (not on public page), Portfolio, Tech Jobs.
+- ✅ Cards, taglines and the wordmark (4 November 2026):
+  - `82b6d5c`: the hand cursor on everything clickable (base styles), checked on every page by the click-through.
+  - `052a261`: `glob` 10.5.0 for `@node-minify/core` (Dependabot's high alert). The two moderate ones wait for OpenNext, ESLint and typescript-eslint (Backlog).
+  - `7b18b94`: round logos drawn 1.1× in the same box.
+  - `fe540d9`: migration 0011. Numbers in taglines (Tech Jobs: "**4,868** real tech jobs, straight from **838** companies", with a fallback), no separate numbers line on public cards, the admin card's numbers on the visitors line, every card the same height in each place (public 200px, admin 218px at 1440px), and a text-only wordmark ("Bobby" and "Builds" semibold, "Builds" in the accent blue; "HQ" in the admin).
+  - Tested live: the migration first, then the deploy; the public tagline, bold numbers, wordmark and card heights, and the admin cards against live data.
