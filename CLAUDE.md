@@ -119,6 +119,7 @@ Inspired by Marc Lou's indie page: a similar structure and feel, with our own ac
   - `comment_posted` `{ page, kind: "reply" }`: after a successful insert in `saveReply()` (about line 1218; insert at about 1225).
   - Use `window.bobby?.track(…)`. Never send comment text, names or emails. Both names are already on the Portfolio's browser event allowlist.
 - **Share images:** embed the Geist font so titles are bold (the built-in font has one weight).
+- **Dependabot:** revisit the glob 13/14 and minimatch 11 alerts when OpenNext, ESLint and typescript-eslint support those versions. (`glob` 10.5.0 is forced for `@node-minify/core` by `overrides` in package.json; drop that once OpenNext no longer needs it.)
 
 ## Security headers and CSP
 

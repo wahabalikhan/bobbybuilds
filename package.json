@@ -57,5 +57,10 @@
     "typescript": "^5.7.4",
     "vitest": "^4.1.12",
     "wrangler": "^4.156.1"
+  },
+  "overrides": {
+    "@node-minify/core": {
+      "glob": "10.5.0"
+    }
   }
 }
