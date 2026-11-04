@@ -150,8 +150,9 @@ Done in the job board repo during its Phase 10.
     - Icons everywhere have no container and keep their own shape (Portfolio's circle photo; the square original is in `public/logos/originals/`).
   - Job board `e5cd2f5`: the daily `open_jobs` and `active_companies` come from `board_stats()`, the same as the Tech Jobs trust line (before: no location filter, and careers-page companies being checked). Ingest function redeployed.
   - Tested: verify with a 13-page Chrome click-through; live public page icons and admin sign-in.
-- ⏳ BobbyBuilds tracks itself (4 November 2026), built and waiting for the go-ahead:
-  - Migration 0010: `show_public` on projects, the `bobbybuilds` project (live, `https://bobbybuilds.app`, its public key in `site.trackerKey`, hidden from the public page), and the order BobbyBuilds, Portfolio, Tech Jobs.
+- ✅ BobbyBuilds tracks itself (4 November 2026):
+  - `f927380`: migration 0010: `show_public` on projects, the `bobbybuilds` project (live, `https://bobbybuilds.app`, its public key in `site.trackerKey`, hidden from the public page), and the order BobbyBuilds, Portfolio, Tech Jobs.
   - t.js on the public pages only (home, 404, journey), never on admin pages. The 404 page now sends `not_found`.
   - Settings: "Show on my public page" (off: in nothing public, still everywhere in the admin) and Order. New projects go last.
   - "Don't count my visits": a switch at the bottom of admin Home for bobbybuilds.app, and a `#bobby-ignore` link to open once on each other site (`#bobby-count` to undo). t.js then sends nothing from that browser.
+  - Tested live: migration applied first, then deployed. The public page and snapshot have only Portfolio and Tech Jobs, and t.js is on the public pages. Admin Home lists BobbyBuilds (not on public page), Portfolio, Tech Jobs.
