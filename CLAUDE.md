@@ -90,7 +90,7 @@ A public indie page showcasing Wahab and his projects, plus a private analytics 
 
 ## Design (every page, public and admin)
 
-The reference is `marclou.pdf` (Marc Lou's indie page). Use the same structure and feel, with our own accent colour and content, and never his brand.
+Inspired by Marc Lou's indie page: a similar structure and feel, with our own accent colour and content, and never his brand.
 
 - **Tab titles:** the page's name first, then the brand. The public layout's template adds " · BobbyBuilds" ("Journey · BobbyBuilds", "Page not found · BobbyBuilds"), the admin layout's adds " · BobbyBuilds HQ" ("Tech Jobs · BobbyBuilds HQ", "Tech Jobs settings · BobbyBuilds HQ", "New project · BobbyBuilds HQ"), so pages set only their own name. The home page is "BobbyBuilds · Wahab (Bobby) Khan" (`homeTitle`, also the share image's title), and admin Home is "BobbyBuilds HQ" (`adminName`). `test:admin-live` checks them.
 - **Page:** a clean white background, generous spacing, Geist. Every page, public and admin (and the admin top bar), uses the one container `PAGE` (`src/lib/layout.ts`: 1040px, the same side padding and centring), so nothing shifts between them. Inner content may be narrower, never wider. Wide content (tables, code) truncates or scrolls inside its own box; `tests/node/layout.test.ts` checks the container. The public site is light only. The admin dashboard alone has a dark version (`.admin-theme` in `globals.css`, by the system setting).
@@ -139,7 +139,7 @@ Keep these free. Nothing in HQ may get in their way:
 
 - `bobbybuilds.app`: HQ. Its route is the exact domain, never `*.bobbybuilds.app/*`. The Access app covers only its `admin` and `admin/*` paths, never a wildcard hostname.
 - `www.bobbybuilds.app`: a 301 redirect to the bare domain (a proxied `AAAA 100::` record and a Redirect Rule).
-- `techjobs.bobbybuilds.app`: the job board, "Tech Jobs, by BobbyBuilds", on its own Worker custom domain (repo ~/Desktop/job_board).
+- `techjobs.bobbybuilds.app`: the job board, "Tech Jobs, by BobbyBuilds", on its own Worker custom domain (its own repo, `job_board`).
 - Email: one address, `hello@bobbybuilds.app`, for sending and receiving. There's no `mail.` subdomain.
   - **Receiving:** Cloudflare Email Routing forwards hello@ to a personal inbox. It owns the bare domain's 3 MX records, its SPF TXT (`v=spf1 include:_spf.mx.cloudflare.net ~all`) and DKIM `cf2024-1._domainkey`.
   - **Sending:** Resend, verified on the bare domain (eu-west-1). TXT `resend._domainkey` (DKIM), CNAME `send` → `send.forge.rmta.net` and CNAME `rsend` → `rsend-euw1.forge.rmta.net`, all DNS only. Resend's SPF and bounce handling sit behind those CNAMEs, never at the bare domain. Resend's Receiving stays off (it would need the bare domain's MX), and click and open tracking stay off.

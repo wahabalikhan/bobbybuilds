@@ -206,7 +206,7 @@ describe("automatic events", () => {
 		createTracker({ key: "pk_test", win: w, send }).start();
 		click(win, "/about");
 		click(win, "https://wahabalikhan.com/contact");
-		click(win, "mailto:hello@wahabalikhan.com");
+		click(win, "mailto:hello@example.com");
 		click(win, "tel:+447700900123");
 		await tick();
 		expect(events(sent)).toEqual([]);

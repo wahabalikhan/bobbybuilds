@@ -4,29 +4,29 @@ BobbyBuilds is built in phases. Each phase starts with a plan and ends with a te
 
 | # | Phase | Status |
 | --- | --- | --- |
-| 1 | Setup | ✅ Done (`df8e5f2`, `609e211`) |
-| 2 | Database | ✅ Done (`a4dcb67`, `62f3258`) |
-| 3 | Collector | ✅ Done (`47b8997`, `086c708`) |
-| 4 | Daily job | ✅ Done (`27c3128`) |
-| 5 | Private dashboard | ✅ Done (`fcffc1c`, `169459c`, `a76d7c6`, `daef9d1`) |
-| 6 | Public indie page | ✅ Done (`e858e83`) |
+| 1 | Setup | ✅ Done (`eb64096`, `2b3d6b7`) |
+| 2 | Database | ✅ Done (`cd5a07e`, `2ecde7e`) |
+| 3 | Collector | ✅ Done (`6763daa`, `85e020e`) |
+| 4 | Daily job | ✅ Done (`fcb36cc`) |
+| 5 | Private dashboard | ✅ Done (`b02e7f7`, `78ffe8e`, `29fc16d`, `4454882`) |
+| 6 | Public indie page | ✅ Done (`34744e6`) |
 | 7 | Connect my portfolio | ✅ Done (portfolio `cada9b5`, `5428cdb`) |
 | 8 | Connect the job board | Not started |
-| 9 | Launch | In progress: custom domain and Access done (`bae426a`, `3a4d5e1`, `ea1f04c`) |
+| 9 | Launch | In progress: custom domain and Access done (`b2cbb96`, `09c5b40`, `fc88135`) |
 
 ## 1. Setup ✅
 
 Scaffold, CLAUDE.md, D1, `lib/site.ts`, secret safety, security headers, and the `/admin` JWT check. Cloudflare Access comes later via a custom domain; for now there's a local admin preview.
 
-- `df8e5f2`: scaffold, D1, `src/lib/site.ts`, check-env, security headers and CSP, the Access JWT check, deploy to workers.dev
-- `609e211`: local-only admin preview (`LOCAL_ADMIN_PREVIEW`, loopback only); custom-domain Access steps in `docs/access-setup.md`
+- `eb64096`: scaffold, D1, `src/lib/site.ts`, check-env, security headers and CSP, the Access JWT check, deploy to workers.dev
+- `2b3d6b7`: local-only admin preview (`LOCAL_ADMIN_PREVIEW`, loopback only); custom-domain Access steps in `docs/access-setup.md`
 
 ## 2. Database ✅
 
 `projects`, `page_views` (with ref, UTM, country, browser, OS, screen, language, engaged time, scroll depth), `events`, `daily_secret`, `uptime_checks`, `github_weekly`, roll-ups, `metrics`, `journey_entries`, `milestones`; keys script.
 
-- `a4dcb67`: migrations 0001–0003, seed for Portfolio and Job Board, `keys:create`, 113 schema and helper tests
-- `62f3258`: portfolio comment events allowed from the browser (0004); package made ESM
+- `cd5a07e`: migrations 0001–0003, seed for Portfolio and Job Board, `keys:create`, 113 schema and helper tests
+- `2ecde7e`: portfolio comment events allowed from the browser (0004); package made ESM
 
 ## 3. Collector ✅
 
@@ -40,8 +40,8 @@ Scaffold, CLAUDE.md, D1, `lib/site.ts`, secret safety, security headers, and the
 
 Plus rate limiting and `test:collector`.
 
-- `47b8997`: the three endpoints, the daily visitor ID, `t.js` (SPA views, engaged time, scroll depth, Core Web Vitals, outbound clicks, downloads, 404s, `bobby.track` for custom and form events), GPC and DNT, rate limits, migration 0005 for the vitals columns, the playground, and 251 tests.
-- `086c708`: web-vitals moved into `t-vitals.js`, which loads after the page. `t.js` went from 12.2 KB to 3.8 KB (1.9 KB gzipped).
+- `6763daa`: the three endpoints, the daily visitor ID, `t.js` (SPA views, engaged time, scroll depth, Core Web Vitals, outbound clicks, downloads, 404s, `bobby.track` for custom and form events), GPC and DNT, rate limits, migration 0005 for the vitals columns, the playground, and 251 tests.
+- `85e020e`: web-vitals moved into `t-vitals.js`, which loads after the page. `t.js` went from 12.2 KB to 3.8 KB (1.9 KB gzipped).
 
 ## 4. Daily job ✅
 
@@ -50,7 +50,7 @@ Plus rate limiting and `test:collector`.
 - GitHub weekly commits and 5-minute uptime pings.
 - The cron Worker, plus `test:rollup`.
 
-- `27c3128`:
+- `fcb36cc`:
   - `/internal/jobs`, protected by `ROLLUP_SECRET`.
   - Roll-ups, including same-day repeat visitors, Core Web Vitals p75 and daily uptime.
   - Secret rotation and the 90-day clean-up.
@@ -65,14 +65,14 @@ Plus rate limiting and `test:collector`.
 - **Project dashboards:** tracked links, campaigns, countries, Core Web Vitals, uptime, shipping streak, and an Events tab with CSV export.
 - **Settings:** projects, keys, origins, allowlists, public number switches, journey entries and milestones.
 
-- `fcffc1c` (5a):
+- `b02e7f7` (5a):
   - Overview and project dashboards: all tabs, including Events with CSV.
   - `seed:demo` and `admin:live`.
   - GitHub history backfill.
   - 334 tests.
-- `169459c`: the LIVE DATA banner is always shown on `admin:live` (pinned, inline-styled), CSS loads on loopback, and `test:admin-live` checks it end to end.
-- `a76d7c6`: the restyle after the reference indie page (white cards, pills, monochrome charts, unfinished periods dashed).
-- `daef9d1` (5b):
+- `78ffe8e`: the LIVE DATA banner is always shown on `admin:live` (pinned, inline-styled), CSS loads on loopback, and `test:admin-live` checks it end to end.
+- `29fc16d`: the restyle after the reference indie page (white cards, pills, monochrome charts, unfinished periods dashed).
+- `4454882` (5b):
   - Settings for projects, keys, origins, events and funnel, public numbers, milestones, journey and system.
   - Safe Markdown.
   - A test that every server action checks admin access first.
@@ -86,7 +86,7 @@ Plus rate limiting and `test:collector`.
 - 10-minute caching.
 - A build-updates form that posts straight to a newsletter tool.
 
-- `e858e83`:
+- `34744e6`:
   - Home (profile panel with photo and bio, headline card, project cards, compact list, latest journey entries), `/p/[slug]`, `/journey` and `/journey/[slug]`.
   - The public snapshot in KV, written only when it changes (at most about 144 writes a day). It replaces Next.js page caching, which would have needed up to about 4,300 KV writes a day.
   - Share images, the sitemap, and noindex until launch.
@@ -99,8 +99,8 @@ Plus rate limiting and `test:collector`.
 
 Instructions only (t.js, `bobby.track` browser events, CSP changes, privacy note), applied in the portfolio repo.
 
-- **Instructions:** `docs/connect-portfolio.md`.
-- **Prepared branch:** `connect-bobby-builds` (commit `cada9b5`) in `~/Desktop/portfolio-bobby-builds`. It has the snippet, `case_study_read` (75% scrolled and 20 seconds), `contact_click` on the mailto links, a footer privacy note and a report-only CSP.
+- **Instructions:** a step-by-step handover (since removed: the steps are done).
+- **Prepared branch:** `connect-bobby-builds` (portfolio commit `cada9b5`), in a fresh clone of the portfolio repo. It has the snippet, `case_study_read` (75% scrolled and 20 seconds), `contact_click` on the mailto links, a footer privacy note and a report-only CSP.
 - **Live settings:** the Portfolio keys and funnel (Home → read a case study → Contact) are set.
 - **Tested on the Pages preview:** page views, `case_study_read` and `contact_click` arrived. A report-only CSP produced no reports.
 - **Portfolio `5428cdb`:** the CSP is enforced. I re-checked all 10 pages: no violations, Supabase comments load, and live cursors connect over the websocket.
@@ -119,30 +119,30 @@ Done in the job board repo during its Phase 10.
 - A check of the Git history for secrets.
 - Go public (`site.indexable: true`). Until then, noindex stays on.
 - ✅ Custom domain and path-based Access for `/admin` (2 November 2026):
-  - `bae426a`:
+  - `b2cbb96`:
     - `bobbybuilds.app` as a Workers custom domain (the bare domain only) and `site.url`.
     - `www` redirects to it with a 301.
     - `docs/access-setup.md` rewritten.
     - A "Domain plan" in CLAUDE.md keeps `techjobs.` and email (hello@ on the bare domain) clear.
-  - `3a4d5e1`: a self-hosted Access app on `bobbybuilds.app` for the paths `admin` and `admin/*`. One email address, one-time PIN, team `bobbybuilds.cloudflareaccess.com`. The JWT check still runs behind it.
+  - `09c5b40`: a self-hosted Access app on `bobbybuilds.app` for the paths `admin` and `admin/*`. One email address, one-time PIN, team `bobbybuilds.cloudflareaccess.com`. The JWT check still runs behind it.
   - Portfolio `46acbe4`: the snippet, footer link and CSP moved to `bobbybuilds.app`.
   - The job board's `HQ_URL` was switched on its Worker and in Supabase. No code changes.
-  - `ea1f04c`: workers.dev closed (error 1042). A test keeps `workers_dev` and `preview_urls` off.
+  - `fc88135`: workers.dev closed (error 1042). A test keeps `workers_dev` and `preview_urls` off.
   - Tested:
     - Public pages are open, with noindex.
     - `/admin` asks for the email, and only that one gets in.
     - The cron's uptime checks are up for both sites.
     - Both sites' data arrives at the new address.
 - ✅ Home page refresh and a simpler admin (2–3 November 2026):
-  - `d9ff78a`, `135eba2`, `c68f407`, `d60a803`: custom dropdown and chart popovers, the GitHub contributions section (hourly, migration 0008), footer, project cards linking to each project, light mode only, project pages removed (`/p/*` → `/`), journey hidden behind `site.showJourney`.
-  - `a1a5d32`: hidden way to `/admin` (Option/Alt + A, or five taps on the copyright).
-  - `76b3257`:
+  - `e66656b`, `3f5c828`, `9b21461`, `3e42a93`: custom dropdown and chart popovers, the GitHub contributions section (hourly, migration 0008), footer, project cards linking to each project, light mode only, project pages removed (`/p/*` → `/`), journey hidden behind `site.showJourney`.
+  - `8cebe38`: hidden way to `/admin` (Option/Alt + A, or five taps on the copyright).
+  - `3143ded`:
     - Admin: Home (Needs attention, the public visitors card, project cards), dashboard tabs (Traffic, Tracked links, Searches, Funnel, Product numbers, Health, Events), one Settings page per project, a three-step New project setup, test projects hidden.
     - What's public: visitors and each product number. Tech Jobs' card shows "open jobs · companies" (migration 0009).
     - The "BobbyBuilds" wordmark, and Option/Alt + A from admin back to the public site.
   - Tested live: the Tech Jobs card line and logo, the wordmark, the redirects, every admin tab against live data, a public-number change round trip through the admin, and both shortcuts.
 - ✅ The simplest admin, and icons in their own shape (3 November 2026):
-  - `8f69c39`:
+  - `ea1bd07`:
     - Top bar: "BobbyBuilds HQ" and a status pill ("Everything's running normally", or "<n> things need attention", which opens the list). No Settings link, no Needs attention block.
     - Home: the chart, "My projects (<n>)" with a "+" for the New project setup, the cards, the retention line in small print.
     - A project: Overview (visitors, top pages and sources in plain words, tracked links merged with what they read, searches, the funnel and health in one line each, and "More detail" closed by default) and Settings (About this project, On your public page, Connection closed by default, Delete at the bottom). Old `/admin/settings` addresses redirect.

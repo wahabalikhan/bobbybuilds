@@ -129,7 +129,7 @@ The key and origins in BobbyBuilds stay the same. The snippet and the CSP ship i
 
 The job board builds its CSP (`script-src` and `connect-src`) from `HQ_URL`, so no code changes are needed. Set it in both places it's used:
 
-1. **The Worker.** In `~/Desktop/job_board`, run `npx wrangler secret list`.
+1. **The Worker.** In the job board's repo, run `npx wrangler secret list`.
    - If `HQ_URL` is listed, run `npx wrangler secret put HQ_URL` and enter `https://bobbybuilds.app`. This makes a new deployment by itself.
    - If it isn't listed, it's a `vars` entry in the job board's `wrangler.jsonc`. Change it there and deploy.
 2. **Supabase.** The ingest function sends `/v1/metrics` from there:
