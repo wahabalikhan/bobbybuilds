@@ -15,6 +15,7 @@ import {
 	setFunnel,
 	setMetricVisibility,
 	setOrigins,
+	setShowPublic,
 	SlugTakenError,
 	updateProjectDetails,
 } from "@/lib/db/settings";
@@ -51,7 +52,7 @@ export async function saveDetailsCore(db: D1Database, prev: FormState, values: F
 	const project = await projectFrom(db, values);
 	if (!project) return missing(prev);
 	// Fields "About this project" doesn't show keep their saved values (slug, description, lesson,
-	// links, order, logo, health address, GitHub repo), so saving never wipes or renames them.
+	// links, logo, health address, GitHub repo), so saving never wipes or renames them.
 	const kept: FormValues = {
 		slug: project.slug,
 		description_md: project.descriptionMd,
@@ -88,7 +89,8 @@ export async function startProjectCore(db: D1Database, prev: FormState, values: 
 	if (!result.ok) return { state: failed(prev, values, result.errors) };
 	const { name, siteUrl, origin } = result.value;
 	// "new" is taken by the New project page's own address.
-	const taken = new Set(["new", ...(await listProjects(db)).map((p) => p.slug)]);
+	const projects = await listProjects(db);
+	const taken = new Set(["new", ...projects.map((p) => p.slug)]);
 	let slug = result.value.slug;
 	for (let n = 2; taken.has(slug); n += 1) slug = `${result.value.slug.slice(0, 36)}-${n}`;
 
@@ -104,7 +106,8 @@ export async function startProjectCore(db: D1Database, prev: FormState, values: 
 		healthUrl: siteUrl,
 		githubRepo: null,
 		links: [],
-		sortOrder: 0,
+		// New projects go to the end of the list; the order can be changed in Settings.
+		sortOrder: Math.min(1000, Math.max(0, ...projects.map((p) => p.sortOrder)) + 1),
 	});
 	await setOrigins(db, id, [origin]);
 	const publicKey = createPublicKey();
@@ -185,8 +188,9 @@ export async function visibilityCore(db: D1Database, prev: FormState, values: Fo
 		.map((key) => Number(key.slice(7)));
 	const headline = values.headline ? Number(values.headline) : null;
 	await setMetricVisibility(db, project.id, publicIds, Number.isInteger(headline) ? headline : null);
+	await setShowPublic(db, project.id, values.show_public === "on");
 	const notes = headline && !publicIds.includes(headline) ? ["The headline number is shown on the public card, so it was made public too."] : [];
-	return { state: ok(prev, "Public numbers saved.", notes) };
+	return { state: ok(prev, values.show_public === "on" ? "Saved." : `Saved. ${project.name} isn't on your public page.`, notes) };
 }
 
 export async function addMetricCore(db: D1Database, prev: FormState, values: FormValues): Promise<ActionResult> {

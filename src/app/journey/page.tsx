@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Empty, Pill } from "@/components/admin/ui";
 import { SiteHeader, SkipLink } from "@/components/public/site-header";
+import { PublicTracker } from "@/components/public/tracker";
 import { formatDay } from "@/lib/format";
 import { getSnapshot } from "@/lib/public/get";
 import { owner } from "@/lib/site";
@@ -19,6 +20,7 @@ export default async function JourneyPage() {
 	const { journey } = await getSnapshot();
 	return (
 		<>
+			<PublicTracker />
 			<SkipLink />
 			<SiteHeader />
 			<main id="content" className={`${PAGE} py-10`}>

@@ -68,6 +68,7 @@ export default async function ProjectPage({
 						<ProjectLogo name={project.name} logoPath={logoFor(project)} size={36} />
 						<h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
 						<StatusPill status={project.status} />
+						{!project.showPublic && <span className="text-sm text-muted">Not on your public page</span>}
 						{project.siteUrl && (
 							<a href={project.siteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
 								Visit site <ArrowIcon />

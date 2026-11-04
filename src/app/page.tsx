@@ -8,6 +8,7 @@ import { ArrowIcon, GitHubIcon } from "@/components/public/icons";
 import { ProfileCard } from "@/components/public/profile";
 import { ProjectCard } from "@/components/public/project-card";
 import { SkipLink } from "@/components/public/site-header";
+import { PublicTracker } from "@/components/public/tracker";
 import { formatDay } from "@/lib/format";
 import { getSnapshot } from "@/lib/public/get";
 import { homeTitle, owner, site } from "@/lib/site";
@@ -33,6 +34,7 @@ export default async function Home() {
 
 	return (
 		<>
+			<PublicTracker />
 			<SkipLink />
 			<div className={`${PAGE} py-8 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10 lg:py-12`}>
 				<aside className="mb-10 lg:sticky lg:top-12 lg:mb-0 lg:self-start">

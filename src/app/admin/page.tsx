@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { CountMyVisits } from "@/components/admin/count-my-visits";
 import { Delta, ProjectLogo, StatusPill } from "@/components/admin/ui";
 import { StatusBadge, type Status } from "@/components/charts";
 import { WeekSparkline } from "@/components/public/charts";
@@ -10,7 +11,7 @@ import { monthlyVisitors, projectSummaries, publicProductNumbers, type ProjectSu
 import { change, formatCount, formatPercent } from "@/lib/format";
 import { logoFor } from "@/lib/project-logo";
 import { productLine } from "@/lib/public/product-line";
-import { adminHref } from "@/lib/site";
+import { adminHref, site } from "@/lib/site";
 
 /** Home: the visitors chart, then the projects. Whether everything's OK is the pill in the top bar. */
 export default async function AdminHome() {
@@ -21,6 +22,11 @@ export default async function AdminHome() {
 		summaries.map(async (s) => ({ slug: s.project.slug, name: s.project.name, logoPath: logoFor(s.project), monthly: await monthlyVisitors(env.DB, today, s.project.id) })),
 	);
 	const main = summaries.filter((s) => s.project.status === "live" || s.project.status === "building");
+	// "Don't count my visits": a one-time link for each site other than this one.
+	const otherSites = summaries.flatMap((s) => {
+		const origin = s.project.siteUrl ? new URL(s.project.siteUrl).origin : null;
+		return origin && origin !== site.url ? [{ name: s.project.name, origin }] : [];
+	});
 	const lines = new Map(await Promise.all(main.map(async (s) => [s.project.id, productLine(await publicProductNumbers(env.DB, s.project.id, today), today)] as const)));
 
 	return (
@@ -48,6 +54,8 @@ export default async function AdminHome() {
 				</div>
 			</section>
 
+			<CountMyVisits sites={otherSites} />
+
 			<p className="text-xs text-muted">
 				Raw page views, events, uptime checks and job runs are deleted after 90 days. Daily totals are kept. No cookies, and no IP addresses, names or emails are stored.
 			</p>
@@ -66,7 +74,10 @@ function ProjectCard({ summary: s, numbers }: { summary: ProjectSummary; numbers
 					<ProjectLogo name={project.name} logoPath={project.logoPath} />
 					<span className="font-semibold group-hover:underline">{project.name}</span>
 				</div>
-				<StatusPill status={s.project.status} />
+				<span className="flex shrink-0 items-center gap-2">
+					{!s.project.showPublic && <span className="text-xs text-muted">Not on public page</span>}
+					<StatusPill status={s.project.status} />
+				</span>
 			</div>
 			<p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-sm text-ink-2">
 				<span className="text-xl font-semibold tracking-tight tabular text-ink">{formatCount(s.visitors30)}</span>

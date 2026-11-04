@@ -92,6 +92,11 @@ export async function setFunnel(db: D1Database, id: number, steps: FunnelStep[])
 	await db.prepare("UPDATE projects SET funnel = ?2, updated_at = ?3 WHERE id = ?1").bind(id, JSON.stringify(steps), now()).run();
 }
 
+/** "Show on my public page": whether the project appears on the public page at all. */
+export async function setShowPublic(db: D1Database, id: number, show: boolean): Promise<void> {
+	await db.prepare("UPDATE projects SET show_public = ?2, updated_at = ?3 WHERE id = ?1").bind(id, show ? 1 : 0, now()).run();
+}
+
 /** Deletes a project and, through the foreign keys, all of its data. Journey entries are kept. */
 export async function deleteProject(db: D1Database, id: number): Promise<void> {
 	await db.prepare("DELETE FROM projects WHERE id = ?1").bind(id).run();

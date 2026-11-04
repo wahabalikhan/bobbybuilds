@@ -8,6 +8,13 @@ export const site = {
 	url: "https://bobbybuilds.app",
 	adminPath: "/admin",
 	/**
+	 * The BobbyBuilds project's public key, for t.js on the public pages (never /admin). Not a
+	 * secret: it's in every page's HTML. Set in migrations/0010_bobbybuilds_project.sql.
+	 */
+	trackerKey: "pk_ocrQh00fwJXI1yFLCW7DaCN3",
+	/** The BobbyBuilds project's slug: it tracks itself, shown in the admin only. */
+	selfSlug: "bobbybuilds",
+	/**
 	 * The public journey (home page section, /journey and /journey/[slug], sitemap entries).
 	 * While false they're hidden and /journey/* redirects to /. Entries are still written in admin.
 	 */

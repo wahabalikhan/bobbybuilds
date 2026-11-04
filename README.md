@@ -19,7 +19,7 @@ It's two things in one app:
 
 ### The tracker (`t.js`)
 
-Each site adds one script tag:
+Each site adds one script tag (BobbyBuilds' own public pages included: it tracks itself, shown in the dashboard only):
 
 ```html
 <script defer src="https://bobbybuilds.app/t.js" data-key="pk_…"></script>
@@ -32,7 +32,7 @@ Each site adds one script tag:
 - **Custom events**, via `bobby.track("event_name", { … })`.
 - **Core Web Vitals**, loaded separately after the page has loaded (`t-vitals.js`).
 
-It never sets cookies or uses local storage, and it never sends the query string, apart from `ref` and `utm_*` for tracked links.
+It never sets cookies, and it never sends the query string, apart from `ref` and `utm_*` for tracked links. Its only use of local storage is reading a "don't count my visits" flag that the site owner sets on their own browser, by opening a page with `#bobby-ignore` at the end of the address (`#bobby-count` clears it).
 
 ### The collector (`/v1/pv`, `/v1/events`, `/v1/metrics`)
 
@@ -58,7 +58,7 @@ The dashboard is protected by **Cloudflare Access**, and the app also checks Acc
 
 ## Privacy
 
-- **No cookies**, no local storage and no fingerprinting beyond the daily ID above.
+- **No cookies** and no fingerprinting beyond the daily ID above. Visitors' browsers store nothing (the one local-storage flag is only ever set by the owner, to leave out their own visits).
 - **No personal data:** no IP addresses, names or email addresses are stored.
 - **Global Privacy Control and Do Not Track are respected:** with either on, `t.js` sends nothing, and the collector stores nothing even if a request arrives.
 - **Retention:** raw page views and events are deleted after 90 days.

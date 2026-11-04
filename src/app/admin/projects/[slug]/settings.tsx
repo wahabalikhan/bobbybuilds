@@ -37,6 +37,9 @@ export async function ProjectSettingsTab({ db, project }: { db: D1Database; proj
 					</div>
 					<TextField name="tagline" label="Tagline" defaultValue={project.tagline} maxLength={120} hint="One line, shown on your public page." />
 					<TextField type="url" name="site_url" label="Site address" defaultValue={project.siteUrl ?? ""} placeholder="https://" hint="Where the public card links to. It's also checked every 5 minutes for uptime." />
+					<div className="sm:w-40">
+						<TextField type="number" name="sort_order" label="Order" defaultValue={String(project.sortOrder)} hint="1 comes first, here and on your public page." />
+					</div>
 				</SettingsForm>
 			</Section>
 
@@ -101,15 +104,24 @@ function Switch({ id, name, label, hint, checked }: { id: string; name: string; 
 	);
 }
 
-/** "Show visitors" (the public chart and sparkline) and a switch for each product number (the card's line). */
+/**
+ * "Show on my public page" (the project at all), then "Show visitors" (the public chart and
+ * sparkline) and a switch for each product number (the card's line).
+ */
 function PublicSwitches({ project, metrics }: { project: Project; metrics: Metric[] }) {
 	const visitors = metrics.find((m) => m.source === "collector" && m.key === "visitors");
 	const products = metrics.filter((m) => m.source === "product");
-	if (!visitors && products.length === 0) return <p className="text-sm text-muted">Nothing to show yet.</p>;
 	return (
 		<SettingsForm action={visibilityAction} submitLabel="Save">
 			<Hidden name="project_id" value={project.id} />
 			<div className="divide-y divide-line rounded-2xl border border-line">
+				<Switch
+					id="show_public"
+					name="show_public"
+					label="Show on my public page"
+					hint="Its card, and its visitors in the public chart and totals. When it's off, it's still everywhere here in the admin."
+					checked={project.showPublic}
+				/>
 				{visitors && <Switch id={`public_${visitors.id}`} name={`public_${visitors.id}`} label="Show visitors" hint="In the public visitors chart and on the card's sparkline." checked={visitors.isPublic} />}
 				{products.map((m) => (
 					<Switch key={m.id} id={`public_${m.id}`} name={`public_${m.id}`} label={m.label} hint={`On the card as "1,240 ${m.label.toLowerCase()}", from the latest daily value. Hidden if it's over a week old.`} checked={m.isPublic} />

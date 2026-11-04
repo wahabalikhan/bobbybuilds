@@ -3,6 +3,8 @@
  *
  * - Built ONLY from the daily roll-ups, public numbers, published journey entries and public
  *   milestones. Never from raw page views or events, and never from private numbers.
+ * - Only projects with "Show on my public page" on (listPublicProjects). A hidden project (like
+ *   BobbyBuilds itself) is in nothing here: no card, chart, totals, or journey entry's project name.
  * - Rebuilt by the 5-minute job every 10 minutes (with today's roll-up), by the daily job, and
  *   after settings changes. Written to KV only when it has changed, so writes stay far below the
  *   free plan's 1,000 a day (at most ~144, usually far fewer).
@@ -10,7 +12,7 @@
  */
 import { addDays, weekStart } from "@/lib/days";
 import { listMetrics, metricSeries, type Metric } from "@/lib/db/dashboard";
-import { listRealProjects, type ProjectLink, type ProjectStatus } from "@/lib/db/projects";
+import { listPublicProjects, type ProjectLink, type ProjectStatus } from "@/lib/db/projects";
 import { sha256Hex } from "@/lib/keys";
 import { renderMarkdown } from "@/lib/markdown";
 import { logoFor } from "@/lib/project-logo";
@@ -140,7 +142,7 @@ async function publicNumber(db: D1Database, metric: Metric, today: string): Prom
 
 /** Builds the snapshot from the roll-ups and public settings only. */
 export async function buildSnapshot(db: D1Database, today: string, now: number = Date.now()): Promise<PublicSnapshot> {
-	const [projects, metrics] = await Promise.all([listRealProjects(db), listMetrics(db)]);
+	const [projects, metrics] = await Promise.all([listPublicProjects(db), listMetrics(db)]);
 	const firstMonthDay = `${months(today)[0]}-01`;
 
 	const publicProjects: PublicProject[] = [];
@@ -180,10 +182,11 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 		value: sum(publicProjects.flatMap((p) => p.monthly?.filter((m) => m.month === month) ?? [])),
 	}));
 
+	// An entry about a hidden project is still public, without naming the project.
 	const { results: entries } = await db
 		.prepare(
 			`SELECT j.slug, j.title, j.body_md, j.published_at, p.slug AS project_slug, p.name AS project_name
-			 FROM journey_entries j LEFT JOIN projects p ON p.id = j.project_id
+			 FROM journey_entries j LEFT JOIN projects p ON p.id = j.project_id AND p.show_public = 1
 			 WHERE j.is_published = 1 AND j.published_at IS NOT NULL AND j.published_at <= ?1
 			 ORDER BY j.published_at DESC, j.id DESC`,
 		)

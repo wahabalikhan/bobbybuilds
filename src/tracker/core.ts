@@ -1,8 +1,9 @@
 /**
  * BobbyBuilds tracker. Built into public/t.js by scripts/build-tracker.mjs.
  *
- * No cookies, no localStorage, no fingerprinting. Sends nothing at all when Global Privacy
- * Control or Do Not Track is on, or in automated browsers. Sends as little as it can:
+ * No cookies and no fingerprinting. Its only use of localStorage is reading the owner's own
+ * "don't count my visits" flag (./ignore.ts). Sends nothing at all when Global Privacy
+ * Control or Do Not Track is on, in automated browsers, or when that flag is set. Sends as little as it can:
  * the path (never the query string), ref and utm_* only, the referrer's domain only,
  * the viewport width and the browser language.
  *
@@ -12,6 +13,8 @@
  * Core Web Vitals come from t-vitals.js (web-vitals), which t.js loads after the page has
  * loaded so the main script stays small.
  */
+
+import { COUNT_HASH, IGNORE_HASH, IGNORE_KEY } from "./ignore";
 
 export type SendPath = "/v1/pv" | "/v1/events";
 export type Send = (path: SendPath, body: Record<string, unknown>) => Promise<unknown>;
@@ -46,6 +49,28 @@ export function privacySignalOn(win: Window): boolean {
 
 export function shouldRun(win: Window): boolean {
 	return !privacySignalOn(win) && !win.navigator.webdriver && /^https?:$/.test(win.location.protocol);
+}
+
+/**
+ * The owner's "don't count my visits" flag for this site. Opening a page with #bobby-ignore sets
+ * it and #bobby-count clears it (then the address loses the hash, and a message says what
+ * happened). Storage that's blocked or missing counts as "not set".
+ */
+export function ownerIgnored(win: Window): boolean {
+	try {
+		const store = win.localStorage;
+		const { hash, host, pathname, search } = win.location;
+		if (hash === IGNORE_HASH || hash === COUNT_HASH) {
+			const ignore = hash === IGNORE_HASH;
+			if (ignore) store.setItem(IGNORE_KEY, "1");
+			else store.removeItem(IGNORE_KEY);
+			win.history.replaceState(win.history.state, "", pathname + search);
+			win.alert?.(ignore ? `Done: your visits to ${host} won't be counted in this browser.` : `Done: your visits to ${host} are counted again in this browser.`);
+		}
+		return store.getItem(IGNORE_KEY) === "1";
+	} catch {
+		return false;
+	}
 }
 
 /** File name and type for links to downloadable files, or null. */
@@ -203,15 +228,17 @@ export function createTracker({ key, win, send, now = () => Date.now() }: { key:
 }
 
 /**
- * Sets up window.bobby and starts tracking. When tracking is off (GPC, DNT, automation),
- * bobby.track still exists but does nothing, so site code never breaks.
+ * Sets up window.bobby and starts tracking. When tracking is off (GPC, DNT, automation, or the
+ * owner's "don't count my visits" flag), bobby.track still exists but does nothing, so site code never breaks.
  * Returns the tracker, or null when tracking is off.
  */
 export function install({ win, key, send }: { win: Window; key: string | undefined; send: Send }) {
 	const w = win as TrackerWindow;
 	const queued = Array.isArray(w.bobby?.q) ? (w.bobby!.q as unknown[][]) : [];
 
-	if (!key || !shouldRun(win)) {
+	// Checked first, so the #bobby-ignore link works (and says so) even with GPC on.
+	const ignored = ownerIgnored(win);
+	if (!key || ignored || !shouldRun(win)) {
 		w.bobby = { track() {} };
 		return null;
 	}

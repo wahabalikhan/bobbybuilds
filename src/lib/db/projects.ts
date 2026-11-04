@@ -27,6 +27,8 @@ export type Project = {
 	publicKey: string | null;
 	secretKeyHint: string | null;
 	sortOrder: number;
+	/** Whether it appears on the public page at all (card, chart, totals, share images). */
+	showPublic: boolean;
 };
 
 type ProjectRow = {
@@ -48,11 +50,12 @@ type ProjectRow = {
 	public_key: string | null;
 	secret_key_hint: string | null;
 	sort_order: number;
+	show_public: number;
 };
 
 // secret_key_hash is deliberately never selected into a Project.
 const PROJECT_COLUMNS = `id, slug, name, tagline, description_md, status, lesson, logo_path, site_url, health_url,
-	github_repo, links, allowed_origins, browser_events, funnel, public_key, secret_key_hint, sort_order`;
+	github_repo, links, allowed_origins, browser_events, funnel, public_key, secret_key_hint, sort_order, show_public`;
 
 function parseJsonArray<T>(value: string): T[] {
 	try {
@@ -83,6 +86,7 @@ function toProject(row: ProjectRow): Project {
 		publicKey: row.public_key,
 		secretKeyHint: row.secret_key_hint,
 		sortOrder: row.sort_order,
+		showPublic: row.show_public === 1,
 	};
 }
 
@@ -104,6 +108,11 @@ export function isTestProject(project: Pick<Project, "allowedOrigins">): boolean
 /** Every project except test projects, in display order. */
 export async function listRealProjects(db: D1Database): Promise<Project[]> {
 	return (await listProjects(db)).filter((p) => !isTestProject(p));
+}
+
+/** Projects for the public page: real projects with "Show on my public page" on, in display order. */
+export async function listPublicProjects(db: D1Database): Promise<Project[]> {
+	return (await listRealProjects(db)).filter((p) => p.showPublic);
 }
 
 /** Ids of projects that have had at least one page view ever (today's raw views or any roll-up). */

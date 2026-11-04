@@ -1,6 +1,7 @@
 import { Window } from "happy-dom";
 import { afterEach, describe, expect, it } from "vitest";
-import { createTracker, downloadInfo, install, privacySignalOn, type Send, shouldRun } from "@/tracker/core";
+import { createTracker, downloadInfo, install, ownerIgnored, privacySignalOn, type Send, shouldRun } from "@/tracker/core";
+import { IGNORE_KEY } from "@/tracker/ignore";
 
 type Sent = { path: string; body: Record<string, unknown> };
 
@@ -70,6 +71,61 @@ describe("privacy signals", () => {
 
 	it("runs normally otherwise", () => {
 		expect(shouldRun(setup().w)).toBe(true);
+	});
+});
+
+describe("don't count my visits", () => {
+	it("#bobby-ignore sets the flag, says so, drops the hash, and sends nothing", async () => {
+		const { win, w, sent, send } = setup("https://wahabalikhan.com/cv?ref=x#bobby-ignore");
+		const messages: string[] = [];
+		Object.defineProperty(win, "alert", { value: (message?: unknown) => void messages.push(String(message)), configurable: true });
+		expect(install({ win: w, key: "pk_test", send })).toBeNull();
+		(w as unknown as { bobby: { track: (n: string) => void } }).bobby.track("contact_click");
+		await tick();
+		expect(sent).toEqual([]);
+		expect(win.localStorage.getItem(IGNORE_KEY)).toBe("1");
+		expect(win.location.href).toBe("https://wahabalikhan.com/cv?ref=x");
+		expect(messages).toEqual(["Done: your visits to wahabalikhan.com won't be counted in this browser."]);
+	});
+
+	it("keeps sending nothing on later visits while the flag is set", async () => {
+		const { win, w, sent, send } = setup();
+		win.localStorage.setItem(IGNORE_KEY, "1");
+		expect(ownerIgnored(w)).toBe(true);
+		expect(install({ win: w, key: "pk_test", send })).toBeNull();
+		await tick();
+		expect(sent).toEqual([]);
+	});
+
+	it("#bobby-count clears the flag, so visits are counted again", async () => {
+		const { win, w, sent, send } = setup("https://techjobs.bobbybuilds.app/#bobby-count");
+		const messages: string[] = [];
+		Object.defineProperty(win, "alert", { value: (message?: unknown) => void messages.push(String(message)), configurable: true });
+		win.localStorage.setItem(IGNORE_KEY, "1");
+		install({ win: w, key: "pk_test", send })!.start();
+		await tick();
+		expect(win.localStorage.getItem(IGNORE_KEY)).toBeNull();
+		expect(messages).toEqual(["Done: your visits to techjobs.bobbybuilds.app are counted again in this browser."]);
+		expect(sent.filter((s) => s.path === "/v1/pv")).toHaveLength(1);
+	});
+
+	it("sets the flag even with Global Privacy Control on (and still sends nothing)", async () => {
+		const { win, w, sent, send } = setup("https://wahabalikhan.com/#bobby-ignore");
+		Object.defineProperty(win, "alert", { value: () => {}, configurable: true });
+		Object.defineProperty(win.navigator, "globalPrivacyControl", { value: true, configurable: true });
+		expect(install({ win: w, key: "pk_test", send })).toBeNull();
+		await tick();
+		expect(win.localStorage.getItem(IGNORE_KEY)).toBe("1");
+		expect(sent).toEqual([]);
+	});
+
+	it("counts as not set when storage is blocked, and ignores other hashes", async () => {
+		const blocked = setup();
+		Object.defineProperty(blocked.win, "localStorage", { get: () => { throw new Error("SecurityError"); }, configurable: true });
+		expect(ownerIgnored(blocked.w)).toBe(false);
+		const other = setup("https://wahabalikhan.com/#contact");
+		expect(ownerIgnored(other.w)).toBe(false);
+		expect(other.win.location.hash).toBe("#contact");
 	});
 });
 

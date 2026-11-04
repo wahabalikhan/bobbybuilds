@@ -73,8 +73,17 @@ describe("projects", () => {
 		["a secret key hash of the wrong length", { secret_key_hash: "abc123", secret_key_hint: "abcd" }],
 		["a secret key hash in upper case", { secret_key_hash: "A".repeat(64), secret_key_hint: "abcd" }],
 		["a hash with no hint", { secret_key_hash: "a".repeat(64) }],
+		["show_public other than 0 or 1", { show_public: 2 }],
 	])("rejects %s", async (_label, overrides) => {
 		await expectRejected(createProject(overrides));
+	});
+
+	it("shows a project on the public page unless show_public is 0", async () => {
+		const shown = await createProject();
+		const hidden = await createProject({ show_public: 0 });
+		const value = (id: number) => db.prepare("SELECT show_public FROM projects WHERE id = ?1").bind(id).first("show_public");
+		expect(await value(shown)).toBe(1);
+		expect(await value(hidden)).toBe(0);
 	});
 
 	it("rejects a duplicate slug", async () => {

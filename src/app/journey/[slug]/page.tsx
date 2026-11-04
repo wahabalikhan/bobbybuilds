@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Pill } from "@/components/admin/ui";
 import { SiteHeader, SkipLink } from "@/components/public/site-header";
+import { PublicTracker } from "@/components/public/tracker";
 import { formatDay } from "@/lib/format";
 import { getSnapshot } from "@/lib/public/get";
 import { owner } from "@/lib/site";
@@ -23,6 +24,7 @@ export default async function JourneyEntry({ params }: { params: Promise<{ slug:
 	if (!entry) notFound();
 	return (
 		<>
+			<PublicTracker />
 			<SkipLink />
 			<SiteHeader />
 			<main id="content" className={`${PAGE} py-10`}>
