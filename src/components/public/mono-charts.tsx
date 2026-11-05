@@ -320,7 +320,7 @@ export function ContributionGrid({ firstDay, counts }: { firstDay: string; count
 						</span>
 					))}
 				</div>
-				<div className="mt-1.5 flex">
+				<div className="mt-1 flex">
 					<div className="flex shrink-0 flex-col text-[11px] leading-none text-muted" style={{ width: LABELS, gap: GAP }} aria-hidden>
 						{["", "Mon", "", "Wed", "", "Fri", ""].map((day, i) => (
 							<span key={i} className="flex flex-1 items-center">
@@ -352,7 +352,7 @@ export function ContributionGrid({ firstDay, counts }: { firstDay: string; count
 					/>
 				)}
 			</div>
-			<div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-muted">
+			<div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-muted">
 				<span>{columns < allColumns ? `Last ${columns} weeks` : "Last 12 months"}</span>
 				<span className="flex items-center gap-1.5" aria-hidden>
 					Less

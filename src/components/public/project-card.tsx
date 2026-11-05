@@ -58,7 +58,7 @@ export function ProjectCard({ project }: { project: PublicProject }) {
 		<article
 			data-project-card
 			aria-labelledby={`project-${project.slug}`}
-			className={`group relative flex h-full min-w-0 flex-col rounded-2xl border border-line bg-card p-5 transition-colors ${CARD_HEIGHT} ${
+			className={`group relative flex h-full min-w-0 flex-col rounded-2xl border border-line bg-card p-4 transition-colors ${CARD_HEIGHT} ${
 				link ? "hover:border-[var(--axis)] has-[a[data-card-link]:focus-visible]:border-[var(--axis)] has-[a[data-card-link]:focus-visible]:outline-2 has-[a[data-card-link]:focus-visible]:outline-offset-2 has-[a[data-card-link]:focus-visible]:outline-[var(--accent)] has-[a[data-card-link]:focus-visible]:outline-solid" : ""
 			}`}
 		>
@@ -109,15 +109,15 @@ export function ProjectCard({ project }: { project: PublicProject }) {
 				)}
 			</p>
 			{/* Above the card's link overlay, so its hover card works. */}
-			<div className="relative z-10 mt-auto pt-5">
+			<div className="relative z-10 mt-auto pt-3">
 				{project.weekly ? (
 					<WeekChart
-						height={40}
+						height={36}
 						weeks={project.weekly}
 						label={`${project.name}: visitors per week for the last 12 weeks, ${formatCount(project.weekly.reduce((t, w) => t + w.value, 0))} in total. This week so far is dashed.`}
 					/>
 				) : (
-					<div aria-hidden className="h-10" />
+					<div aria-hidden className="h-9" />
 				)}
 			</div>
 			{caseStudy && (

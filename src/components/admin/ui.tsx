@@ -32,7 +32,7 @@ export function Card({ title, note, children, className = "", action }: { title?
 /** "My projects ………… 3": a small heading, a hairline, and something on the right. */
 export function SectionHeading({ id, children, aside, relaxed = false }: { id?: string; children: ReactNode; aside?: ReactNode; relaxed?: boolean }) {
 	return (
-		<div className={`flex items-baseline justify-between gap-3 border-b border-line ${relaxed ? "mb-6 pb-3.5" : "mb-4 pb-2"}`}>
+		<div className={`flex items-baseline justify-between gap-3 border-b border-line ${relaxed ? "mb-4 pb-3" : "mb-4 pb-2"}`}>
 			<h2 id={id} className="text-[15px] font-medium tracking-tight">
 				{children}
 			</h2>

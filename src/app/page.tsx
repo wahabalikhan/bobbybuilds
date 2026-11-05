@@ -41,15 +41,18 @@ export default async function Home() {
 			<PublicTracker />
 			<SkipLink />
 			<SiteHeader showAfter="projects" />
-			<main id="content" className={`${PAGE} space-y-20 pb-20 pt-[84px] sm:space-y-24 sm:pt-[108px]`}>
-				<Me />
+			<main id="content" className={`${PAGE} space-y-14 pb-16 pt-[72px] sm:space-y-16 sm:pt-[88px]`}>
+				{/* The hero keeps its own, larger space below (64px, 80px from sm); the other sections are closer. */}
+				<div className="mb-16! sm:mb-20!">
+					<Me />
+				</div>
 
 				{projects.length > 0 && (
 					<section id="projects" aria-labelledby="projects-heading" className="scroll-mt-20">
 						<SectionHeading id="projects-heading" aside={projects.length} relaxed>
 							Projects
 						</SectionHeading>
-						<div className="grid auto-rows-fr gap-4 md:grid-cols-2">
+						<div className="grid auto-rows-fr gap-3 md:grid-cols-2">
 							{projects.map((p) => (
 								<ProjectCard key={p.slug} project={p} />
 							))}

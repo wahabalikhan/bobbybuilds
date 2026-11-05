@@ -47,12 +47,12 @@ export function Journey({ entries }: { entries: Pick<PublicEntry, "slug" | "type
 	return (
 		<>
 			{types.length > 1 && (
-				<div role="group" aria-label="Show entries of one type" className="mb-8 flex flex-wrap gap-2">
+				<div role="group" aria-label="Show entries of one type" className="mb-6 flex flex-wrap gap-2">
 					{chip(null, "All")}
 					{types.map((t) => chip(t.value, t.label, t.emoji))}
 				</div>
 			)}
-			<ol className="space-y-8 border-l border-line pl-6 sm:pl-8">
+			<ol className="space-y-6 border-l border-line pl-6 sm:pl-8">
 				{visible.map((e) => {
 					const t = journeyType(e.type);
 					return (

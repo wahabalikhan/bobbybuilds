@@ -9,4 +9,4 @@ export const PAGE = "mx-auto w-full max-w-[900px] px-5 sm:px-6";
  * One height for every card on the public page (project cards and both Activity cards) when they're
  * side by side (md and up), so they all line up. On phones they're stacked and keep their own height.
  */
-export const CARD_HEIGHT = "md:h-[240px]";
+export const CARD_HEIGHT = "md:h-[216px]";

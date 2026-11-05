@@ -64,7 +64,7 @@ export function HonestNumbers({ snapshot }: { snapshot: PublicSnapshot }) {
 			<SectionHeading id="numbers-heading" relaxed>
 				The honest numbers
 			</SectionHeading>
-			<dl className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
+			<dl className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4">
 				{profile.buildingSince && profile.buildingSince <= today && <Figure label="Days building" value={formatWhole(daysBuilding(profile.buildingSince, today))} />}
 				<Figure label="Visitors, last 30 days" value={formatWhole(snapshot.visitors30)}>
 					{snapshot.monthly.length > 1 && (
