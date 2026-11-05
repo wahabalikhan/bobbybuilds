@@ -41,6 +41,8 @@ export type Project = {
 	caseStudyUrl: string | null;
 	/** Up to 3 lines with {key} placeholders, e.g. "{open_jobs} jobs made clear". */
 	outcomes: string[];
+	/** What's happening now ("building the CV fit"), shown after "Now:" on the public card. "" = none. */
+	nowText: string;
 };
 
 type ProjectRow = {
@@ -70,12 +72,13 @@ type ProjectRow = {
 	screenshot_alt: string;
 	case_study_url: string | null;
 	outcomes: string;
+	now_text: string;
 };
 
 // secret_key_hash is deliberately never selected into a Project.
 const PROJECT_COLUMNS = `id, slug, name, tagline, tagline_fallback, description_md, status, lesson, logo_path, site_url, health_url,
 	github_repo, links, allowed_origins, browser_events, funnel, public_key, secret_key_hint, sort_order, show_public,
-	is_paused, emoji, screenshot_path, screenshot_alt, case_study_url, outcomes`;
+	is_paused, emoji, screenshot_path, screenshot_alt, case_study_url, outcomes, now_text`;
 
 function parseJsonArray<T>(value: string): T[] {
 	try {
@@ -113,6 +116,7 @@ function toProject(row: ProjectRow): Project {
 		screenshotAlt: row.screenshot_alt,
 		caseStudyUrl: row.case_study_url,
 		outcomes: parseJsonArray<unknown>(row.outcomes).filter((o): o is string => typeof o === "string"),
+		nowText: row.now_text,
 	};
 }
 

@@ -160,6 +160,14 @@ function PublicCard({ project, numbers }: { project: Project; numbers: Awaited<R
 					<TextField key={i} name={`outcome_${i}`} label={`Outcome ${i + 1}`} defaultValue={project.outcomes[i] ?? ""} maxLength={80} placeholder={i === 0 && numbers[0] ? `{${numbers[0].key}} …` : ""} />
 				))}
 			</div>
+			<TextField
+				name="now_text"
+				label="Now (optional)"
+				defaultValue={project.nowText}
+				maxLength={140}
+				placeholder="building the CV fit"
+				hint={'Shown small and grey in the card, after "Now:". Leave blank to hide it.'}
+			/>
 		</SettingsForm>
 	);
 }

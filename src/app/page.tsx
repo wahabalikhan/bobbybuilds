@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { SectionHeading } from "@/components/admin/ui";
 import { SiteFooter } from "@/components/public/footer";
-import { ContributionGraph } from "@/components/public/github";
-import { HeadlineCard } from "@/components/public/headline-card";
-import { ArrowIcon, GitHubIcon } from "@/components/public/icons";
-import { ProfileCard } from "@/components/public/profile";
+import { HonestNumbers } from "@/components/public/honest-numbers";
+import { Journey } from "@/components/public/journey";
+import { Activity } from "@/components/public/activity";
+import { Me } from "@/components/public/me";
 import { ProjectCard } from "@/components/public/project-card";
-import { SkipLink } from "@/components/public/site-header";
+import { SiteHeader, SkipLink } from "@/components/public/site-header";
 import { PublicTracker } from "@/components/public/tracker";
-import { formatDay } from "@/lib/format";
 import { getSnapshot } from "@/lib/public/get";
-import { homeTitle, owner, site } from "@/lib/site";
+import { homeTitle, owner } from "@/lib/site";
 import { PAGE } from "@/lib/layout";
 
 // Reads the public snapshot (rebuilt from the roll-ups every 10 minutes) on each request.
@@ -25,87 +23,66 @@ export const metadata: Metadata = {
 	alternates: { canonical: "/" },
 };
 
+/** Statuses shown on the public page. Ideas and retired projects aren't, for now. */
+const SHOWN = new Set(["live", "building", "paused"]);
+
+/**
+ * Top to bottom: Me (a short intro), Projects (two columns on desktop), The honest numbers,
+ * Activity (only when "Show my activity" is on in Profile), and The journey last, because it keeps
+ * growing. Everything comes from the
+ * public snapshot. Each section has a stable anchor to link to: #projects, #numbers, #activity, #journey.
+ */
 export default async function Home() {
 	const snapshot = await getSnapshot();
-	const main = snapshot.projects.filter((p) => p.status === "live" || p.status === "building");
-	const withVisitors = snapshot.projects.filter((p) => p.monthly).map((p) => ({ slug: p.slug, name: p.name, logoPath: p.logoPath, monthly: p.monthly! }));
-	const latest = snapshot.journey.slice(0, 3);
-	const projectBySlug = new Map(snapshot.projects.map((p) => [p.slug, p]));
+	const projects = snapshot.projects.filter((p) => SHOWN.has(p.status));
 
 	return (
-		<>
+		<div className="public-theme min-h-screen bg-page text-ink">
 			<PublicTracker />
 			<SkipLink />
-			<div className={`${PAGE} py-8 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10 lg:py-12`}>
-				<aside className="mb-10 lg:sticky lg:top-12 lg:mb-0 lg:self-start">
-					<ProfileCard />
-				</aside>
-				<main id="content" className="min-w-0 space-y-12">
-					{withVisitors.length > 0 && <HeadlineCard projects={withVisitors} />}
+			<SiteHeader hideWhileVisible="me-name" />
+			<main id="content" className={`${PAGE} space-y-20 pb-20 pt-7 sm:space-y-24 sm:pt-[52px]`}>
+				<Me />
 
-					<section aria-labelledby="projects-heading">
-						<SectionHeading id="projects-heading" aside={main.length} relaxed>
-							My projects
+				{projects.length > 0 && (
+					<section id="projects" aria-labelledby="projects-heading" className="scroll-mt-20">
+						<SectionHeading id="projects-heading" aside={projects.length} relaxed>
+							Projects
 						</SectionHeading>
-						<div className="grid gap-4 md:grid-cols-2">
-							{main.map((p) => (
+						<div className="grid auto-rows-fr gap-4 md:grid-cols-2">
+							{projects.map((p) => (
 								<ProjectCard key={p.slug} project={p} />
 							))}
 						</div>
 					</section>
+				)}
 
-					{snapshot.github && (
-						<section aria-labelledby="github-heading">
-							<SectionHeading
-								id="github-heading"
-								relaxed
-								aside={
-									<a href={`https://github.com/${snapshot.github.login}`} target="_blank" rel="noopener noreferrer me" className="inline-flex items-center gap-1.5 hover:text-ink">
-										<GitHubIcon /> {snapshot.github.login} <ArrowIcon />
-										<span className="sr-only">(opens in a new tab)</span>
-									</a>
-								}
-							>
-								GitHub
-							</SectionHeading>
-							<div className="rounded-2xl border border-line bg-card p-5 sm:p-6">
-								<ContributionGraph github={snapshot.github} />
-							</div>
-						</section>
-					)}
+				<HonestNumbers snapshot={snapshot} />
 
-					{site.showJourney && latest.length > 0 && (
-						<section aria-labelledby="journey-heading">
-							<SectionHeading
-								id="journey-heading"
-								relaxed
-								aside={
-									<Link href="/journey" className="link">
-										All entries
-									</Link>
-								}
-							>
-								Journey
-							</SectionHeading>
-							<ul className="space-y-4">
-								{latest.map((e) => (
-									<li key={e.slug}>
-										<Link href={`/journey/${e.slug}`} className="group block">
-											<span className="text-sm text-muted">
-												{formatDay(new Date(e.publishedAt).toISOString().slice(0, 10), true)}
-												{e.projectSlug && ` · ${projectBySlug.get(e.projectSlug)?.name ?? e.projectName}`}
-											</span>
-											<span className="block font-medium group-hover:underline">{e.title}</span>
-											<span className="block text-sm text-ink-2">{e.excerpt}</span>
-										</Link>
-									</li>
-								))}
-							</ul>
-						</section>
-					)}
-				</main>
-			</div>
+
+
+				{snapshot.activity && <Activity activity={snapshot.activity} />}
+
+				{snapshot.journey.length > 0 && (
+					<section id="journey" aria-labelledby="journey-heading" className="scroll-mt-20">
+						<SectionHeading id="journey-heading" aside={snapshot.journey.length} relaxed>
+							The journey
+						</SectionHeading>
+						<Journey
+							entries={snapshot.journey.map(({ slug, type, day, title, html, linkUrl, projectName }) => ({
+								slug,
+								type,
+								day,
+								title,
+								html,
+								linkUrl,
+								projectName,
+							}))}
+						/>
+					</section>
+				)}
+			</main>
 			<SiteFooter year={Number(snapshot.today.slice(0, 4))} />
-		</>
+		</div>
 	);
 }

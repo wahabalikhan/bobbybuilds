@@ -1,8 +1,9 @@
 /**
  * The public snapshot: everything the public pages show, in one JSON value in KV.
  *
- * - Built ONLY from the daily roll-ups, public numbers, published journey entries and public
- *   milestones. Never from raw page views or events, and never from private numbers.
+ * - Built ONLY from the daily roll-ups, public numbers, published journey entries, public
+ *   milestones, the profile, monthly costs and revenue, and (when "Show my activity" is on) the
+ *   GitHub contribution calendar. Never from raw page views or events, and never from private numbers.
  * - Only projects with "Show on my public page" on (listPublicProjects). A hidden project (like
  *   BobbyBuilds itself) is in nothing here: no card, chart, totals, or journey entry's project name.
  * - Rebuilt by the 5-minute job every 10 minutes (with today's roll-up), by the daily job, and
@@ -12,15 +13,17 @@
  */
 import { addDays, weekStart } from "@/lib/days";
 import { listMetrics, metricSeries, type Metric } from "@/lib/db/dashboard";
+import { getProfile } from "@/lib/db/profile";
 import { listPublicProjects, type ProjectLink, type ProjectStatus } from "@/lib/db/projects";
+import type { JourneyType } from "@/lib/journey-types";
 import { sha256Hex } from "@/lib/keys";
 import { renderMarkdown } from "@/lib/markdown";
 import { logoFor } from "@/lib/project-logo";
 import { owner } from "@/lib/site";
-import { fillTaglineParts, type TaglinePart } from "./product-line";
+import { fillOutcome, fillTaglineParts, type TaglinePart } from "./product-line";
 
 export const SNAPSHOT_KEY = "public-snapshot";
-export const SNAPSHOT_VERSION = 4;
+export const SNAPSHOT_VERSION = 6;
 
 export type Point = { day: string; value: number };
 export type Month = { month: string; value: number };
@@ -61,11 +64,24 @@ export type PublicProject = {
 	monthly: Month[] | null;
 	numbers: PublicNumber[];
 	milestones: { day: string; title: string; note: string }[];
+	/** "" = none. */
+	emoji: string;
+	/** The hero screenshot from public/screenshots/, always with alt text. */
+	screenshot: { src: string; alt: string } | null;
+	caseStudyUrl: string | null;
+	/** Filled-in outcomes (numbers marked), in order; ones that can't be filled are left out. */
+	outcomes: TaglinePart[][];
+	/** Shown after "Now:" in the card. "" = none. */
+	now: string;
 };
 
 export type PublicEntry = {
 	slug: string;
+	type: JourneyType;
+	/** 'YYYY-MM-DD': the date shown. */
+	day: string;
 	title: string;
+	linkUrl: string | null;
 	publishedAt: number;
 	projectSlug: string | null;
 	projectName: string | null;
@@ -73,8 +89,17 @@ export type PublicEntry = {
 	excerpt: string;
 };
 
-/** GitHub's contribution calendar for the last year: counts per day from firstDay (public data). */
-export type PublicGithub = { login: string; firstDay: string; counts: number[] };
+/** GitHub's contribution calendar for the last year: counts per day from firstDay (public data), with its total and longest streak. */
+export type PublicGithub = { login: string; firstDay: string; counts: number[]; total: number; longestStreak: number };
+
+/**
+ * The Activity section (only when "Show my activity" is on in Profile): Shipped journey entries
+ * per month for the last 12 months (this month last), and the GitHub contribution calendar.
+ */
+export type PublicActivity = { shipped: { month: string; titles: string[] }[]; github: PublicGithub | null };
+
+/** The latest month with any costs or revenue entered (this month, or the one before that was filled in). */
+export type PublicMoney = { month: string; costPence: number; revenuePence: number; costs: { service: string; pence: number }[] };
 
 export type PublicSnapshot = {
 	version: number;
@@ -82,9 +107,13 @@ export type PublicSnapshot = {
 	today: string;
 	/** Visitors per month across projects whose visitors are public. */
 	monthly: Month[];
+	/** Visitors in the last 30 days across projects whose visitors are public. */
+	visitors30: number;
+	profile: { buildingSince: string | null };
+	money: PublicMoney | null;
 	projects: PublicProject[];
 	journey: PublicEntry[];
-	github: PublicGithub | null;
+	activity: PublicActivity | null;
 };
 
 const sum = (points: { value: number }[]) => points.reduce((t, p) => t + p.value, 0);
@@ -146,7 +175,7 @@ async function publicNumber(db: D1Database, metric: Metric, today: string): Prom
 
 /** Builds the snapshot from the roll-ups and public settings only. */
 export async function buildSnapshot(db: D1Database, today: string, now: number = Date.now()): Promise<PublicSnapshot> {
-	const [projects, metrics] = await Promise.all([listPublicProjects(db), listMetrics(db)]);
+	const [projects, metrics, profile] = await Promise.all([listPublicProjects(db), listMetrics(db), getProfile(db)]);
 	const firstMonthDay = `${months(today)[0]}-01`;
 
 	const publicProjects: PublicProject[] = [];
@@ -181,6 +210,11 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			monthly: visitorsDaily ? toMonths(visitorsDaily, today) : null,
 			numbers,
 			milestones,
+			emoji: project.emoji,
+			screenshot: project.screenshotPath && project.screenshotAlt ? { src: project.screenshotPath, alt: project.screenshotAlt } : null,
+			caseStudyUrl: project.caseStudyUrl,
+			outcomes: project.outcomes.map((o) => fillOutcome(o, numbers, today)).filter((o): o is TaglinePart[] => o !== null),
+			now: project.nowText,
 		});
 	}
 
@@ -192,38 +226,70 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 	// An entry about a hidden project is still public, without naming the project.
 	const { results: entries } = await db
 		.prepare(
-			`SELECT j.slug, j.title, j.body_md, j.published_at, p.slug AS project_slug, p.name AS project_name
+			`SELECT j.slug, j.type, j.title, j.body_md, j.link_url, j.published_at, p.slug AS project_slug, p.name AS project_name
 			 FROM journey_entries j LEFT JOIN projects p ON p.id = j.project_id AND p.show_public = 1
 			 WHERE j.is_published = 1 AND j.published_at IS NOT NULL AND j.published_at <= ?1
 			 ORDER BY j.published_at DESC, j.id DESC`,
 		)
 		.bind(now)
-		.all<{ slug: string; title: string; body_md: string; published_at: number; project_slug: string | null; project_name: string | null }>();
+		.all<{ slug: string; type: JourneyType; title: string; body_md: string; link_url: string | null; published_at: number; project_slug: string | null; project_name: string | null }>();
 
-	const { results: contributions } = await db
-		.prepare("SELECT day, count FROM github_contributions ORDER BY day")
-		.all<{ day: string; count: number }>();
-	const github: PublicGithub | null = contributions.length
-		? { login: owner.githubLogin, firstDay: contributions[0].day, counts: contributions.map((c) => c.count) }
-		: null;
+	const visitors30 = sum(publicProjects.flatMap((p) => p.numbers.filter((n) => n.kind === "count" && n.key === "visitors").map((n) => ({ value: n.figure ?? 0 }))));
 
 	return {
 		version: SNAPSHOT_VERSION,
 		generatedAt: now,
 		today,
 		monthly,
+		visitors30,
+		profile: { buildingSince: profile.buildingSince },
+		money: await publicMoney(db, today.slice(0, 7)),
 		projects: publicProjects,
 		journey: entries.map((e) => ({
 			slug: e.slug,
+			type: e.type,
+			day: new Date(e.published_at).toISOString().slice(0, 10),
 			title: e.title,
+			linkUrl: e.link_url,
 			publishedAt: e.published_at,
 			projectSlug: e.project_slug,
 			projectName: e.project_name,
 			html: renderMarkdown(e.body_md),
 			excerpt: excerpt(e.body_md),
 		})),
-		github,
+		activity: profile.showActivity ? await activity(db, today, entries) : null,
 	};
+}
+
+/** This month's costs and revenue, or the latest month before it that has any. */
+async function publicMoney(db: D1Database, thisMonth: string): Promise<PublicMoney | null> {
+	const latest = await db.prepare("SELECT max(month) AS month FROM money WHERE month <= ?1").bind(thisMonth).first<{ month: string | null }>();
+	if (!latest?.month) return null;
+	const { results } = await db
+		.prepare("SELECT kind, service, sum(amount_pence) AS pence FROM money WHERE month = ?1 GROUP BY kind, service ORDER BY kind, pence DESC, service COLLATE NOCASE")
+		.bind(latest.month)
+		.all<{ kind: "cost" | "revenue"; service: string; pence: number }>();
+	const costs = results.filter((r) => r.kind === "cost").map((r) => ({ service: r.service, pence: r.pence }));
+	return { month: latest.month, costPence: sum(costs.map((c) => ({ value: c.pence }))), revenuePence: sum(results.filter((r) => r.kind === "revenue").map((r) => ({ value: r.pence }))), costs };
+}
+
+/** Shipped entries per month (from the published entries) and the GitHub calendar (see PublicActivity). */
+async function activity(db: D1Database, today: string, entries: { type: JourneyType; title: string; published_at: number }[]): Promise<PublicActivity> {
+	const shipped = months(today).map((month) => ({
+		month,
+		titles: entries.filter((e) => e.type === "shipped" && new Date(e.published_at).toISOString().startsWith(month)).map((e) => e.title),
+	}));
+	const { results } = await db.prepare("SELECT day, count FROM github_contributions ORDER BY day").all<{ day: string; count: number }>();
+	let longestStreak = 0;
+	let run = 0;
+	for (const r of results) {
+		run = r.count > 0 ? run + 1 : 0;
+		longestStreak = Math.max(longestStreak, run);
+	}
+	const github: PublicGithub | null = results.length
+		? { login: owner.githubLogin, firstDay: results[0].day, counts: results.map((r) => r.count), total: sum(results.map((r) => ({ value: r.count }))), longestStreak }
+		: null;
+	return { shipped, github };
 }
 
 /** Hash of the content (not the time it was built), to tell whether anything changed. */

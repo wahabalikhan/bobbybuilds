@@ -1,13 +1,14 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. The public site is light only, whatever the visitor's system setting; the admin
- * dashboard (wrapped in .admin-theme) also has a dark version, chosen by the system setting.
+ * Design tokens. Both the public pages (wrapped in .public-theme) and the admin (.admin-theme) have
+ * a dark version, chosen by the system setting.
  * Look: white page, white cards with thin light-grey borders and 16px corners, no heavy shadows,
  * monochrome charts (light grey fill, dark line), small grey pills, black pill buttons.
- * --accent is #1D4ED8 (links, focus, selected states; never chart marks). Contrast: 6.7:1 on white,
- * hover #1E40AF 8.7:1; admin dark mode uses #6B8CF5 (6.3:1) with hover #93B0FF (9.3:1).
- * Status colours are reserved for state (always shown with an icon and a label).
+ * --accent is #1D4ED8 in the admin (links, focus, selected states; never chart marks). Contrast:
+ * 6.7:1 on white, hover #1E40AF 8.7:1; admin dark mode uses #6B8CF5 (6.3:1) with hover #93B0FF (9.3:1).
+ * The public pages have no blue: --accent is ink there (links underlined, the focus ring in ink).
+ * Status colours are reserved for state (always shown with a label).
  */
 :root {
 	color-scheme: light;
@@ -28,12 +29,15 @@
 	--chart-fill: #f1f1f2;
 	--chart-bar: #0a0a0a;
 	--chart-soft: #c7c7cc;
-	/* GitHub contribution levels (the public GitHub section only: GitHub's own greens, light only). */
-	--gh-0: #ebedf0;
-	--gh-1: #9be9a8;
-	--gh-2: #40c463;
-	--gh-3: #30a14e;
-	--gh-4: #216e39;
+	/* Social icons in their brand colours (LinkedIn #0A66C2: 5.7:1 on white; GitHub's black mark). */
+	--brand-linkedin: #0a66c2;
+	--brand-github: #181717;
+	/* GitHub activity levels (the public Activity section): greys, darker for more. */
+	--act-0: #ebebed;
+	--act-1: #c7c7cc;
+	--act-2: #8e8e93;
+	--act-3: #52525b;
+	--act-4: #0a0a0a;
 	--previous: #c7c7cc;
 	--good: #0ca30c;
 	--good-ink: #006300;
@@ -44,8 +48,16 @@
 	--foreground: var(--ink);
 }
 
+/* Public pages: monochrome, so links and focus are ink (hover #52525B, 7.7:1 on white). */
+:root:has(.public-theme) {
+	--accent: #0a0a0a;
+	--accent-hover: #52525b;
+	--accent-wash: rgb(10 10 10 / 0.06);
+}
+
 @media (prefers-color-scheme: dark) {
-	.admin-theme {
+	.admin-theme,
+	:root:has(.public-theme) {
 		color-scheme: dark;
 		/* #1d4ed8 is only 2.95:1 on the dark page, so dark mode uses a lighter step (6.3:1). */
 		--accent: #6b8cf5;
@@ -67,6 +79,21 @@
 		--chart-soft: #4a4a50;
 		--previous: #4a4a50;
 		--good-ink: #0ca30c;
+		/* LinkedIn's lighter blue (7.9:1 on the dark page); GitHub's mark is white on dark. */
+		--brand-linkedin: #70b5f9;
+		--brand-github: #fafafa;
+		--act-0: #1c1c1f;
+		--act-1: #3a3a3f;
+		--act-2: #6b6b72;
+		--act-3: #a1a1a8;
+		--act-4: #fafafa;
+	}
+
+	/* Public dark mode: links and focus in light ink (hover #C4C4C8, 11.6:1 on the dark page). */
+	:root:has(.public-theme) {
+		--accent: #fafafa;
+		--accent-hover: #c4c4c8;
+		--accent-wash: rgb(250 250 250 / 0.08);
 	}
 }
 
@@ -132,7 +159,8 @@ body {
 	font-variant-numeric: tabular-nums;
 }
 
-:focus-visible {
+/* A project card's link draws its focus outline round the whole card instead (project-card.tsx). */
+:focus-visible:not([data-card-link]) {
 	outline: 2px solid var(--accent);
 	outline-offset: 2px;
 }
@@ -151,6 +179,13 @@ body {
 .prose-bobby pre code { background: none; padding: 0; }
 .prose-bobby blockquote { border-left: 3px solid var(--line); padding-left: 1rem; color: var(--ink-2); }
 .prose-bobby img { border-radius: 12px; border: 1px solid var(--line); }
+
+/* The public page's jump links scroll smoothly, unless the visitor prefers reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+	:root:has(.public-theme) {
+		scroll-behavior: smooth;
+	}
+}
 
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }

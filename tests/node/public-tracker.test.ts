@@ -9,10 +9,10 @@ function files(dir: string): string[] {
 	});
 }
 
-const PUBLIC_PAGES = ["src/app/journey/[slug]/page.tsx", "src/app/journey/page.tsx", "src/app/not-found.tsx", "src/app/page.tsx"];
+const PUBLIC_PAGES = ["src/app/not-found.tsx", "src/app/page.tsx"];
 
 describe("BobbyBuilds' own t.js", () => {
-	it("is on the public pages (home, 404, journey) and nowhere else: never the admin or the root layout", () => {
+	it("is on the public pages (home and 404) and nowhere else: never the admin or the root layout", () => {
 		const users = files("src")
 			.filter((f) => /from "@\/components\/public\/tracker"/.test(readFileSync(f, "utf8")))
 			.sort();

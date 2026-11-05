@@ -33,7 +33,7 @@ export function shareImage({ eyebrow, title, subtitle, pill }: { eyebrow: string
 						</div>
 						<div style={{ fontSize: 28, color: "#0a0a0a", fontWeight: 600 }}>{owner.name}</div>
 						<div style={{ fontSize: 28, color: "#71717a" }}>{`· ${site.name}`}</div>
-						<div style={{ marginLeft: "auto", width: 120, height: 8, borderRadius: 999, background: "#1d4ed8" }} />
+						<div style={{ marginLeft: "auto", width: 120, height: 8, borderRadius: 999, background: "#0a0a0a" }} />
 					</div>
 				</div>
 			</div>

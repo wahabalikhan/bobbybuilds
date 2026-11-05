@@ -1,30 +1,21 @@
 import Link from "next/link";
-import { owner, site } from "@/lib/site";
-import { AdminKeyboardShortcut } from "./admin-shortcut";
-import { Avatar } from "./profile";
+import { Wordmark } from "@/components/wordmark";
+import { site } from "@/lib/site";
 import { PAGE } from "@/lib/layout";
+import { FadingHeader } from "./fading-header";
 
-/** A slim header for the journey and 404 pages. */
-export function SiteHeader() {
+/**
+ * The small monochrome wordmark at the top of every public page, linking home. No navigation bar.
+ * On the home page (`hideWhileVisible` = the big heading's id) it's a sticky bar whose wordmark only
+ * fades in once that heading has scrolled away (FadingHeader); elsewhere it's always shown.
+ */
+export function SiteHeader({ hideWhileVisible }: { hideWhileVisible?: string } = {}) {
+	if (hideWhileVisible) return <FadingHeader targetId={hideWhileVisible} label={`${site.name} home`} />;
 	return (
-		<header className="border-b border-line">
-			<AdminKeyboardShortcut />
-			<div className={`${PAGE} flex items-center justify-between gap-4 py-4`}>
-				<Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
-					<Avatar size={28} />
-					{owner.name}
-				</Link>
-				<nav aria-label="Site" className="flex gap-1 text-sm text-ink-2">
-					<Link href="/" className="rounded-full px-3 py-1.5 hover:bg-pill hover:text-ink">
-						Projects
-					</Link>
-					{site.showJourney && (
-						<Link href="/journey" className="rounded-full px-3 py-1.5 hover:bg-pill hover:text-ink">
-							Journey
-						</Link>
-					)}
-				</nav>
-			</div>
+		<header className={`${PAGE} pt-6 sm:pt-8`}>
+			<Link href="/" className="inline-block rounded-sm" aria-label={`${site.name} home`}>
+				<Wordmark mono />
+			</Link>
 		</header>
 	);
 }

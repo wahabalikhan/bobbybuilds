@@ -24,3 +24,12 @@ export function ArrowIcon({ className = "h-3.5 w-3.5" }: IconProps) {
 		</svg>
 	);
 }
+
+export function MailIcon({ className = "h-4 w-4" }: IconProps) {
+	return (
+		<svg aria-hidden viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+			<rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
+			<path d="m3.5 6.5 8.5 6.5 8.5-6.5" />
+		</svg>
+	);
+}

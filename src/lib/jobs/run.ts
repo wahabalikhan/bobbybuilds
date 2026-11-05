@@ -10,10 +10,9 @@ import { owner } from "@/lib/site";
 /**
  * The two scheduled tasks, triggered by the cron Worker (cron/):
  * - frequent (every 5 minutes): uptime pings; every 10 minutes, today's roll-up and the
- *   public snapshot (written to KV only if it changed); hourly (on the hour, before that
- *   snapshot), the GitHub contribution calendar
+ *   public snapshot (written to KV only if it changed)
  * - daily (00:10 UTC): finalise yesterday's roll-up, refresh today's, rotate the daily
- *   secret, 90-day clean-up, public snapshot
+ *   secret, 90-day clean-up, the GitHub contribution calendar (for the shipping rhythm), public snapshot
  */
 
 export const TASKS = ["daily", "frequent"] as const;
@@ -27,9 +26,6 @@ async function frequent(deps: JobDeps, at: number) {
 	const summary: Record<string, unknown> = {
 		uptime: uptime.map((check) => ({ project: check.projectId, up: check.up, ms: check.responseMs, status: check.statusCode })),
 	};
-	if (new Date(at).getUTCMinutes() === 0) {
-		summary.contributions = await syncGithubContributions(deps.db, deps.fetch, owner.githubLogin, deps.githubToken, at);
-	}
 	if (new Date(at).getUTCMinutes() % 10 === 0) {
 		summary.rollup = await rollupDay(deps.db, utcDay(at), at);
 		if (deps.kv) {
@@ -46,6 +42,8 @@ async function daily(deps: JobDeps, at: number) {
 		rollups: [await rollupDay(deps.db, addDays(today, -1), at), await rollupDay(deps.db, today, at)],
 		secret: await rotateDailySecret(deps.db, today),
 		cleanup: await cleanUp(deps.db, today),
+		// Daily is enough: the shipping rhythm counts whole days.
+		contributions: await syncGithubContributions(deps.db, deps.fetch, owner.githubLogin, deps.githubToken, at),
 	};
 	if (deps.kv) {
 		const { written, bytes } = await publishSnapshot(deps.db, deps.kv, today, at);

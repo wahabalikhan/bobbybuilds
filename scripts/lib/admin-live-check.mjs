@@ -56,8 +56,8 @@ export async function checkLiveBanner(origin, extraPaths = []) {
 		if (csp.includes("upgrade-insecure-requests")) problems.push(`${path} sends upgrade-insecure-requests on loopback, so its CSS wouldn't load.`);
 	}
 
-	// The public pages must work too (they need the KV binding). /journey is either shown (200) or,
-	// while site.showJourney is false, redirected to the home page.
+	// The public pages must work too (they need the KV binding). /journey redirects to the home
+	// page's journey section.
 	const homePage = await get(`${origin}/`);
 	if (homePage.status !== 200) problems.push(`The public page / returned ${homePage.status}.`);
 	const journey = await fetch(`${origin}/journey`, { redirect: "manual" });

@@ -40,13 +40,12 @@ describe("wrangler.jsonc and site.url", () => {
 	});
 });
 
-describe("hidden journey and removed project pages", () => {
-	it("redirects /p/* to / permanently, and /journey/* to / (temporarily) while the journey is hidden", async () => {
+describe("removed project and journey pages", () => {
+	it("redirects /p/* to / and /journey/* to the home page's journey section, permanently", async () => {
 		const { default: config } = await import("../../next.config");
 		const redirects = await config.redirects!();
 		expect(redirects).toContainEqual({ source: "/p/:path*", destination: "/", permanent: true });
-		expect(redirects.some((r) => r.source === "/journey/:path*")).toBe(!site.showJourney);
-		expect(redirects.find((r) => r.source === "/journey/:path*")?.permanent).toBe(site.showJourney ? undefined : false);
+		expect(redirects).toContainEqual({ source: "/journey/:path*", destination: "/#journey", permanent: true });
 	});
 });
 

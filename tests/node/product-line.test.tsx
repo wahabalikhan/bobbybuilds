@@ -59,6 +59,8 @@ describe("taglines with numbers", () => {
 			siteUrl: "https://techjobs.bobbybuilds.app",
 			logoPath: null,
 			weekly: null,
+			outcomes: [],
+			now: "",
 		} as unknown as PublicProject;
 		const html = renderToStaticMarkup(<ProjectCard project={project} />);
 		expect([...html.matchAll(/<strong[^>]*>([^<]*)<\/strong>/g)].map((m) => m[1])).toEqual(["4,868", "838"]);

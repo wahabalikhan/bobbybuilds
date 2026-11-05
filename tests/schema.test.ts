@@ -456,3 +456,11 @@ describe("phase 10: profile, project cards, journey types and money", () => {
 		}
 	});
 });
+
+describe("phase 10b: a project's Now line", () => {
+	it("is one line of up to 140 characters", async () => {
+		await expect(createProject({ now_text: "x".repeat(140) })).resolves.toBeGreaterThan(0);
+		await expectRejected(createProject({ now_text: "x".repeat(141) }));
+		await expectRejected(createProject({ now_text: "building\nthe CV fit" }));
+	});
+});

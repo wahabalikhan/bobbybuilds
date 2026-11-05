@@ -34,7 +34,7 @@ export default async function AdminHome() {
 	const published = journey.filter((e) => e.isPublished).length;
 	const sum = (kind: "cost" | "revenue") => money.filter((r) => r.kind === kind).reduce((t, r) => t + r.amountPence, 0);
 	const publicPage = [
-		{ href: adminHref("/settings/profile"), label: "Profile", detail: profile.thisWeek ? `This week: ${profile.thisWeek}` : "This week and the date you started building" },
+		{ href: adminHref("/settings/profile"), label: "Profile", detail: [profile.buildingSince ? `building since ${profile.buildingSince}` : "no start date yet", profile.showActivity ? "Activity shown" : "Activity hidden"].join(" · ") },
 		{ href: adminHref("/settings/journey"), label: "Journey", detail: journey.length ? `${published} published${journey.length > published ? `, ${journey.length - published} draft${journey.length - published === 1 ? "" : "s"}` : ""}` : "No entries yet" },
 		{ href: adminHref("/settings/money"), label: "Costs and revenue", detail: `${formatMonth(today.slice(0, 7))}: costs ${formatPence(sum("cost"))} · revenue ${formatPence(sum("revenue"))}` },
 	];

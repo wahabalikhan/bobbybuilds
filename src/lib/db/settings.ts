@@ -103,11 +103,11 @@ export async function setShowPublic(db: D1Database, id: number, show: boolean): 
 	await db.prepare("UPDATE projects SET show_public = ?2, updated_at = ?3 WHERE id = ?1").bind(id, show ? 1 : 0, now()).run();
 }
 
-/** The project's public card: emoji, hero screenshot and its alt text, case study link and outcomes. */
+/** The project's public card: emoji, hero screenshot and its alt text, case study link, outcomes and its Now line. */
 export async function setPublicCard(db: D1Database, id: number, card: PublicCard): Promise<void> {
 	await db
-		.prepare("UPDATE projects SET emoji = ?2, screenshot_path = ?3, screenshot_alt = ?4, case_study_url = ?5, outcomes = ?6, updated_at = ?7 WHERE id = ?1")
-		.bind(id, card.emoji, card.screenshotPath, card.screenshotAlt, card.caseStudyUrl, JSON.stringify(card.outcomes), now())
+		.prepare("UPDATE projects SET emoji = ?2, screenshot_path = ?3, screenshot_alt = ?4, case_study_url = ?5, outcomes = ?6, now_text = ?7, updated_at = ?8 WHERE id = ?1")
+		.bind(id, card.emoji, card.screenshotPath, card.screenshotAlt, card.caseStudyUrl, JSON.stringify(card.outcomes), card.nowText, now())
 		.run();
 }
 

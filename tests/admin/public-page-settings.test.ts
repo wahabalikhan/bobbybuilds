@@ -27,6 +27,11 @@ describe("the public card", () => {
 		expect(result).toMatchObject({ ok: true, value: { emoji: "💼", screenshotAlt: "The job list", outcomes: ["{open_jobs} jobs made clear", "{visitors} visitors"] } });
 	});
 
+	it("tidies the Now line: a typed \"Now:\" is dropped, spaces are squeezed, and it's one short line", () => {
+		expect(validatePublicCard({ now_text: "Now:   building the   CV fit" }, [], keys)).toMatchObject({ ok: true, value: { nowText: "building the CV fit" } });
+		expect(validatePublicCard({ now_text: "x".repeat(141) }, [], keys)).toMatchObject({ ok: false, errors: { now_text: expect.any(String) } });
+	});
+
 	it.each([
 		["a word instead of an emoji", { emoji: "jobs" }, "emoji"],
 		["a screenshot that isn't in public/screenshots/", { screenshot_path: "/screenshots/missing.png", screenshot_alt: "x" }, "screenshot_path"],
@@ -58,11 +63,10 @@ describe("paused", () => {
 });
 
 describe("profile", () => {
-	it("saves This week, the start date and the shipping rhythm switch", async () => {
-		expect(validateProfile({ this_week: "x".repeat(141) })).toMatchObject({ ok: false, errors: { this_week: expect.any(String) } });
+	it("saves the start date and the activity switch", async () => {
 		expect(validateProfile({ building_since: "2026-02-30" })).toMatchObject({ ok: false, errors: { building_since: expect.any(String) } });
-		await core.profileCore(db, idle, { this_week: "Working on  the CV fit", building_since: "2026-06-30", show_shipping_rhythm: "on" });
-		expect(await getProfile(db)).toEqual({ thisWeek: "Working on the CV fit", buildingSince: "2026-06-30", showShippingRhythm: true });
+		await core.profileCore(db, idle, { building_since: "2026-06-30", show_activity: "on" });
+		expect(await getProfile(db)).toEqual({ buildingSince: "2026-06-30", showActivity: true });
 	});
 });
 

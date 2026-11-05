@@ -14,8 +14,8 @@ describe("one page container, public and admin", () => {
 		expect(PAGE).toBe("mx-auto w-full max-w-[1040px] px-5 sm:px-6");
 	});
 
-	it("is used by the public page, its footer and slim header, the 404 page, and the admin top bar and main area", () => {
-		for (const file of ["src/app/page.tsx", "src/components/public/footer.tsx", "src/components/public/site-header.tsx", "src/app/not-found.tsx", "src/app/journey/page.tsx", "src/app/journey/[slug]/page.tsx"]) {
+	it("is used by the public page, its footer and header (plain and fading), the 404 page, and the admin top bar and main area", () => {
+		for (const file of ["src/app/page.tsx", "src/components/public/footer.tsx", "src/components/public/site-header.tsx", "src/components/public/fading-header.tsx", "src/app/not-found.tsx"]) {
 			expect(readFileSync(file, "utf8"), file).toContain("${PAGE}");
 		}
 		const admin = readFileSync("src/app/admin/layout.tsx", "utf8");
@@ -69,9 +69,9 @@ describe("the wordmark", () => {
 		expect(html).toContain('<span class="font-normal text-muted">HQ</span>');
 	});
 
-	it("is in the profile panel and the admin top bar, and the old dark square is gone", () => {
-		expect(readFileSync("src/components/public/profile.tsx", "utf8")).toMatch(/<Wordmark \/>/);
+	it("is monochrome in the public header (plain and fading) and has HQ in the admin top bar", () => {
+		expect(readFileSync("src/components/public/site-header.tsx", "utf8")).toMatch(/<Wordmark mono \/>/);
+		expect(readFileSync("src/components/public/fading-header.tsx", "utf8")).toMatch(/<Wordmark mono \/>/);
 		expect(readFileSync("src/app/admin/layout.tsx", "utf8")).toMatch(/<Wordmark suffix="HQ" \/>/);
-		expect(readFileSync("src/components/public/profile.tsx", "utf8")).not.toMatch(/15171C/);
 	});
 });

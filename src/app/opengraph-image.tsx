@@ -11,11 +11,11 @@ export const dynamic = "force-dynamic";
 export default async function Image() {
 	const snapshot = await getSnapshot();
 	const total = snapshot.monthly.reduce((t, m) => t + m.value, 0);
-	const live = snapshot.projects.filter((p) => p.status === "live" || p.status === "building").length;
+	const live = snapshot.projects.filter((p) => ["live", "building", "paused"].includes(p.status)).length;
 	return shareImage({
 		eyebrow: `${live} project${live === 1 ? "" : "s"}, built in public`,
 		title: owner.name,
-		subtitle: `Product designer building free tools that are honest about what they do.`,
+		subtitle: owner.bio,
 		pill: total > 0 ? `${formatWhole(total)} visitors in 12 months` : undefined,
 	});
 }

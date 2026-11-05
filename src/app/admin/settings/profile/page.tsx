@@ -13,7 +13,7 @@ import { profileAction } from "../actions";
 
 export const metadata: Metadata = { title: "Profile" };
 
-/** The bits of the public page's "Me" section that change: This week, and the days building. */
+/** The profile bits of the public page: the days building and the Activity switch. ("This week" is now each project's Now, in its Settings.) */
 export default async function ProfilePage() {
 	const { env } = await getCloudflareContext({ async: true });
 	const profile = await getProfile(env.DB);
@@ -26,14 +26,6 @@ export default async function ProfilePage() {
 				<h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
 			</div>
 			<SettingsForm action={profileAction}>
-				<TextField
-					name="this_week"
-					label="This week"
-					defaultValue={profile.thisWeek}
-					maxLength={140}
-					placeholder="Working on the CV fit for Tech Jobs · open to product design roles"
-					hint="One line under your headline. Leave blank to hide it."
-				/>
 				<div className="sm:w-56">
 					<TextField
 						type="date"
@@ -45,11 +37,11 @@ export default async function ProfilePage() {
 				</div>
 				<div className="rounded-2xl border border-line">
 					<Switch
-						id="show_shipping_rhythm"
-						name="show_shipping_rhythm"
-						label="Show my shipping rhythm"
-						hint="A small strip of how often you've shipped over the last year, from your GitHub activity across all repos."
-						checked={profile.showShippingRhythm}
+						id="show_activity"
+						name="show_activity"
+						label="Show my activity"
+						hint="An Activity section on your public page: how many Shipped journey entries you've written each month, and your GitHub contributions over the last year."
+						checked={profile.showActivity}
 					/>
 				</div>
 			</SettingsForm>

@@ -13,7 +13,7 @@ BobbyBuilds is built in phases. Each phase starts with a plan and ends with a te
 | 7 | Connect my portfolio | ✅ Done (portfolio `cada9b5`, `5428cdb`) |
 | 8 | Connect the job board | Not started |
 | 9 | Launch | In progress: custom domain and Access done (`b2cbb96`, `09c5b40`, `fc88135`) |
-| 10 | Public page redesign | In progress: 10a (data and admin) built, not committed |
+| 10 | Public page redesign | ✅ Done (10a `9d5b21e`; 10b "BobbyBuilds public page redesign") |
 
 ## 1. Setup ✅
 
@@ -168,9 +168,18 @@ Done in the job board repo during its Phase 10.
 
 An original, single-column public page (no longer modelled on IndiePage): Me, Projects, The honest numbers, The journey, and an optional Shipping rhythm. Black, grey and white, with colour only from screenshots, project and journey emojis, status dots and social icons on hover. Light and dark mode.
 
-- **10a: data and admin** (built 5 November 2026, not committed yet):
+- **10a: data and admin** (`9d5b21e`, 5 November 2026; migration 0012 applied live and deployed; the live public page was checked unchanged):
   - Migration 0012: `profile` (This week, building since, shipping rhythm switch), project emoji, screenshot and alt text, case study link, outcomes and `is_paused`, journey `type` and `link_url`, and `money` (monthly costs and revenue in pence).
   - Admin: My public page on Home (Profile, Journey, Costs and revenue), the card form under each project's On your public page, Paused as a status, and the journey editor un-hidden with types, a short body and a link.
   - Screenshots come from `public/screenshots/` (no uploads).
   - The project Overview and Settings tabs read the database themselves instead of taking it as a prop (they hung under `next dev`).
-- **10b: the public page**: not started. It will add the snapshot (version 5), the new sections, dark mode, `/journey/*` → `/#journey`, removal of `site.showJourney` and of journey entry pages and share images, the blue accent dropped on public pages, and the rewrite of CLAUDE.md's Design and Public pages sections.
+- **10b: the public page** (commit "BobbyBuilds public page redesign", 5 November 2026; migration 0013 applied live, then deployed):
+  - Snapshot version 5: the profile, `visitors30`, the latest month's money, each project's emoji, screenshot, case study link and filled outcomes, journey types, dates and links, and the shipping rhythm (replacing the raw GitHub calendar; only when it's switched on).
+  - The new single-column home page: Me, Projects, The honest numbers, The journey and Shipping rhythm. A small monochrome wordmark at the top. No visitors chart at the top, no profile panel, no green GitHub grid.
+  - Light and dark mode on the public pages, with no blue (ink links and focus ring). Footer icons are grey until hovered.
+  - `/journey` and `/journey/*` → `/#journey` (permanent). The journey pages, their share images and `site.showJourney` are gone. The share image's blue bar is ink.
+  - The GitHub contribution calendar is fetched by the daily job instead of hourly.
+  - The new bio, Leeds and the email link in `owner`.
+  - Revised the same day: jump links under the profile (to `#projects`, `#numbers`, `#journey`, `#activity`, with smooth scrolling); the old project cards back in two columns (status dot, emoji, the outcomes line, the 12-week chart restyled in monochrome with a new hover card, Try it and case study links; no screenshot); Activity (Shipping rhythm, Shipped entries per month, and GitHub activity, the contribution grid in greys) behind "Show my activity", replacing the shipping rhythm strip; brand-coloured icons in the profile and footer.
+  - Revised again: Activity as two cards like the project cards; the GitHub grid fills its card (it had a fixed 440px minimum width and month labels spilling into extra columns) and shows fewer recent weeks to keep squares at 8px or more; the order Projects → Honest numbers → Activity → Journey; a shorter intro ("BobbyBuilds" large, "Wahab (Bobby) Khan, Leeds" small beside it and the icons on one line, then the new one-sentence bio 8px below); no This week line, no jump links and no Open to work pill; a "Now:" line per project. Migration 0013 (`0013_project_now.sql`: `now_text`, with This week moved into Tech Jobs' Now).
+  - Final touches before the commit: no emoji on the cards, the case study link hidden when it's the project's own site, the whole card clickable (the name as a stretched link, ↗ on hover and focus, an outline round the card) instead of "Try it", and the heading at 64px (44px on phones).

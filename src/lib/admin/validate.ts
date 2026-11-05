@@ -314,7 +314,7 @@ export function validateNewProject(values: FormValues): Result<NewProjectStart> 
 
 // --- On your public page: the project's card ----------------------------------------------
 
-export type PublicCard = { emoji: string; screenshotPath: string | null; screenshotAlt: string; caseStudyUrl: string | null; outcomes: string[] };
+export type PublicCard = { emoji: string; screenshotPath: string | null; screenshotAlt: string; caseStudyUrl: string | null; outcomes: string[]; nowText: string };
 
 export const OUTCOME_ROWS = 3;
 
@@ -351,20 +351,20 @@ export function validatePublicCard(values: FormValues, screenshots: string[], nu
 			else outcomes.push(outcome);
 		}
 	}
-	return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value: { emoji, screenshotPath, screenshotAlt: screenshotPath ? screenshotAlt : "", caseStudyUrl, outcomes } };
+	const nowText = text(values.now_text).replace(/^now:\s*/i, "").replace(/\s+/g, " ");
+	if (nowText.length > 140) errors.now_text = `Keep it to one short line: 140 characters or fewer (this is ${nowText.length}).`;
+	return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value: { emoji, screenshotPath, screenshotAlt: screenshotPath ? screenshotAlt : "", caseStudyUrl, outcomes, nowText } };
 }
 
 // --- Profile ----------------------------------------------------------------------------
 
 export function validateProfile(values: FormValues): Result<Profile> {
 	const errors: Errors = {};
-	const thisWeek = text(values.this_week).replace(/\s+/g, " ");
-	if (thisWeek.length > 140) errors.this_week = `Keep it to one line: 140 characters or fewer (this is ${thisWeek.length}).`;
 	const since = text(values.building_since);
 	if (since && !isDay(since)) errors.building_since = "Choose a date.";
 	return Object.keys(errors).length
 		? { ok: false, errors }
-		: { ok: true, value: { thisWeek, buildingSince: since || null, showShippingRhythm: values.show_shipping_rhythm === "on" } };
+		: { ok: true, value: { buildingSince: since || null, showActivity: values.show_activity === "on" } };
 }
 
 // --- Costs and revenue ------------------------------------------------------------------

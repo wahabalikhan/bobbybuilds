@@ -317,13 +317,10 @@ for (const [slug, type, title, body, link, projectId, published, daysAgo] of [
 }
 
 console.log("Adding the demo profile, project cards, costs and revenue…");
-await db
-	.prepare("UPDATE profile SET this_week = ?1, building_since = ?2 WHERE id = 1")
-	.bind("Demo: working on the CV fit for Tech Jobs · open to product design roles", addDays(today, -128))
-	.run();
+await db.prepare("UPDATE profile SET building_since = ?1 WHERE id = 1").bind(addDays(today, -128)).run();
 await db.prepare("UPDATE projects SET emoji = '🎨', case_study_url = 'https://wahabalikhan.com' WHERE id = ?1").bind(portfolio.id).run();
 await db
-	.prepare("UPDATE projects SET emoji = '💼', outcomes = ?2 WHERE id = ?1")
+	.prepare("UPDATE projects SET emoji = '💼', outcomes = ?2, now_text = 'Demo: building the CV fit' WHERE id = ?1")
 	.bind(jobBoard.id, // The demo job board only has returning_users as a product number.
 		JSON.stringify(["{returning_users} people came back", "{visitors} visitors in 30 days"]))
 	.run();

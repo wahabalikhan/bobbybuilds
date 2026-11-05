@@ -123,12 +123,38 @@ describe("public snapshot", () => {
 		expect(await env.PUBLIC_CACHE.get(SNAPSHOT_KEY)).not.toBeNull();
 	});
 
-	it("includes the GitHub contribution calendar, oldest day first, or null when there's none", async () => {
+	it("has Activity only when it's switched on: Shipped entries per month and the GitHub calendar, oldest day first", async () => {
 		await db.prepare("DELETE FROM github_contributions").run();
-		expect((await buildSnapshot(db, TODAY, NOW)).github).toBeNull();
-		for (const [day, count] of [["2026-11-01", 4], ["2026-10-31", 0], ["2026-11-02", 9]] as const) await insert("github_contributions", { day, count, updated_at: NOW });
-		expect((await buildSnapshot(db, TODAY, NOW)).github).toEqual({ login: "wahabalikhan", firstDay: "2026-10-31", counts: [0, 4, 9] });
+		await db.prepare("UPDATE profile SET show_shipping_rhythm = 0 WHERE id = 1").run();
+		expect((await buildSnapshot(db, TODAY, NOW)).activity).toBeNull();
+		await db.prepare("UPDATE profile SET show_shipping_rhythm = 1 WHERE id = 1").run();
+		expect((await buildSnapshot(db, TODAY, NOW)).activity?.github).toBeNull();
+		for (const [day, count] of [["2026-11-01", 4], ["2026-10-31", 0], ["2026-11-02", 9], ["2026-10-30", 2]] as const) await insert("github_contributions", { day, count, updated_at: NOW });
+		await insert("journey_entries", { slug: "activity-shipped", type: "shipped", title: "Shipped alerts", is_published: 1, published_at: NOW - 86_400_000 });
+		const activity = (await buildSnapshot(db, TODAY, NOW)).activity!;
+		expect(activity.github).toEqual({ login: "wahabalikhan", firstDay: "2026-10-30", counts: [2, 0, 4, 9], total: 15, longestStreak: 2 });
+		expect(activity.shipped).toHaveLength(12);
+		expect(activity.shipped.at(-1)).toEqual({ month: TODAY.slice(0, 7), titles: ["Shipped alerts"] });
 		await db.prepare("DELETE FROM github_contributions").run();
+		await db.prepare("DELETE FROM journey_entries WHERE slug = 'activity-shipped'").run();
+		await db.prepare("UPDATE profile SET show_shipping_rhythm = 0 WHERE id = 1").run();
+	});
+
+	it("has the latest month's costs by service and revenue, and nothing before any is entered", async () => {
+		await db.prepare("DELETE FROM money").run();
+		expect((await buildSnapshot(db, TODAY, NOW)).money).toBeNull();
+		const last = `${Number(TODAY.slice(0, 4)) + 1}-01`;
+		await insert("money", { month: TODAY.slice(0, 7), kind: "cost", service: "Cloudflare", amount_pence: 500 });
+		await insert("money", { month: TODAY.slice(0, 7), kind: "cost", service: "Anthropic", amount_pence: 640 });
+		await insert("money", { month: TODAY.slice(0, 7), kind: "revenue", service: "Tech Jobs", amount_pence: 0 });
+		await insert("money", { month: last, kind: "cost", service: "Future", amount_pence: 999 });
+		expect((await buildSnapshot(db, TODAY, NOW)).money).toEqual({
+			month: TODAY.slice(0, 7),
+			costPence: 1140,
+			revenuePence: 0,
+			costs: [{ service: "Anthropic", pence: 640 }, { service: "Cloudflare", pence: 500 }],
+		});
+		await db.prepare("DELETE FROM money").run();
 	});
 
 	it("uses public/logos/<slug>.* as a project's logo when none is chosen in Settings", async () => {

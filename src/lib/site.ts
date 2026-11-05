@@ -16,11 +16,6 @@ export const site = {
 	trackerKey: "pk_ocrQh00fwJXI1yFLCW7DaCN3",
 	/** The BobbyBuilds project's slug: it tracks itself, shown in the admin only. */
 	selfSlug: "bobbybuilds",
-	/**
-	 * The public journey (home page section, /journey and /journey/[slug], sitemap entries).
-	 * While false they're hidden and /journey/* redirects to /. Entries are still written in admin.
-	 */
-	showJourney: false,
 	/** Search engines stay out until launch: set to true to allow indexing. */
 	indexable: false,
 } as const;
@@ -33,11 +28,15 @@ export const owner = {
 	fullName: "Wahab Ali Khan",
 	/** The GitHub account behind the public GitHub section (contribution calendar). */
 	githubLogin: "wahabalikhan",
+	/** Shown in small grey text beside the heading, after the name ("Wahab (Bobby) Khan, Leeds"). */
+	location: "Leeds",
 	// Photo: add a square public/profile.png or public/profile.jpg (detected at build). Until then, the initial is shown.
-	bio: "Product designer with 4+ years designing enterprise SaaS for technical users, and a BSc in Computer Science that means I build what I design. After being made redundant in June 2026, I started building the tools I wished I'd had. They're free, they're honest about what they do, and I'm building every one of them in public. Follow along with me on LinkedIn!",
+	bio: "I'm a product designer with five years in B2B SaaS, now designing and building tools that make everyday things easier, in public.",
+	/** The profile's links, in order, each an icon with its label. */
 	links: [
 		{ label: "LinkedIn", url: "https://linkedin.com/in/wahabalikhan" },
 		{ label: "GitHub", url: "https://github.com/wahabalikhan" },
+		{ label: "Email", url: "mailto:hello@bobbybuilds.app" },
 	],
 } as const;
 

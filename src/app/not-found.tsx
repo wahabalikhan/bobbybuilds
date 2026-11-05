@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonClass } from "@/components/admin/ui";
+import { SiteFooter } from "@/components/public/footer";
 import { SiteHeader } from "@/components/public/site-header";
 import { PublicTracker } from "@/components/public/tracker";
 import { PAGE } from "@/lib/layout";
@@ -10,7 +11,7 @@ export const metadata: Metadata = { title: "Page not found" };
 
 export default function NotFound() {
 	return (
-		<>
+		<div className="public-theme min-h-screen bg-page text-ink">
 			<PublicTracker />
 			<SiteHeader />
 			<main id="content" data-bobby-not-found className={`${PAGE} py-16`}>
@@ -20,6 +21,7 @@ export default function NotFound() {
 					Back to the projects
 				</Link>
 			</main>
-		</>
+			<SiteFooter year={new Date().getUTCFullYear()} />
+		</div>
 	);
 }

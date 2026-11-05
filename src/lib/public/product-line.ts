@@ -40,15 +40,35 @@ export function fillTaglineParts(tagline: string, fallback: string, numbers: Pic
 	const values = new Map(
 		numbers.filter((n) => n.kind === "latest" && n.figure !== null && n.latestDay !== null && n.latestDay >= earliest).map((n) => [n.key, formatWhole(n.figure!)]),
 	);
-	if (!taglineKeys(tagline).every((key) => values.has(key))) return fallback ? [{ text: fallback }] : [];
+	return fillParts(tagline, values) ?? (fallback ? [{ text: fallback }] : []);
+}
+
+/**
+ * One of a project's outcomes ("{open_jobs} jobs made clear"), filled in the same way, or null
+ * when any number can't be (not public, no value, or over RECENT_DAYS old): then it's left out.
+ * Counts like {visitors} use their 30-day total.
+ */
+export function fillOutcome(template: string, numbers: Pick<PublicNumber, "key" | "kind" | "figure" | "latestDay">[], today: string): TaglinePart[] | null {
+	const earliest = addDays(today, -RECENT_DAYS);
+	const values = new Map(
+		numbers
+			.filter((n) => n.figure !== null && (n.kind === "count" || (n.latestDay !== null && n.latestDay >= earliest)))
+			.map((n) => [n.key, formatWhole(n.figure!)]),
+	);
+	return taglineKeys(template).length ? fillParts(template, values) : null;
+}
+
+/** Splits a template into text and numbers, or null if a placeholder has no value. */
+function fillParts(template: string, values: Map<string, string>): TaglinePart[] | null {
+	if (!taglineKeys(template).every((key) => values.has(key))) return null;
 	const parts: TaglinePart[] = [];
 	let last = 0;
-	for (const match of tagline.matchAll(PLACEHOLDER)) {
-		if (match.index > last) parts.push({ text: tagline.slice(last, match.index) });
+	for (const match of template.matchAll(PLACEHOLDER)) {
+		if (match.index > last) parts.push({ text: template.slice(last, match.index) });
 		parts.push({ text: values.get(match[1])!, number: true });
 		last = match.index + match[0].length;
 	}
-	if (last < tagline.length) parts.push({ text: tagline.slice(last) });
+	if (last < template.length) parts.push({ text: template.slice(last) });
 	return parts;
 }
 
