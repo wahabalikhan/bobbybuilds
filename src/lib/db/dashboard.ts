@@ -128,6 +128,8 @@ export type ProjectSummary = {
 	weekly: DayValue[];
 	/** The card's chart: from the project's start (per day for its first four weeks, then per week). */
 	trend: Trend;
+	/** Its first tracked day, for the note under the chart (its live date is project.startedOn). */
+	trackingSince: string | null;
 	headline: (MetricFigure & { label: string; unit: string }) | null;
 	uptime: { lastUp: boolean | null; lastCheckedAt: number | null; uptime7: number | null };
 };
@@ -183,6 +185,7 @@ export async function projectSummaries(db: D1Database, today: string): Promise<P
 					return { day: week, value: series.filter((d) => d.day >= week && d.day <= end).reduce((t, d) => t + d.value, 0) };
 				}),
 				trend: trendFrom(series, today, chartStart(project.startedOn, firstTracked.get(project.id) ?? null)),
+				trackingSince: firstTracked.get(project.id) ?? null,
 				headline: headlineMetric
 					? { ...(await metricFigure(db, headlineMetric, today)), label: headlineMetric.label, unit: headlineMetric.unit }
 					: null,

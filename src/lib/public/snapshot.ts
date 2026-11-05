@@ -24,7 +24,7 @@ import { owner } from "@/lib/site";
 import { fillOutcome, fillTaglineParts, type TaglinePart } from "./product-line";
 
 export const SNAPSHOT_KEY = "public-snapshot";
-export const SNAPSHOT_VERSION = 8;
+export const SNAPSHOT_VERSION = 9;
 
 export type Point = { day: string; value: number };
 export type Month = { month: string; value: number };
@@ -63,6 +63,9 @@ export type PublicProject = {
 	weekly: Point[] | null;
 	/** The card's chart: from the project's start (per day for its first four weeks, then per week); null when visitors aren't public. */
 	trend: Trend | null;
+	/** Its first tracked day and its live date ("Started on"), for the note under the chart. */
+	trackingSince: string | null;
+	liveSince: string | null;
 	/** Visitors per month for 12 months; null when visitors aren't public. */
 	monthly: Month[] | null;
 	numbers: PublicNumber[];
@@ -213,6 +216,8 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			pill: headline && headlineNumber?.figure != null ? { label: headline.label, unit: headline.unit, value: headlineNumber.figure, period: headlineNumber.period } : null,
 			weekly: visitorsDaily ? toWeeks(visitorsDaily, today) : null,
 			trend: visitorsDaily ? trendFrom(visitorsDaily, today, chartStart(project.startedOn, firstTracked.get(project.id) ?? null)) : null,
+			trackingSince: firstTracked.get(project.id) ?? null,
+			liveSince: project.startedOn,
 			monthly: visitorsDaily ? toMonths(visitorsDaily, today) : null,
 			numbers,
 			milestones,

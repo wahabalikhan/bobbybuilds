@@ -42,3 +42,9 @@ export function trendFrom(daily: TrendPoint[], today: string, start: string | nu
 		}),
 	};
 }
+
+/** The note under a project's chart: "Tracking since 2 Nov 2026 · live since 20 Jun 2026" (each part only when known). */
+export function trackingNote(trackingSince: string | null, liveSince: string | null, formatDay: (day: string, withYear?: boolean) => string): string | null {
+	const parts = [trackingSince && `Tracking since ${formatDay(trackingSince, true)}`, liveSince && `${trackingSince ? "live" : "Live"} since ${formatDay(liveSince, true)}`].filter(Boolean);
+	return parts.length ? parts.join(" · ") : null;
+}

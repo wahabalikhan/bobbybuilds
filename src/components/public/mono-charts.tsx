@@ -71,6 +71,7 @@ export function WeekChart({
 	unit = ["visitor", "visitors"],
 	unfinishedLast = true,
 	minPoints = 0,
+	note = null,
 }: {
 	weeks: { day: string; value: number }[];
 	label: string;
@@ -81,6 +82,8 @@ export function WeekChart({
 	unfinishedLast?: boolean;
 	/** Space for at least this many points, so a short series (a new project) isn't stretched across the chart: it starts at the left and stops where its data does. */
 	minPoints?: number;
+	/** A note in place of the first date under the chart ("Tracking since … · live since …"), cut with "…" if there's no room. */
+	note?: string | null;
 }) {
 	const pointName = (day: string, long = false) => (period === "week" ? `Week of ${formatDay(day, long)}` : formatDay(day, long));
 	const lastName = period === "week" ? "This week" : "Today";
@@ -89,7 +92,8 @@ export function WeekChart({
 	const values = weeks.map((w) => w.value);
 	const n = values.length;
 	const max = Math.max(1, ...values);
-	const plotH = height - 18;
+	// 24.5px under the plot: the 18px label row (dates, or the tracking note), so the text sits 10px below the chart's baseline.
+	const plotH = height - 24.5;
 	const slots = Math.max(n, minPoints);
 	const x = (i: number) => (slots <= 1 ? width / 2 : 4 + (i / (slots - 1)) * (width - 8));
 	const y = (v: number) => plotH - (v / max) * (plotH - 8);
@@ -126,6 +130,8 @@ export function WeekChart({
 				<line x1={0} x2={width} y1={plotH + 0.5} y2={plotH + 0.5} stroke="var(--axis)" />
 				<path d={line(0, solidEnd)} fill="none" stroke="var(--accent)" strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" />
 				{solidEnd < n && <path d={line(n - 2, n)} fill="none" stroke="var(--accent)" strokeWidth={1.5} strokeDasharray="3 3" strokeLinecap="round" />}
+				{!note && (
+					<>
 				<text x={0} y={height - 3} fontSize={11} fill="var(--muted)">
 					{n ? formatDay(weeks[0].day) : ""}
 				</text>
@@ -133,6 +139,8 @@ export function WeekChart({
 				<text x={n > 0 && x(n - 1) > width * 0.6 ? width : n > 0 ? x(n - 1) : width} y={height - 3} fontSize={11} fill="var(--muted)" textAnchor={n > 0 && x(n - 1) > width * 0.6 ? "end" : "start"}>
 					{n > 1 || slots === n ? (unfinishedLast ? lastName : n ? formatDay(weeks[n - 1].day) : "") : ""}
 				</text>
+					</>
+				)}
 				{hover !== null && (
 					<>
 						<line x1={x(hover)} x2={x(hover)} y1={0} y2={plotH} stroke="var(--axis)" strokeDasharray="2 2" />
@@ -140,6 +148,15 @@ export function WeekChart({
 					</>
 				)}
 			</svg>
+			{note && (
+				// The same 18px row the date labels use, so the chart keeps its height.
+				<div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[18px] items-end justify-between gap-3 text-[11px] leading-none text-muted">
+					<span className="min-w-0 truncate pb-[3px]" title={note}>
+						{note}
+					</span>
+					<span className="shrink-0 pb-[3px]">{unfinishedLast ? lastName : n ? formatDay(weeks[n - 1].day) : ""}</span>
+				</div>
+			)}
 			{hover !== null && (
 				<HoverCard x={x(hover) / width} top={-8} label={`${pointName(weeks[hover].day)}${unfinishedLast && hover === n - 1 ? ", so far" : ""}`} value={`${formatWhole(values[hover])} ${values[hover] === 1 ? unit[0] : unit[1]}`} />
 			)}

@@ -17,6 +17,7 @@ import { change, formatCount, formatDay, formatMonth, formatPence, formatPercent
 import { logoFor } from "@/lib/project-logo";
 import { productLine } from "@/lib/public/product-line";
 import { CARD_HEIGHT } from "@/lib/layout";
+import { trackingNote } from "@/lib/trend";
 import { adminHref, site } from "@/lib/site";
 
 /** Home: the visitors chart, then the projects. Whether everything's OK is the pill in the top bar. */
@@ -151,6 +152,7 @@ function ProjectCard({ summary: s, numbers }: { summary: ProjectSummary; numbers
 					height={40}
 					period={s.trend.period}
 					minPoints={s.trend.period === "day" ? 7 : 4}
+					note={trackingNote(s.trackingSince, s.project.startedOn, formatDay)}
 					weeks={s.trend.points}
 					label={`${project.name}: visitors per ${s.trend.period} since ${formatDay(s.trend.points[0]?.day ?? "", true)}, ${formatCount(s.trend.points.reduce((t, w) => t + w.value, 0))} in total. ${s.trend.period === "day" ? "Today" : "This week"} so far is dashed.`}
 				/>

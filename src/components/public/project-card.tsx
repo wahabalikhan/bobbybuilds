@@ -4,6 +4,7 @@ import { formatCount, formatDay } from "@/lib/format";
 import type { TaglinePart } from "@/lib/public/product-line";
 import type { PublicProject } from "@/lib/public/snapshot";
 import { StatusDot } from "@/components/status-dot";
+import { trackingNote } from "@/lib/trend";
 import { ArrowIcon } from "./icons";
 import { WeekChart } from "./mono-charts";
 
@@ -115,6 +116,7 @@ export function ProjectCard({ project }: { project: PublicProject }) {
 						height={36}
 						period={project.trend.period}
 						minPoints={project.trend.period === "day" ? 7 : 4}
+						note={trackingNote(project.trackingSince, project.liveSince, formatDay)}
 						weeks={project.trend.points}
 						label={`${project.name}: visitors per ${project.trend.period} since ${formatDay(project.trend.points[0]?.day ?? "", true)}, ${formatCount(project.trend.points.reduce((t, w) => t + w.value, 0))} in total. ${project.trend.period === "day" ? "Today" : "This week"} so far is dashed.`}
 					/>

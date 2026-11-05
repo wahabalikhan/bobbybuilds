@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { chartStart, trendFrom } from "@/lib/trend";
+import { formatDay } from "@/lib/format";
+import { chartStart, trackingNote, trendFrom } from "@/lib/trend";
 
 const days = (from: string, n: number, value = (i: number) => i + 1) =>
 	Array.from({ length: n }, (_, i) => ({ day: new Date(Date.parse(`${from}T00:00:00Z`) + i * 86_400_000).toISOString().slice(0, 10), value: value(i) }));
@@ -27,5 +28,14 @@ describe("a project chart's start", () => {
 		expect(weekly.points.at(-1)!.day).toBe("2026-11-02");
 		expect(trendFrom(days("2026-01-01", 309), "2026-11-05", null).points).toHaveLength(12);
 		expect(trendFrom(days("2026-01-01", 309), "2026-11-05", "2026-01-05").points).toHaveLength(12);
+	});
+});
+
+describe("the note under a project chart", () => {
+	it("says when tracking began and when it went live, or only what's known", () => {
+		expect(trackingNote("2026-11-02", "2026-06-20", formatDay)).toBe("Tracking since 2 Nov 2026 · live since 20 Jun 2026");
+		expect(trackingNote(null, "2026-11-04", formatDay)).toBe("Live since 4 Nov 2026");
+		expect(trackingNote("2026-11-02", null, formatDay)).toBe("Tracking since 2 Nov 2026");
+		expect(trackingNote(null, null, formatDay)).toBeNull();
 	});
 });
