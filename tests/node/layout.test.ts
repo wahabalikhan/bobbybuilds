@@ -70,8 +70,8 @@ describe("the wordmark", () => {
 	});
 
 	it("is in the public header (plain and fading) and, with HQ, in the admin top bar", () => {
-		expect(readFileSync("src/components/public/site-header.tsx", "utf8")).toMatch(/<Wordmark \/>/);
-		expect(readFileSync("src/components/public/fading-header.tsx", "utf8")).toMatch(/<Wordmark \/>/);
-		expect(readFileSync("src/app/admin/layout.tsx", "utf8")).toMatch(/<Wordmark suffix="HQ" \/>/);
+		expect(readFileSync("src/components/public/site-header.tsx", "utf8")).toMatch(/<Wordmark icon \/>/);
+		expect(readFileSync("src/components/public/fading-header.tsx", "utf8")).toMatch(/<Wordmark icon \/>/);
+		expect(readFileSync("src/app/admin/layout.tsx", "utf8")).toMatch(/<Wordmark suffix="HQ" icon \/>/);
 	});
 });

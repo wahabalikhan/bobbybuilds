@@ -46,7 +46,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 			<header className="border-b border-line">
 				<div className={`${PAGE} flex flex-wrap items-center gap-x-4 gap-y-2 py-4`}>
 					<Link href={adminHref()}>
-						<Wordmark suffix="HQ" />
+						<Wordmark suffix="HQ" icon />
 					</Link>
 					<StatusMenu items={attention} />
 				</div>

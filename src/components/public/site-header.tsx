@@ -10,11 +10,11 @@ import { FadingHeader } from "./fading-header";
  * the top of Projects has scrolled up to the top of the screen (FadingHeader); elsewhere it's always shown.
  */
 export function SiteHeader({ showAfter }: { showAfter?: string } = {}) {
-	if (showAfter) return <FadingHeader showAfter={showAfter} label={`${site.name} home`} />;
+	if (showAfter) return <FadingHeader showAfter={showAfter} label={site.name} />;
 	return (
 		<header className={`${PAGE} pt-6 sm:pt-8`}>
-			<Link href="/" className="inline-block rounded-sm" aria-label={`${site.name} home`}>
-				<Wordmark />
+			<Link href="/" className="inline-block rounded-sm" aria-label={site.name}>
+				<Wordmark icon />
 			</Link>
 		</header>
 	);
