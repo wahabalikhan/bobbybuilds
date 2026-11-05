@@ -5,32 +5,45 @@ import { useEffect, useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 import { PAGE } from "@/lib/layout";
 
-/** The bar's height in px (h-14). The heading counts as out of view once it's gone under the bar. */
+/** The bar's height in px (h-14). */
 const BAR = 56;
 
 /**
- * The home page's header: a sticky bar whose wordmark is hidden while the big "BobbyBuilds" heading
- * (`targetId`) is on screen, so it isn't said twice, and fades in (with the bar's background and
- * hairline) once the heading has scrolled away. Watched with an IntersectionObserver; no fade with
- * reduced motion. While hidden it can't be clicked, but it stays in the page for keyboard and
- * screen reader users, and shows when it's focused.
+ * The home page's header: a fixed bar that's hidden at the top of the page and fades in once the
+ * top of the section `showAfter` (Projects) has scrolled up to the top of the screen, and fades out
+ * the same way when you scroll back up. No fade with reduced motion. While hidden it can't be clicked, but its
+ * link stays in the page for keyboard and screen reader users, and the bar shows while it's focused.
  */
-export function FadingHeader({ targetId, label }: { targetId: string; label: string }) {
+export function FadingHeader({ showAfter, label }: { showAfter: string; label: string }) {
 	const [shown, setShown] = useState(false);
 
 	useEffect(() => {
-		// The home page always has the heading; without it there's nothing to watch.
-		const heading = document.getElementById(targetId);
-		if (!heading) return;
-		const observer = new IntersectionObserver(([entry]) => setShown(!entry.isIntersecting), { rootMargin: `-${BAR}px 0px 0px 0px` });
-		observer.observe(heading);
-		return () => observer.disconnect();
-	}, [targetId]);
+		const section = document.getElementById(showAfter);
+		if (!section) return;
+		let frame = 0;
+		const update = () => {
+			frame = 0;
+			setShown(section.getBoundingClientRect().top <= BAR);
+		};
+		const onScroll = () => {
+			if (!frame) frame = requestAnimationFrame(update);
+		};
+		window.addEventListener("scroll", onScroll, { passive: true });
+		window.addEventListener("resize", onScroll, { passive: true });
+		onScroll();
+		return () => {
+			window.removeEventListener("scroll", onScroll);
+			window.removeEventListener("resize", onScroll);
+			if (frame) cancelAnimationFrame(frame);
+		};
+	}, [showAfter]);
 
 	return (
 		<header
 			data-shown={shown}
-			className="sticky top-0 z-30 border-b border-transparent transition-colors duration-300 motion-reduce:transition-none data-[shown=true]:border-line data-[shown=true]:bg-page"
+			className={`fixed inset-x-0 top-0 z-30 border-b border-line bg-page transition-opacity duration-300 motion-reduce:transition-none ${
+				shown ? "opacity-100" : "pointer-events-none opacity-0 has-[a:focus-visible]:pointer-events-auto has-[a:focus-visible]:opacity-100"
+			}`}
 		>
 			<div className={`${PAGE} flex h-14 items-center`}>
 				<Link
@@ -44,9 +57,9 @@ export function FadingHeader({ targetId, label }: { targetId: string; label: str
 						window.scrollTo({ top: 0, behavior: still ? "auto" : "smooth" });
 						if (window.location.hash) history.replaceState(null, "", "/");
 					}}
-					className={`inline-block rounded-sm transition-opacity duration-300 motion-reduce:transition-none ${shown ? "opacity-100" : "pointer-events-none opacity-0 focus-visible:opacity-100"}`}
+					className="inline-block rounded-sm"
 				>
-					<Wordmark mono />
+					<Wordmark bold />
 				</Link>
 			</div>
 		</header>

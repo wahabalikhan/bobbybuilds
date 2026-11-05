@@ -40,8 +40,8 @@ export default async function Home() {
 		<div className="public-theme min-h-screen bg-page text-ink">
 			<PublicTracker />
 			<SkipLink />
-			<SiteHeader hideWhileVisible="me-name" />
-			<main id="content" className={`${PAGE} space-y-20 pb-20 pt-7 sm:space-y-24 sm:pt-[52px]`}>
+			<SiteHeader showAfter="projects" />
+			<main id="content" className={`${PAGE} space-y-20 pb-20 pt-[84px] sm:space-y-24 sm:pt-[108px]`}>
 				<Me />
 
 				{projects.length > 0 && (

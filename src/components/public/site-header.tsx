@@ -5,16 +5,16 @@ import { PAGE } from "@/lib/layout";
 import { FadingHeader } from "./fading-header";
 
 /**
- * The small monochrome wordmark at the top of every public page, linking home. No navigation bar.
- * On the home page (`hideWhileVisible` = the big heading's id) it's a sticky bar whose wordmark only
- * fades in once that heading has scrolled away (FadingHeader); elsewhere it's always shown.
+ * The small wordmark at the top of every public page ("Bobby" ink, "Builds" blue, bold, like the big heading), linking home. No navigation bar.
+ * On the home page (`showAfter` = the Projects section) it's a fixed bar that only slides in once
+ * the top of Projects has scrolled up to the top of the screen (FadingHeader); elsewhere it's always shown.
  */
-export function SiteHeader({ hideWhileVisible }: { hideWhileVisible?: string } = {}) {
-	if (hideWhileVisible) return <FadingHeader targetId={hideWhileVisible} label={`${site.name} home`} />;
+export function SiteHeader({ showAfter }: { showAfter?: string } = {}) {
+	if (showAfter) return <FadingHeader showAfter={showAfter} label={`${site.name} home`} />;
 	return (
 		<header className={`${PAGE} pt-6 sm:pt-8`}>
 			<Link href="/" className="inline-block rounded-sm" aria-label={`${site.name} home`}>
-				<Wordmark mono />
+				<Wordmark bold />
 			</Link>
 		</header>
 	);

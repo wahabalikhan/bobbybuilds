@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The public page's charts, in its monochrome style: an ink line or ink bars, grey axes and
+ * The public page's charts: the accent blue for the line or bars, grey axes, gridlines and
  * labels, and one hover card design (HoverCard: an inverted ink card with a small label, a bold
  * value and an optional list). They only show figures already in the page, so they make no
  * requests, and each has a screen-reader-only version of its numbers. The admin keeps its own
@@ -102,8 +102,8 @@ export function WeekChart({ weeks, label, height = 64 }: { weeks: { day: string;
 			>
 				<path d={area} fill="var(--chart-fill)" />
 				<line x1={0} x2={width} y1={plotH + 0.5} y2={plotH + 0.5} stroke="var(--axis)" />
-				<path d={line(0, solidEnd)} fill="none" stroke="var(--ink)" strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" />
-				{solidEnd < n && <path d={line(n - 2, n)} fill="none" stroke="var(--ink)" strokeWidth={1.5} strokeDasharray="3 3" strokeLinecap="round" />}
+				<path d={line(0, solidEnd)} fill="none" stroke="var(--accent)" strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" />
+				{solidEnd < n && <path d={line(n - 2, n)} fill="none" stroke="var(--accent)" strokeWidth={1.5} strokeDasharray="3 3" strokeLinecap="round" />}
 				<text x={0} y={height - 3} fontSize={11} fill="var(--muted)">
 					{n ? formatDay(weeks[0].day) : ""}
 				</text>
@@ -113,7 +113,7 @@ export function WeekChart({ weeks, label, height = 64 }: { weeks: { day: string;
 				{hover !== null && (
 					<>
 						<line x1={x(hover)} x2={x(hover)} y1={0} y2={plotH} stroke="var(--axis)" strokeDasharray="2 2" />
-						<circle cx={x(hover)} cy={y(values[hover])} r={4} fill="var(--ink)" stroke="var(--card)" strokeWidth={2} />
+						<circle cx={x(hover)} cy={y(values[hover])} r={4} fill="var(--accent)" stroke="var(--card)" strokeWidth={2} />
 					</>
 				)}
 			</svg>
@@ -187,7 +187,7 @@ export function MonthBars({ months, title, unit, height = 200 }: { months: { mon
 					return (
 						<g key={m.month}>
 							{hover === i && <rect x={cx - band / 2 + 1} y={PAD.top} width={band - 2} height={plotH} rx={8} fill="var(--pill)" />}
-							<path d={d} fill={i === last ? "var(--chart-soft)" : "var(--ink)"} />
+							<path d={d} fill={i === last ? "color-mix(in srgb, var(--accent) 40%, var(--card))" : "var(--accent)"} />
 							{i % every === 0 && (
 								<text x={cx} y={height - 6} fontSize={11} fill="var(--muted)" textAnchor="middle">
 									{formatMonth(m.month).slice(0, 3)}
@@ -232,7 +232,7 @@ export function MonthBars({ months, title, unit, height = 200 }: { months: { mon
 	);
 }
 
-/** Five grey levels, as GitHub's: none, 1–3, 4–6, 7–9, 10+ (colours in globals.css: --act-0 … --act-4). */
+/** GitHub's five levels: none, 1–3, 4–6, 7–9, 10+ (blues, in globals.css: --act-0 … --act-4). */
 export function level(count: number): number {
 	return count <= 0 ? 0 : count <= 3 ? 1 : count <= 6 ? 2 : count <= 9 ? 3 : 4;
 }
@@ -248,8 +248,8 @@ const GAP = 2;
 const LABELS = 28;
 
 /**
- * GitHub contributions as GitHub lays them out (a column per week, Sunday to Saturday), in greys:
- * darker for more. It fills its card: the week columns are equal fractions of the width and the
+ * GitHub contributions as GitHub lays them out (a column per week, Sunday to Saturday), in blues:
+ * darker for more (brighter in dark mode). It fills its card: the week columns are equal fractions of the width and the
  * squares stay square. When the full year won't fit with squares of at least MIN_SQUARE, it shows
  * fewer, most recent weeks (and says so). Hovering a square shows that day in the hover card.
  */

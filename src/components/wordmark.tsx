@@ -1,18 +1,18 @@
 import { site } from "@/lib/site";
 
 /**
- * The text-only wordmark, both halves in semibold: "Bobby" in ink, "Builds" in the accent blue
- * (--accent: 6.7:1 on white, and the admin's dark-theme blue is 6.3:1 on its dark page). An
- * optional suffix ("HQ" in the admin top bar) follows in muted grey, after a real space so screen
- * readers say "BobbyBuilds HQ". Used in the admin top bar. The public pages use `mono`: "Builds" in
- * grey instead of blue, because the public page has no blue.
+ * The text-only wordmark: "Bobby" in ink and "Builds" in the accent blue (the admin's blue in the
+ * admin, the public page's blue on public pages). Semibold, or `bold` on public pages to match the
+ * big "BobbyBuilds" heading. An optional suffix ("HQ" in the admin top bar) follows in muted grey,
+ * after a real space so screen readers say "BobbyBuilds HQ".
  */
-export function Wordmark({ suffix, mono = false }: { suffix?: string; mono?: boolean }) {
+export function Wordmark({ suffix, bold = false }: { suffix?: string; bold?: boolean }) {
 	const [first, second] = site.wordmark;
+	const weight = bold ? "font-bold" : "font-semibold";
 	return (
 		<span className="text-lg tracking-tight">
-			<span className="font-semibold text-ink">{first}</span>
-			<span className={`font-semibold ${mono ? "text-muted" : "text-accent"}`}>{second}</span>
+			<span className={`${weight} text-ink`}>{first}</span>
+			<span className={`${weight} text-accent`}>{second}</span>
 			{suffix && (
 				<>
 					{" "}

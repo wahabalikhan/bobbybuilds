@@ -1,4 +1,5 @@
 import { ProjectLogo } from "@/components/admin/ui";
+import { CARD_HEIGHT } from "@/lib/layout";
 import { formatCount } from "@/lib/format";
 import type { TaglinePart } from "@/lib/public/product-line";
 import type { PublicProject } from "@/lib/public/snapshot";
@@ -76,7 +77,7 @@ export function ProjectCard({ project }: { project: PublicProject }) {
 		<article
 			data-project-card
 			aria-labelledby={`project-${project.slug}`}
-			className={`group relative flex h-full min-w-0 flex-col rounded-2xl border border-line bg-card p-5 transition-colors ${
+			className={`group relative flex h-full min-w-0 flex-col rounded-2xl border border-line bg-card p-5 transition-colors ${CARD_HEIGHT} ${
 				link ? "hover:border-[var(--axis)] has-[a[data-card-link]:focus-visible]:border-[var(--axis)] has-[a[data-card-link]:focus-visible]:outline-2 has-[a[data-card-link]:focus-visible]:outline-offset-2 has-[a[data-card-link]:focus-visible]:outline-[var(--accent)] has-[a[data-card-link]:focus-visible]:outline-solid" : ""
 			}`}
 		>
@@ -92,9 +93,9 @@ export function ProjectCard({ project }: { project: PublicProject }) {
 								data-card-link
 								className="flex min-w-0 items-center gap-1 outline-none after:absolute after:inset-0 after:rounded-2xl after:content-['']"
 							>
-								<span className="truncate underline-offset-4 group-hover:underline group-has-[a[data-card-link]:focus-visible]:underline">{project.name}</span>
+								<span className="truncate underline-offset-4 group-hover:text-accent group-hover:underline group-has-[a[data-card-link]:focus-visible]:text-accent group-has-[a[data-card-link]:focus-visible]:underline">{project.name}</span>
 								{/* Always there, so nothing shifts when it appears. */}
-								<ArrowIcon className="h-3.5 w-3.5 shrink-0 text-muted opacity-0 transition-opacity group-hover:opacity-100 group-has-[a[data-card-link]:focus-visible]:opacity-100" />
+								<ArrowIcon className="h-3.5 w-3.5 shrink-0 text-accent opacity-0 transition-opacity group-hover:opacity-100 group-has-[a[data-card-link]:focus-visible]:opacity-100" />
 								<span className="sr-only">(opens in a new tab)</span>
 							</a>
 						) : (
@@ -130,11 +131,12 @@ export function ProjectCard({ project }: { project: PublicProject }) {
 			<div className="relative z-10 mt-auto pt-5">
 				{project.weekly ? (
 					<WeekChart
+						height={40}
 						weeks={project.weekly}
 						label={`${project.name}: visitors per week for the last 12 weeks, ${formatCount(project.weekly.reduce((t, w) => t + w.value, 0))} in total. This week so far is dashed.`}
 					/>
 				) : (
-					<div aria-hidden className="h-16" />
+					<div aria-hidden className="h-10" />
 				)}
 			</div>
 			{caseStudy && (

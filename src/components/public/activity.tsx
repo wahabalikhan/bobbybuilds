@@ -1,5 +1,6 @@
 import { SectionHeading } from "@/components/admin/ui";
 import { formatWhole } from "@/lib/format";
+import { CARD_HEIGHT } from "@/lib/layout";
 import type { PublicActivity } from "@/lib/public/snapshot";
 import { ContributionGrid, MonthBars } from "./mono-charts";
 
@@ -10,7 +11,7 @@ import { ContributionGrid, MonthBars } from "./mono-charts";
  * the year's total and longest streak.
  */
 /** The same box as a project card (project-card.tsx). */
-const CARD = "flex h-full min-w-0 flex-col rounded-2xl border border-line bg-card p-5";
+const CARD = `flex h-full min-w-0 flex-col rounded-2xl border border-line bg-card p-5 ${CARD_HEIGHT}`;
 
 export function Activity({ activity }: { activity: PublicActivity }) {
 	const shipped = activity.shipped.reduce((t, m) => t + m.titles.length, 0);
@@ -31,6 +32,7 @@ export function Activity({ activity }: { activity: PublicActivity }) {
 							months={activity.shipped.map((m) => ({ month: m.month, value: m.titles.length, items: m.titles }))}
 							title="Shipped entries per month for the last 12 months"
 							unit={["thing shipped", "things shipped"]}
+							height={124}
 						/>
 					</div>
 				</div>
@@ -45,7 +47,8 @@ export function Activity({ activity }: { activity: PublicActivity }) {
 								</span>
 								longest streak <strong className="font-semibold tabular text-ink">{formatWhole(github.longestStreak)}</strong> day{github.longestStreak === 1 ? "" : "s"}
 							</p>
-							<div className="mt-auto pt-5">
+							{/* At the bottom; at least 8px under the summary, which wraps to two lines on narrower cards. */}
+							<div className="mt-auto pt-2">
 								<ContributionGrid firstDay={github.firstDay} counts={github.counts} />
 							</div>
 						</>

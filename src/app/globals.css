@@ -7,7 +7,7 @@
  * monochrome charts (light grey fill, dark line), small grey pills, black pill buttons.
  * --accent is #1D4ED8 in the admin (links, focus, selected states; never chart marks). Contrast:
  * 6.7:1 on white, hover #1E40AF 8.7:1; admin dark mode uses #6B8CF5 (6.3:1) with hover #93B0FF (9.3:1).
- * The public pages have no blue: --accent is ink there (links underlined, the focus ring in ink).
+ * The public pages have one accent, a blue used sparingly (see :root:has(.public-theme) below).
  * Status colours are reserved for state (always shown with a label).
  */
 :root {
@@ -32,12 +32,12 @@
 	/* Social icons in their brand colours (LinkedIn #0A66C2: 5.7:1 on white; GitHub's black mark). */
 	--brand-linkedin: #0a66c2;
 	--brand-github: #181717;
-	/* GitHub activity levels (the public Activity section): greys, darker for more. */
-	--act-0: #ebebed;
-	--act-1: #c7c7cc;
-	--act-2: #8e8e93;
-	--act-3: #52525b;
-	--act-4: #0a0a0a;
+	/* GitHub activity levels (the public Activity section): empty in light grey, then four blues up to the accent. */
+	--act-0: #ebedf0;
+	--act-1: #c7d0f7;
+	--act-2: #8fa1ef;
+	--act-3: #5470e2;
+	--act-4: #2747d6;
 	--previous: #c7c7cc;
 	--good: #0ca30c;
 	--good-ink: #006300;
@@ -48,11 +48,17 @@
 	--foreground: var(--ink);
 }
 
-/* Public pages: monochrome, so links and focus are ink (hover #52525B, 7.7:1 on white). */
+/*
+ * Public pages: one accent blue, used sparingly: "Builds" in the big heading, links on hover,
+ * focus outlines, the line in each card's chart
+ * and the Shipping rhythm bars, and the text selection tint. Never backgrounds or filled buttons.
+ * #2747D6 is 7.1:1 on white (6.8:1 on #FAFAFA); dark mode uses #8199F8 (7.4:1 on the page, 7.05:1 on cards).
+ */
 :root:has(.public-theme) {
-	--accent: #0a0a0a;
-	--accent-hover: #52525b;
-	--accent-wash: rgb(10 10 10 / 0.06);
+	--accent: #2747d6;
+	--accent-hover: #2747d6;
+	--accent-wash: rgb(39 71 214 / 0.08);
+	--accent-selection: rgb(39 71 214 / 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -82,18 +88,20 @@
 		/* LinkedIn's lighter blue (7.9:1 on the dark page); GitHub's mark is white on dark. */
 		--brand-linkedin: #70b5f9;
 		--brand-github: #fafafa;
-		--act-0: #1c1c1f;
-		--act-1: #3a3a3f;
-		--act-2: #6b6b72;
-		--act-3: #a1a1a8;
-		--act-4: #fafafa;
+		/* Dark mode: brighter for more, up to the dark-mode accent; empty in a dark grey that matches the cards. */
+		--act-0: #1f1f22;
+		--act-1: #1c2655;
+		--act-2: #2a3d8f;
+		--act-3: #4f68d9;
+		--act-4: #8199f8;
 	}
 
-	/* Public dark mode: links and focus in light ink (hover #C4C4C8, 11.6:1 on the dark page). */
+	/* Public dark mode: the lighter blue. */
 	:root:has(.public-theme) {
-		--accent: #fafafa;
-		--accent-hover: #c4c4c8;
-		--accent-wash: rgb(250 250 250 / 0.08);
+		--accent: #8199f8;
+		--accent-hover: #8199f8;
+		--accent-wash: rgb(129 153 248 / 0.12);
+		--accent-selection: rgb(129 153 248 / 0.32);
 	}
 }
 
@@ -195,3 +203,18 @@ body {
 .link:hover { color: var(--accent-hover); }
 .prose-bobby a { color: var(--accent); }
 .prose-bobby a:hover { color: var(--accent-hover); }
+
+/* Public pages: text links are ink (underlined, so they're links without the colour) and turn blue on hover. */
+.public-theme .link,
+.public-theme .prose-bobby a {
+	color: var(--ink);
+}
+.public-theme .link:hover,
+.public-theme .prose-bobby a:hover {
+	color: var(--accent);
+}
+
+/* Public pages: the light blue tint for selected text. */
+:root:has(.public-theme) ::selection {
+	background: var(--accent-selection);
+}
