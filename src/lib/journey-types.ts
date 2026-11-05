@@ -1,6 +1,7 @@
 /** Journey entry types, in the order the filter chips show them. Used by the admin and the public page. */
 export const JOURNEY_TYPES = [
 	{ value: "shipped", label: "Shipped", emoji: "🚀" },
+	{ value: "building", label: "Building", emoji: "🛠" },
 	{ value: "decision", label: "Decision", emoji: "🤔" },
 	{ value: "lesson", label: "Lesson", emoji: "💡" },
 	{ value: "post", label: "Post", emoji: "✍️" },

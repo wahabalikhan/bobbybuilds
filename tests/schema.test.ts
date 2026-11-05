@@ -429,6 +429,7 @@ describe("phase 10: profile, project cards, journey types and money", () => {
 	it("takes a known journey type and an https link only", async () => {
 		await expect(insert("journey_entries", { slug: "shipped-it", title: "Shipped", type: "shipped", link_url: "https://example.com" })).resolves.toBeTruthy();
 		await expectRejected(insert("journey_entries", { slug: "rant", title: "Rant", type: "rant" }));
+		await expect(insert("journey_entries", { slug: "building-it", title: "Building", type: "building" })).resolves.toBeTruthy();
 		await expectRejected(insert("journey_entries", { slug: "plain-link", title: "Link", link_url: "http://example.com" }));
 	});
 
