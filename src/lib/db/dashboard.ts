@@ -7,7 +7,8 @@
 import { daysBetween } from "@/lib/admin/range";
 import { sourceName } from "@/lib/admin/sources";
 import { addDays, weekStart } from "@/lib/days";
-import { listRealProjects, type Project } from "./projects";
+import { chartStart, trendFrom, type Trend } from "@/lib/trend";
+import { firstTrackedDays, listRealProjects, type Project } from "./projects";
 
 export type DayValue = { day: string; value: number };
 export type Ranked = { key: string; pageviews: number; visitors: number };
@@ -125,6 +126,8 @@ export type ProjectSummary = {
 	sparkline: DayValue[];
 	/** Visitors per Monday-start week for the last 12 weeks; the last one is this week so far. */
 	weekly: DayValue[];
+	/** The card's chart: from the project's start (per day for its first four weeks, then per week). */
+	trend: Trend;
 	headline: (MetricFigure & { label: string; unit: string }) | null;
 	uptime: { lastUp: boolean | null; lastCheckedAt: number | null; uptime7: number | null };
 };
@@ -135,7 +138,7 @@ export async function projectSummaries(db: D1Database, today: string): Promise<P
 	const firstWeek = addDays(thisWeek, -7 * 11);
 	const since = firstWeek < addDays(today, -59) ? firstWeek : addDays(today, -59);
 
-	const [totals, metrics, lastChecks, uptimeDays] = await Promise.all([
+	const [totals, metrics, lastChecks, uptimeDays, firstTracked] = await Promise.all([
 		db
 			.prepare("SELECT project_id, day, visitors FROM daily_totals WHERE day BETWEEN ?1 AND ?2")
 			.bind(since, today)
@@ -154,6 +157,7 @@ export async function projectSummaries(db: D1Database, today: string): Promise<P
 			.prepare("SELECT project_id, sum(checks) AS checks, sum(up_checks) AS up FROM daily_uptime WHERE day BETWEEN ?1 AND ?2 GROUP BY project_id")
 			.bind(addDays(today, -6), today)
 			.all<{ project_id: number; checks: number; up: number }>(),
+		firstTrackedDays(db),
 	]);
 
 	return Promise.all(
@@ -178,6 +182,7 @@ export async function projectSummaries(db: D1Database, today: string): Promise<P
 					const end = addDays(week, 6);
 					return { day: week, value: series.filter((d) => d.day >= week && d.day <= end).reduce((t, d) => t + d.value, 0) };
 				}),
+				trend: trendFrom(series, today, chartStart(project.startedOn, firstTracked.get(project.id) ?? null)),
 				headline: headlineMetric
 					? { ...(await metricFigure(db, headlineMetric, today)), label: headlineMetric.label, unit: headlineMetric.unit }
 					: null,
@@ -416,6 +421,20 @@ export async function uptimeChecks(db: D1Database, projectId: number, since: num
 		.bind(projectId, since)
 		.all<{ checked_at: number; up: number; response_ms: number | null; status_code: number | null }>();
 	return results.map((r) => ({ checkedAt: r.checked_at, up: r.up === 1, responseMs: r.response_ms, statusCode: r.status_code }));
+}
+
+/** Each project's latest uptime check in the last day: true up, false down (absent when there's none). */
+export async function latestUptime(db: D1Database, now: number): Promise<Map<number, boolean>> {
+	const { results } = await db
+		.prepare(
+			`SELECT project_id, up FROM (
+			   SELECT project_id, up, ROW_NUMBER() OVER (PARTITION BY project_id ORDER BY checked_at DESC) AS n
+			   FROM uptime_checks WHERE checked_at >= ?1)
+			 WHERE n = 1`,
+		)
+		.bind(now - 86_400_000)
+		.all<{ project_id: number; up: number }>();
+	return new Map(results.map((r) => [r.project_id, r.up === 1]));
 }
 
 /** Runs of failed checks. `end` is the first good check after, or null if still down. Newest first. */

@@ -1,6 +1,6 @@
 import { ProjectLogo } from "@/components/admin/ui";
 import { CARD_HEIGHT } from "@/lib/layout";
-import { formatCount } from "@/lib/format";
+import { formatCount, formatDay } from "@/lib/format";
 import type { TaglinePart } from "@/lib/public/product-line";
 import type { PublicProject } from "@/lib/public/snapshot";
 import { StatusDot } from "@/components/status-dot";
@@ -84,7 +84,7 @@ export function ProjectCard({ project }: { project: PublicProject }) {
 						)}
 					</h3>
 				</div>
-				<StatusDot status={project.status} />
+				<StatusDot status={project.status} up={project.up} />
 			</div>
 			<p className="mt-2 line-clamp-2 h-[2lh] text-sm leading-relaxed text-ink-2" title={project.tagline || undefined}>
 				<Parts parts={project.taglineParts} />
@@ -110,11 +110,13 @@ export function ProjectCard({ project }: { project: PublicProject }) {
 			</p>
 			{/* Above the card's link overlay, so its hover card works. */}
 			<div className="relative z-10 mt-auto pt-3">
-				{project.weekly ? (
+				{project.trend ? (
 					<WeekChart
 						height={36}
-						weeks={project.weekly}
-						label={`${project.name}: visitors per week for the last 12 weeks, ${formatCount(project.weekly.reduce((t, w) => t + w.value, 0))} in total. This week so far is dashed.`}
+						period={project.trend.period}
+						minPoints={project.trend.period === "day" ? 7 : 4}
+						weeks={project.trend.points}
+						label={`${project.name}: visitors per ${project.trend.period} since ${formatDay(project.trend.points[0]?.day ?? "", true)}, ${formatCount(project.trend.points.reduce((t, w) => t + w.value, 0))} in total. ${project.trend.period === "day" ? "Today" : "This week"} so far is dashed.`}
 					/>
 				) : (
 					<div aria-hidden className="h-9" />

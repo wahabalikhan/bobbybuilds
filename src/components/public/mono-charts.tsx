@@ -70,6 +70,7 @@ export function WeekChart({
 	period = "week",
 	unit = ["visitor", "visitors"],
 	unfinishedLast = true,
+	minPoints = 0,
 }: {
 	weeks: { day: string; value: number }[];
 	label: string;
@@ -78,6 +79,8 @@ export function WeekChart({
 	unit?: [string, string];
 	/** The last point is a period still in progress: its segment is dashed and it says "so far". */
 	unfinishedLast?: boolean;
+	/** Space for at least this many points, so a short series (a new project) isn't stretched across the chart: it starts at the left and stops where its data does. */
+	minPoints?: number;
 }) {
 	const pointName = (day: string, long = false) => (period === "week" ? `Week of ${formatDay(day, long)}` : formatDay(day, long));
 	const lastName = period === "week" ? "This week" : "Today";
@@ -87,7 +90,8 @@ export function WeekChart({
 	const n = values.length;
 	const max = Math.max(1, ...values);
 	const plotH = height - 18;
-	const x = (i: number) => (n <= 1 ? width / 2 : 4 + (i / (n - 1)) * (width - 8));
+	const slots = Math.max(n, minPoints);
+	const x = (i: number) => (slots <= 1 ? width / 2 : 4 + (i / (slots - 1)) * (width - 8));
 	const y = (v: number) => plotH - (v / max) * (plotH - 8);
 	const line = (from: number, to: number) => values.slice(from, to).map((v, i) => `${i ? "L" : "M"}${x(from + i).toFixed(1)},${y(v).toFixed(1)}`).join("");
 	const solidEnd = unfinishedLast && n >= 2 ? n - 1 : n;
@@ -95,7 +99,7 @@ export function WeekChart({
 
 	const onMove = (event: React.PointerEvent) => {
 		const rect = event.currentTarget.getBoundingClientRect();
-		setHover(Math.min(n - 1, Math.max(0, Math.round(((event.clientX - rect.left) / Math.max(1, rect.width)) * (n - 1)))));
+		setHover(Math.min(n - 1, Math.max(0, Math.round(((event.clientX - rect.left) / Math.max(1, rect.width)) * (slots - 1)))));
 	};
 	const onKey = (event: KeyboardEvent) => {
 		if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
@@ -125,8 +129,9 @@ export function WeekChart({
 				<text x={0} y={height - 3} fontSize={11} fill="var(--muted)">
 					{n ? formatDay(weeks[0].day) : ""}
 				</text>
-				<text x={width} y={height - 3} fontSize={11} fill="var(--muted)" textAnchor="end">
-					{unfinishedLast ? lastName : n ? formatDay(weeks[n - 1].day) : ""}
+				{/* The last label sits under the last point (the chart's right edge unless it's a short series). */}
+				<text x={n > 0 && x(n - 1) > width * 0.6 ? width : n > 0 ? x(n - 1) : width} y={height - 3} fontSize={11} fill="var(--muted)" textAnchor={n > 0 && x(n - 1) > width * 0.6 ? "end" : "start"}>
+					{n > 1 || slots === n ? (unfinishedLast ? lastName : n ? formatDay(weeks[n - 1].day) : "") : ""}
 				</text>
 				{hover !== null && (
 					<>

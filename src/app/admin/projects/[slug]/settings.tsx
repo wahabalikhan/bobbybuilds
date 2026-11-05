@@ -60,8 +60,9 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 						hint="Shown instead when a number in the tagline is over a week old or isn't public. Only needed with numbers in the tagline."
 					/>
 					<TextField type="url" name="site_url" label="Site address" defaultValue={project.siteUrl ?? ""} placeholder="https://" hint="Where the public card links to. It's also checked every 5 minutes for uptime." />
-					<div className="sm:w-40">
+					<div className="grid gap-4 sm:grid-cols-[10rem_14rem]">
 						<TextField type="number" name="sort_order" label="Order" defaultValue={String(project.sortOrder)} hint="1 comes first, here and on your public page." />
+						<TextField type="date" name="started_on" label="Started on" defaultValue={project.startedOn ?? ""} hint="Its charts start here, or when its tracking began if that's later." />
 					</div>
 				</SettingsForm>
 			</Section>

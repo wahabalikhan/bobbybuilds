@@ -71,6 +71,7 @@ export type ProjectDetails = {
 	githubRepo: string | null;
 	links: ProjectLink[];
 	sortOrder: number;
+	startedOn: string | null;
 };
 
 /**
@@ -127,6 +128,9 @@ export function validateProjectDetails(values: FormValues, logos: string[]): Res
 	const githubRepo = text(values.github_repo).replace(/^https:\/\/github\.com\//, "").replace(/\/+$/, "");
 	if (githubRepo && !/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(githubRepo)) errors.github_repo = 'Write it as "owner/repo", e.g. wahabalikhan/portfolio.';
 
+	const startedOn = text(values.started_on);
+	if (startedOn && !isDay(startedOn)) errors.started_on = "Choose a date.";
+
 	const sortOrder = Number(text(values.sort_order) || "0");
 	if (!Number.isInteger(sortOrder) || sortOrder < -1000 || sortOrder > 1000) errors.sort_order = "Use a whole number between -1000 and 1000.";
 
@@ -144,6 +148,7 @@ export function validateProjectDetails(values: FormValues, logos: string[]): Res
 		githubRepo: githubRepo || null,
 		links: parseLinks(text(values.links), errors),
 		sortOrder,
+		startedOn: startedOn && isDay(startedOn) ? startedOn : null,
 	};
 	return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value };
 }

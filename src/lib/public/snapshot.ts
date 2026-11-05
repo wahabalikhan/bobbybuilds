@@ -2,8 +2,8 @@
  * The public snapshot: everything the public pages show, in one JSON value in KV.
  *
  * - Built ONLY from the daily roll-ups, public numbers, published journey entries, public
- *   milestones, the profile, monthly costs and revenue, and (when "Show my activity" is on) the
- *   GitHub contribution calendar. Never from raw page views or events, and never from private numbers.
+ *   milestones, the profile, monthly costs and revenue, each project's latest uptime check (up or
+ *   down, for its status dot) and (when "Show my activity" is on) the GitHub contribution calendar. Never from raw page views or events, and never from private numbers.
  * - Only projects with "Show on my public page" on (listPublicProjects). A hidden project (like
  *   BobbyBuilds itself) is in nothing here: no card, chart, totals, or journey entry's project name.
  * - Rebuilt by the 5-minute job every 10 minutes (with today's roll-up), by the daily job, and
@@ -12,9 +12,10 @@
  * - Public pages read it with one KV read; if it's missing (first deploy) they build it once.
  */
 import { addDays, weekStart } from "@/lib/days";
-import { listMetrics, metricSeries, type Metric } from "@/lib/db/dashboard";
+import { latestUptime, listMetrics, metricSeries, type Metric } from "@/lib/db/dashboard";
 import { getProfile } from "@/lib/db/profile";
-import { listPublicProjects, type ProjectLink, type ProjectStatus } from "@/lib/db/projects";
+import { firstTrackedDays, listPublicProjects, type ProjectLink, type ProjectStatus } from "@/lib/db/projects";
+import { chartStart, trendFrom, type Trend } from "@/lib/trend";
 import type { JourneyType } from "@/lib/journey-types";
 import { sha256Hex } from "@/lib/keys";
 import { renderMarkdown } from "@/lib/markdown";
@@ -23,7 +24,7 @@ import { owner } from "@/lib/site";
 import { fillOutcome, fillTaglineParts, type TaglinePart } from "./product-line";
 
 export const SNAPSHOT_KEY = "public-snapshot";
-export const SNAPSHOT_VERSION = 6;
+export const SNAPSHOT_VERSION = 8;
 
 export type Point = { day: string; value: number };
 export type Month = { month: string; value: number };
@@ -60,6 +61,8 @@ export type PublicProject = {
 	pill: { label: string; unit: string; value: number; period: string } | null;
 	/** Visitors per week for 12 weeks (last = this week so far); null when visitors aren't public. */
 	weekly: Point[] | null;
+	/** The card's chart: from the project's start (per day for its first four weeks, then per week); null when visitors aren't public. */
+	trend: Trend | null;
 	/** Visitors per month for 12 months; null when visitors aren't public. */
 	monthly: Month[] | null;
 	numbers: PublicNumber[];
@@ -73,6 +76,8 @@ export type PublicProject = {
 	outcomes: TaglinePart[][];
 	/** Shown after "Now:" in the card. "" = none. */
 	now: string;
+	/** Its latest uptime check in the last day: true up, false down, null when there's none (the status dot pulses only while it's up). */
+	up: boolean | null;
 };
 
 export type PublicEntry = {
@@ -175,7 +180,7 @@ async function publicNumber(db: D1Database, metric: Metric, today: string): Prom
 
 /** Builds the snapshot from the roll-ups and public settings only. */
 export async function buildSnapshot(db: D1Database, today: string, now: number = Date.now()): Promise<PublicSnapshot> {
-	const [projects, metrics, profile] = await Promise.all([listPublicProjects(db), listMetrics(db), getProfile(db)]);
+	const [projects, metrics, profile, firstTracked, uptime] = await Promise.all([listPublicProjects(db), listMetrics(db), getProfile(db), firstTrackedDays(db), latestUptime(db, now)]);
 	const firstMonthDay = `${months(today)[0]}-01`;
 
 	const publicProjects: PublicProject[] = [];
@@ -207,6 +212,7 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			descriptionHtml: renderMarkdown(project.descriptionMd),
 			pill: headline && headlineNumber?.figure != null ? { label: headline.label, unit: headline.unit, value: headlineNumber.figure, period: headlineNumber.period } : null,
 			weekly: visitorsDaily ? toWeeks(visitorsDaily, today) : null,
+			trend: visitorsDaily ? trendFrom(visitorsDaily, today, chartStart(project.startedOn, firstTracked.get(project.id) ?? null)) : null,
 			monthly: visitorsDaily ? toMonths(visitorsDaily, today) : null,
 			numbers,
 			milestones,
@@ -215,6 +221,7 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			caseStudyUrl: project.caseStudyUrl,
 			outcomes: project.outcomes.map((o) => fillOutcome(o, numbers, today)).filter((o): o is TaglinePart[] => o !== null),
 			now: project.nowText,
+			up: uptime.get(project.id) ?? null,
 		});
 	}
 

@@ -7,7 +7,7 @@ import { ArrowIcon } from "@/components/public/icons";
 import { parseRange } from "@/lib/admin/range";
 import { requestTime } from "@/lib/admin/clock";
 import { utcDay } from "@/lib/days";
-import { publicProductNumbers } from "@/lib/db/dashboard";
+import { latestUptime, publicProductNumbers } from "@/lib/db/dashboard";
 import { getProjectBySlug } from "@/lib/db/projects";
 import { logoFor } from "@/lib/project-logo";
 import { productLine } from "@/lib/public/product-line";
@@ -59,6 +59,7 @@ export default async function ProjectPage({
 		return search ? `${base}?${search}` : base;
 	};
 	const numbers = productLine(await publicProductNumbers(env.DB, project.id, today), today);
+	const up = (await latestUptime(env.DB, now)).get(project.id) ?? null;
 
 	return (
 		<div className="space-y-6">
@@ -68,7 +69,7 @@ export default async function ProjectPage({
 					<div className="flex flex-wrap items-center gap-3">
 						<ProjectLogo name={project.name} logoPath={logoFor(project)} size={36} />
 						<h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
-						<StatusDot status={project.status} />
+						<StatusDot status={project.status} up={up} />
 						{!project.showPublic && <span className="text-sm text-muted">Not on your public page</span>}
 						{project.siteUrl && (
 							<a href={project.siteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink">

@@ -132,6 +132,8 @@ export async function startProjectCore(db: D1Database, prev: FormState, values: 
 		healthUrl: siteUrl,
 		githubRepo: null,
 		links: [],
+		// Its charts start when its tracking begins until a "Started on" date is set in Settings.
+		startedOn: null,
 		// New projects go to the end of the list; the order can be changed in Settings.
 		sortOrder: Math.min(1000, Math.max(0, ...projects.map((p) => p.sortOrder)) + 1),
 	});

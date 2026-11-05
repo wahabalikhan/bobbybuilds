@@ -13,7 +13,7 @@ import { monthlyVisitors, projectSummaries, publicProductNumbers, type ProjectSu
 import { listMonth } from "@/lib/db/money";
 import { getProfile } from "@/lib/db/profile";
 import { listJourney } from "@/lib/db/settings";
-import { change, formatCount, formatMonth, formatPence, formatPercent } from "@/lib/format";
+import { change, formatCount, formatDay, formatMonth, formatPence, formatPercent } from "@/lib/format";
 import { logoFor } from "@/lib/project-logo";
 import { productLine } from "@/lib/public/product-line";
 import { CARD_HEIGHT } from "@/lib/layout";
@@ -128,7 +128,7 @@ function ProjectCard({ summary: s, numbers }: { summary: ProjectSummary; numbers
 				</div>
 				<span className="flex shrink-0 items-center gap-3">
 					{!s.project.showPublic && <span className="text-xs text-muted">Not on public page</span>}
-					<StatusDot status={s.project.status} />
+					<StatusDot status={s.project.status} up={s.uptime.lastUp} />
 				</span>
 			</div>
 			{/* One line, so every card is the same height: the public numbers follow the visitors and are cut with "…" if there's no room (full text on hover). */}
@@ -149,8 +149,10 @@ function ProjectCard({ summary: s, numbers }: { summary: ProjectSummary; numbers
 			<div className="relative z-10 mt-auto pt-5">
 				<WeekChart
 					height={40}
-					weeks={s.weekly}
-					label={`${project.name}: visitors per week for the last 12 weeks, ${formatCount(s.weekly.reduce((t, w) => t + w.value, 0))} in total. This week so far is dashed.`}
+					period={s.trend.period}
+					minPoints={s.trend.period === "day" ? 7 : 4}
+					weeks={s.trend.points}
+					label={`${project.name}: visitors per ${s.trend.period} since ${formatDay(s.trend.points[0]?.day ?? "", true)}, ${formatCount(s.trend.points.reduce((t, w) => t + w.value, 0))} in total. ${s.trend.period === "day" ? "Today" : "This week"} so far is dashed.`}
 				/>
 			</div>
 			<div className="mt-4 text-xs text-muted [&_span]:text-xs" title={s.uptime.uptime7 === null ? undefined : `${formatPercent(s.uptime.uptime7, 2)} up over 7 days`}>

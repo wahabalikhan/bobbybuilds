@@ -28,10 +28,8 @@ export const owner = {
 	fullName: "Wahab Ali Khan",
 	/** The GitHub account behind the public GitHub section (contribution calendar). */
 	githubLogin: "wahabalikhan",
-	/** Shown in small grey text beside the heading, after the name ("Wahab (Bobby) Khan, Leeds"). */
-	location: "Leeds",
 	// Photo: add a square public/profile.png or public/profile.jpg (detected at build). Until then, the initial is shown.
-	bio: "I'm a product designer with five years in B2B SaaS, now designing and building tools that make everyday things easier, in public.",
+	bio: "Product designer with 4+ years in B2B SaaS, also designing and building tools that make everyday things easier, in public.",
 	/** The profile's links, in order, each an icon with its label. */
 	links: [
 		{ label: "LinkedIn", url: "https://linkedin.com/in/wahabalikhan" },

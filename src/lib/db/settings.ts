@@ -20,8 +20,8 @@ export async function createProject(db: D1Database, details: ProjectDetails): Pr
 	try {
 		const row = await db
 			.prepare(
-				`INSERT INTO projects (slug, name, tagline, description_md, status, lesson, logo_path, site_url, health_url, github_repo, links, sort_order, tagline_fallback, is_paused)
-				 VALUES (?1, ?2, ?3, ?4, CASE WHEN ?5 = 'paused' THEN 'building' ELSE ?5 END, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?5 = 'paused') RETURNING id`,
+				`INSERT INTO projects (slug, name, tagline, description_md, status, lesson, logo_path, site_url, health_url, github_repo, links, sort_order, tagline_fallback, is_paused, started_on)
+				 VALUES (?1, ?2, ?3, ?4, CASE WHEN ?5 = 'paused' THEN 'building' ELSE ?5 END, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?5 = 'paused', ?14) RETURNING id`,
 			)
 			.bind(
 				details.slug,
@@ -37,6 +37,7 @@ export async function createProject(db: D1Database, details: ProjectDetails): Pr
 				JSON.stringify(details.links),
 				details.sortOrder,
 				details.taglineFallback,
+				details.startedOn,
 			)
 			.first<{ id: number }>();
 		// Every project starts with visitors as its public headline number.
@@ -59,7 +60,7 @@ export async function updateProjectDetails(db: D1Database, id: number, details: 
 				`UPDATE projects SET slug = ?2, name = ?3, tagline = ?4, description_md = ?5,
 				   status = CASE WHEN ?6 = 'paused' THEN (CASE WHEN status IN ('live', 'building') THEN status ELSE 'building' END) ELSE ?6 END,
 				   is_paused = (?6 = 'paused'), lesson = ?7, logo_path = ?8,
-				   site_url = ?9, health_url = ?10, github_repo = ?11, links = ?12, sort_order = ?13, updated_at = ?14, tagline_fallback = ?15
+				   site_url = ?9, health_url = ?10, github_repo = ?11, links = ?12, sort_order = ?13, updated_at = ?14, tagline_fallback = ?15, started_on = ?16
 				 WHERE id = ?1`,
 			)
 			.bind(
@@ -78,6 +79,7 @@ export async function updateProjectDetails(db: D1Database, id: number, details: 
 				details.sortOrder,
 				now(),
 				details.taglineFallback,
+				details.startedOn,
 			)
 			.run();
 	} catch (error) {

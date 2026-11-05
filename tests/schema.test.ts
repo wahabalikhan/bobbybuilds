@@ -465,3 +465,12 @@ describe("phase 10b: a project's Now line", () => {
 		await expectRejected(createProject({ now_text: "building\nthe CV fit" }));
 	});
 });
+
+describe("a project's Started on date", () => {
+	it("is a real day, or empty", async () => {
+		await expect(createProject({ started_on: "2026-10-31" })).resolves.toBeGreaterThan(0);
+		await expect(createProject({ started_on: null })).resolves.toBeGreaterThan(0);
+		await expectRejected(createProject({ started_on: "2026-02-30" }));
+		await expectRejected(createProject({ started_on: "31/10/2026" }));
+	});
+});

@@ -24,7 +24,7 @@ export function Photo({ className = "h-16 w-16 sm:h-24 sm:w-24" }: { className?:
 
 /**
  * The intro, kept short so the projects come sooner. The photo on the left; to its right one line
- * with "BobbyBuilds" (large) and "Wahab (Bobby) Khan, Leeds" in small grey text (wrapping under the
+ * with "BobbyBuilds" (large) and "by Wahab (Bobby) Khan" in small grey text (wrapping under the
  * heading when there's no room), the bio about 8px underneath, then the link icons under the bio.
  * On phones: the photo and heading on the first line, then the bio and icons full width.
  */
@@ -39,9 +39,7 @@ export function Me() {
 				<h1 id="me-name" className="text-[min(44px,11vw)] font-bold leading-none tracking-tight sm:text-[64px]">
 					{site.name}
 				</h1>
-				<p className="text-sm text-muted">
-					{owner.name}, {owner.location}
-				</p>
+				<p className="text-sm text-muted">by {owner.name}</p>
 			</div>
 			<p className="col-span-2 mt-2 max-w-[60ch] text-base leading-relaxed text-ink-2 sm:col-span-1 sm:col-start-2 sm:text-lg">{owner.bio}</p>
 			<ul className="col-span-2 -ml-1.5 mt-2 flex items-center gap-1 sm:col-span-1 sm:col-start-2" aria-label="Find me on">

@@ -16,7 +16,7 @@ const uniqueSlug = (base: string) => `${base}-${(counter += 1)}-${crypto.randomU
 /** A project with no keys yet (made directly, not through the setup, which makes keys). */
 async function keylessProject() {
 	const slug = uniqueSlug("keyless");
-	await createProject(db, { name: "Keyless", slug, tagline: "", taglineFallback: "", descriptionMd: "", status: "building", lesson: null, logoPath: null, siteUrl: null, healthUrl: null, githubRepo: null, links: [], sortOrder: 0 });
+	await createProject(db, { name: "Keyless", slug, tagline: "", taglineFallback: "", descriptionMd: "", status: "building", lesson: null, logoPath: null, siteUrl: null, healthUrl: null, githubRepo: null, links: [], sortOrder: 0, startedOn: null });
 	return (await getProjectBySlug(db, slug))!;
 }
 

@@ -43,6 +43,8 @@ export type Project = {
 	outcomes: string[];
 	/** What's happening now ("building the CV fit"), shown after "Now:" on the public card. "" = none. */
 	nowText: string;
+	/** 'YYYY-MM-DD': its charts start here, or when its tracking began if that's later. */
+	startedOn: string | null;
 };
 
 type ProjectRow = {
@@ -73,12 +75,13 @@ type ProjectRow = {
 	case_study_url: string | null;
 	outcomes: string;
 	now_text: string;
+	started_on: string | null;
 };
 
 // secret_key_hash is deliberately never selected into a Project.
 const PROJECT_COLUMNS = `id, slug, name, tagline, tagline_fallback, description_md, status, lesson, logo_path, site_url, health_url,
 	github_repo, links, allowed_origins, browser_events, funnel, public_key, secret_key_hint, sort_order, show_public,
-	is_paused, emoji, screenshot_path, screenshot_alt, case_study_url, outcomes, now_text`;
+	is_paused, emoji, screenshot_path, screenshot_alt, case_study_url, outcomes, now_text, started_on`;
 
 function parseJsonArray<T>(value: string): T[] {
 	try {
@@ -117,6 +120,7 @@ function toProject(row: ProjectRow): Project {
 		caseStudyUrl: row.case_study_url,
 		outcomes: parseJsonArray<unknown>(row.outcomes).filter((o): o is string => typeof o === "string"),
 		nowText: row.now_text,
+		startedOn: row.started_on,
 	};
 }
 
@@ -143,6 +147,19 @@ export async function listRealProjects(db: D1Database): Promise<Project[]> {
 /** Projects for the public page: real projects with "Show on my public page" on, in display order. */
 export async function listPublicProjects(db: D1Database): Promise<Project[]> {
 	return (await listRealProjects(db)).filter((p) => p.showPublic);
+}
+
+/** Each project's first day with page views (its tracking began), from the roll-ups and today's raw views. */
+export async function firstTrackedDays(db: D1Database): Promise<Map<number, string>> {
+	const { results } = await db
+		.prepare(
+			`SELECT project_id, min(day) AS day FROM (
+			   SELECT project_id, day FROM daily_totals WHERE pageviews > 0
+			   UNION ALL SELECT project_id, day FROM page_views
+			 ) GROUP BY project_id`,
+		)
+		.all<{ project_id: number; day: string }>();
+	return new Map(results.map((r) => [r.project_id, r.day]));
 }
 
 /** Ids of projects that have had at least one page view ever (today's raw views or any roll-up). */
