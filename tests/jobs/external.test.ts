@@ -26,13 +26,39 @@ describe("GitHub contribution calendar", () => {
 		await db.prepare("DELETE FROM github_contributions").run();
 	});
 
-	it("asks GitHub's GraphQL API for the login's calendar with the token, and stores every day", async () => {
+	/** GitHub's public profile calendar: one cell and tooltip per day, and the year's total. */
+	const profilePage = (days: number, from = "2025-11-02", count = (i: number) => i % 4, total?: number) => {
+		const list = Array.from({ length: days }, (_, i) => ({ date: new Date(Date.parse(`${from}T00:00:00Z`) + i * 86_400_000).toISOString().slice(0, 10), n: count(i) }));
+		const sum = total ?? list.reduce((t, d) => t + d.n, 0);
+		const cells = list.map((d, i) => `<td tabindex="0" data-ix="${i}" data-date="${d.date}" id="contribution-day-component-${i % 7}-${i}" data-level="1" class="ContributionCalendar-day"></td>`).join("");
+		const tips = list.map((d, i) => `<tool-tip id="tooltip-${i}" for="contribution-day-component-${i % 7}-${i}" popover="manual" class="sr-only">${d.n === 0 ? "No" : d.n} contribution${d.n === 1 ? "" : "s"} on May 11th.</tool-tip>`).join("");
+		return new Response(`<h2 id="js-contribution-activity-description"> ${sum.toLocaleString("en-US")} contributions in the last year </h2><table>${cells}</table>${tips}`);
+	};
+
+	it("reads GitHub's own profile calendar first, with no token needed, so it matches the profile", async () => {
+		const { fn, calls } = fakeFetch(() => profilePage(369));
+		const summary = await syncGithubContributions(db, fn, "wahabalikhan", undefined, 5);
+		expect(summary).toEqual({ days: 369, total: Array.from({ length: 369 }, (_, i) => i % 4).reduce((a, b) => a + b, 0), source: "profile" });
+		expect(calls.map((c) => c.url)).toEqual(["https://github.com/users/wahabalikhan/contributions"]);
+		expect((await stored())[1]).toEqual({ day: "2025-11-03", count: 1 });
+	});
+
+	it("falls back to the API when the profile's days don't add up to its total, or it can't be read", async () => {
+		const wrongTotal = fakeFetch((url) => (url.includes("graphql") ? calendar(366) : profilePage(369, "2025-11-02", (i) => i % 4, 1)));
+		expect(await syncGithubContributions(db, wrongTotal.fn, "x", "tok", 5)).toMatchObject({ source: "api", days: 366 });
+		expect(wrongTotal.calls.map((c) => c.url)).toEqual(["https://github.com/users/x/contributions", "https://api.github.com/graphql"]);
+		const down = fakeFetch((url) => (url.includes("graphql") ? calendar(366) : new Response("busy", { status: 503 })));
+		expect(await syncGithubContributions(db, down.fn, "x", "tok", 6)).toMatchObject({ source: "api" });
+	});
+
+	it("asks GitHub's GraphQL API for the login's calendar with the token as the fallback, and stores every day", async () => {
 		const { fn, calls } = fakeFetch(() => calendar(366));
 		const summary = await syncGithubContributions(db, fn, "wahabalikhan", "tok", 5);
-		expect(summary).toEqual({ days: 366, total: Array.from({ length: 366 }, (_, i) => i % 5).reduce((a, b) => a + b, 0) });
-		expect(calls[0].url).toBe("https://api.github.com/graphql");
-		expect((calls[0].init?.headers as Record<string, string>).Authorization).toBe("Bearer tok");
-		expect(JSON.parse(String(calls[0].init?.body)).variables).toEqual({ login: "wahabalikhan" });
+		expect(summary).toEqual({ days: 366, total: Array.from({ length: 366 }, (_, i) => i % 5).reduce((a, b) => a + b, 0), source: "api" });
+		expect(calls[0].url).toBe("https://github.com/users/wahabalikhan/contributions");
+		expect(calls[1].url).toBe("https://api.github.com/graphql");
+		expect((calls[1].init?.headers as Record<string, string>).Authorization).toBe("Bearer tok");
+		expect(JSON.parse(String(calls[1].init?.body)).variables).toEqual({ login: "wahabalikhan" });
 		const rows = await stored();
 		expect(rows.length).toBe(366);
 		expect(rows[0]).toEqual({ day: "2025-11-02", count: 0 });

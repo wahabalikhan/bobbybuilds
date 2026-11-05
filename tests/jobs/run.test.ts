@@ -70,11 +70,11 @@ describe("/internal/jobs", () => {
 		expect(between.summary).toHaveProperty("uptime");
 	});
 
-	it("refreshes the GitHub contribution calendar on the daily task, never the frequent one", async () => {
+	it("refreshes the GitHub contribution calendar hourly, on the frequent task on the hour", async () => {
 		const at = (minute: number) => Date.UTC(2026, 11, 7, 9, minute);
-		expect((await runTask("frequent", deps(), at(0))).summary).not.toHaveProperty("contributions");
+		expect((await runTask("frequent", deps(), at(0))).summary).toHaveProperty("contributions");
 		expect((await runTask("frequent", deps(), at(10))).summary).not.toHaveProperty("contributions");
-		expect((await runTask("daily", deps(), NOW)).summary).toHaveProperty("contributions");
+		expect((await runTask("daily", deps(), NOW)).summary).not.toHaveProperty("contributions");
 	});
 
 	it("records a failure as ok: false instead of throwing", async () => {
