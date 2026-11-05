@@ -41,7 +41,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 		<div className="max-w-3xl space-y-6">
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Costs and revenue" }]} />
-				<h1 className="text-2xl font-semibold tracking-tight">Costs and revenue</h1>
+				<h1 className="text-2xl font-bold tracking-tight">Costs and revenue</h1>
 				<p className="text-sm text-ink-2">What it costs to run everything each month, and what it earns (even £0). This month&rsquo;s totals and the costs by service go on your public page.</p>
 			</div>
 

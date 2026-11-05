@@ -15,7 +15,7 @@ describe("niceTicks", () => {
 });
 
 describe("charts render without broken numbers", () => {
-	it("draws a time series with a summary, hover titles and a table", () => {
+	it("draws a time series with a summary, hover cards and a table", () => {
 		const html = renderToStaticMarkup(
 			<TimeSeriesChart
 				title="Visitors"
@@ -26,7 +26,11 @@ describe("charts render without broken numbers", () => {
 			/>,
 		);
 		expect(html).toContain('aria-label="Visitors. 4 days from 1 Oct to 4 Oct. Latest 8."');
-		expect(html).toContain("<title>3 Oct 2026: no data · Previous (3 Oct): 3</title>");
+		// The ink hover card for each day: the date, the value (or "No data") and the previous period.
+		expect(html).toContain(">3 Oct 2026</div>");
+		expect(html).toContain(">No data</div>");
+		expect(html).toContain(">Previous (3 Oct): 3</div>");
+		expect(html).not.toContain("<title>");
 		expect(html).toContain("Show as a table");
 		expect(html).toContain("This period");
 		expect(html).not.toMatch(/NaN|Infinity|undefined/);
@@ -62,8 +66,10 @@ describe("charts render without broken numbers", () => {
 		expect(html).toContain("Down");
 		const strip = renderToStaticMarkup(<UptimeStrip days={[{ day: "2026-11-01", checks: 288, up: 288 }, { day: "2026-11-02", checks: 0, up: 0 }]} />);
 		expect(strip).toContain("99.9% or more");
-		expect(strip).toContain("1 Nov 2026: 100.00% up (288 of 288 checks)");
-		expect(strip).toContain("2 Nov 2026: no checks");
+		expect(strip).toContain(">1 Nov 2026</div>");
+		expect(strip).toContain(">100.00% up</div>");
+		expect(strip).toContain(">288 of 288 checks</div>");
+		expect(strip).toContain(">No checks</div>");
 	});
 
 	it("grades uptime", () => {

@@ -23,7 +23,7 @@ export default async function EditJourneyEntry({ params, searchParams }: { param
 		<div className="max-w-3xl space-y-6">
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Journey", href: adminHref("/settings/journey") }, { label: entry.title }]} />
-				<h1 className="text-2xl font-semibold tracking-tight">{entry.title}</h1>
+				<h1 className="text-2xl font-bold tracking-tight">{entry.title}</h1>
 				{query.created && <p role="status" className="mt-1 text-sm text-good-ink">✓ Entry created.</p>}
 			</div>
 			<section className="rounded-2xl border border-line bg-card p-5">

@@ -33,3 +33,12 @@ export function MailIcon({ className = "h-4 w-4" }: IconProps) {
 		</svg>
 	);
 }
+
+/** → for links that stay on this site (↗ is for links that open another site). */
+export function ArrowRightIcon({ className = "h-3.5 w-3.5" }: IconProps) {
+	return (
+		<svg aria-hidden viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+			<path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" />
+		</svg>
+	);
+}

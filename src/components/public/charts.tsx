@@ -1,14 +1,15 @@
 "use client";
 
 /**
- * The public page's interactive pieces: the project dropdown, the monthly bars and the card
- * sparklines, each with a hover popover (a white card, like the rest of the page). They only
+ * The admin Home's interactive pieces: the project dropdown, the monthly bars and the card
+ * sparklines, each with the ink hover card every chart uses (HOVER_CARD). They only
  * show figures already in the page, so they make no requests. Every chart also has a
  * screen-reader-only table with the same numbers.
  */
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { ProjectLogo } from "@/components/admin/ui";
 import { niceTicks } from "@/components/charts";
+import { HOVER_CARD, HOVER_LABEL } from "@/lib/chart-style";
 import { formatDay, formatWhole } from "@/lib/format";
 
 export type ChartProject = { slug: string; name: string; logoPath: string | null };
@@ -31,7 +32,7 @@ function useWidth<T extends HTMLElement>(initial: number) {
 export function Popover({ x, top = 0, children }: { x: number; top?: number; children: ReactNode }) {
 	const style: CSSProperties = x <= 0.5 ? { left: `calc(${x * 100}% + 14px)`, top } : { right: `calc(${(1 - x) * 100}% + 14px)`, top };
 	return (
-		<div aria-hidden className="pointer-events-none absolute z-20 w-max min-w-[200px] max-w-[320px] rounded-2xl border border-line bg-card px-4 py-3 text-sm shadow-[0_8px_30px_rgba(0,0,0,0.08)]" style={style}>
+		<div aria-hidden className={`absolute ${HOVER_CARD} min-w-[200px] text-sm`} style={style}>
 			{children}
 		</div>
 	);
@@ -40,11 +41,11 @@ export function Popover({ x, top = 0, children }: { x: number; top?: number; chi
 export function PopoverRow({ project, value }: { project: ChartProject; value: string }) {
 	return (
 		<div className="mt-1.5 flex items-center justify-between gap-6">
-			<span className="flex min-w-0 items-center gap-2 text-muted">
+			<span className="flex min-w-0 items-center gap-2 opacity-80">
 				<ProjectLogo name={project.name} logoPath={project.logoPath} size={18} />
 				<span className="truncate">{project.name}</span>
 			</span>
-			<span className="whitespace-nowrap tabular font-medium text-ink">{value}</span>
+			<span className="whitespace-nowrap tabular font-semibold">{value}</span>
 		</div>
 	);
 }
@@ -282,18 +283,18 @@ export function MonthBars({
 			</svg>
 			{hover !== null && (
 				<Popover x={(PAD.left + band * hover + band / 2) / width} top={PAD.top}>
-					<div className="font-semibold text-ink">
+					<div className={HOVER_LABEL}>
 						{months[hover]}
-						{hover === last && <span className="font-normal text-muted"> (so far)</span>}
+						{hover === last && ", so far"}
 					</div>
 					{shown.map((p) => (
 						<PopoverRow key={p.slug} project={p} value={formatWhole(p.values[hover] ?? 0)} />
 					))}
-					{shown.length === 0 && <div className="mt-1.5 text-muted">No visitors</div>}
+					{shown.length === 0 && <div className="mt-1.5 opacity-80">No visitors</div>}
 					{projects.length > 1 && (
-						<div className="mt-2.5 flex items-center justify-between border-t border-line pt-2.5">
-							<span className="text-xs uppercase tracking-wide text-muted">Total</span>
-							<span className="tabular font-semibold text-ink">{formatWhole(totals[hover])}</span>
+						<div className="mt-2.5 flex items-center justify-between border-t border-[color-mix(in_srgb,var(--page)_20%,transparent)] pt-2.5">
+							<span className="text-[11px] font-medium uppercase tracking-[0.06em] opacity-70">Total</span>
+							<span className="tabular font-semibold">{formatWhole(totals[hover])}</span>
 						</div>
 					)}
 				</Popover>
@@ -347,9 +348,9 @@ export function WeekSparkline({ project, weeks, label, height = 56 }: { project:
 			</svg>
 			{hover !== null && (
 				<Popover x={x(hover) / width} top={-12}>
-					<div className="font-semibold text-ink">
+					<div className={HOVER_LABEL}>
 						Week of {formatDay(weeks[hover].day, true)}
-						{hover === n - 1 && <span className="font-normal text-muted"> (so far)</span>}
+						{hover === n - 1 && ", so far"}
 					</div>
 					<PopoverRow project={project} value={`${formatWhole(values[hover])} visitor${values[hover] === 1 ? "" : "s"}`} />
 				</Popover>

@@ -23,7 +23,7 @@ export default async function ProfilePage() {
 		<div className="max-w-2xl space-y-6">
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Profile" }]} />
-				<h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
+				<h1 className="text-2xl font-bold tracking-tight">Profile</h1>
 			</div>
 			<SettingsForm action={profileAction}>
 				<div className="sm:w-56">

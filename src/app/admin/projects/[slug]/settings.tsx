@@ -89,7 +89,7 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 			</details>
 
 			<section aria-labelledby="delete-heading" className="mt-16 border-t-2 border-[color-mix(in_srgb,var(--critical)_35%,transparent)] pt-8">
-				<h2 id="delete-heading" className="text-[15px] font-medium tracking-tight text-critical">
+				<h2 id="delete-heading" className="text-[15px] font-medium tracking-tight text-critical-ink">
 					Delete this project
 				</h2>
 				<p className="mb-4 mt-1 text-sm text-ink-2">

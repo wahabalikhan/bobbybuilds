@@ -13,7 +13,8 @@ BobbyBuilds is built in phases. Each phase starts with a plan and ends with a te
 | 7 | Connect my portfolio | ✅ Done (portfolio `cada9b5`, `5428cdb`) |
 | 8 | Connect the job board | Not started |
 | 9 | Launch | In progress: custom domain and Access done (`b2cbb96`, `09c5b40`, `fc88135`) |
-| 10 | Public page redesign | ✅ Done (10a `9d5b21e`; 10b "BobbyBuilds public page redesign") |
+| 10 | Public page redesign | ✅ Done (10a `9d5b21e`; 10b `768053a`, `e9944c4`, `f08aae7`) |
+| 11 | One design system for the admin | ✅ Done ("Admin on the public design system") |
 
 ## 1. Setup ✅
 
@@ -184,3 +185,11 @@ An original, single-column public page (no longer modelled on IndiePage): Me, Pr
   - Revised again: Activity as two cards like the project cards; the GitHub grid fills its card (it had a fixed 440px minimum width and month labels spilling into extra columns) and shows fewer recent weeks to keep squares at 8px or more; the order Projects → Honest numbers → Activity → Journey; a shorter intro ("BobbyBuilds" large, "Wahab (Bobby) Khan, Leeds" small beside it and the icons on one line, then the new one-sentence bio 8px below); no This week line, no jump links and no Open to work pill; a "Now:" line per project. Migration 0013 (`0013_project_now.sql`: `now_text`, with This week moved into Tech Jobs' Now).
   - Final touches before the commit: no emoji on the cards, the case study link hidden when it's the project's own site, the whole card clickable (the name as a stretched link, ↗ on hover and focus, an outline round the card) instead of "Try it", and the heading at 64px (44px on phones).
 - **Refinements** (6 November 2026, after `768053a`): the container at 900px; one accent blue on the public page (#2747D6, #8199F8 in dark mode: "Builds" in the heading and header, links on hover, card titles and ↗ on hover and focus, focus outlines, the card charts' line, the Shipping rhythm bars, the GitHub grid's levels and text selection); the heading at 700; the icons under the bio; every card 240px tall from `md` up (`CARD_HEIGHT`) with a 40px card chart; the GitHub grid restored to fill its width at the bottom of its card; the home header fixed and fading in only once the top of Projects reaches it, and out the same way.
+
+## 11. One design system for the admin
+
+The admin takes on the public page's design language, so the two match.
+
+- **Step 1: shared foundations** (6 November 2026): one accent blue for both (#2747D6, #8199F8 in dark mode) with the selection tint; text links ink and underlined, blue on hover; focus outlines in the blue; the wordmark bold and all ink everywhere (the admin adds a grey "HQ"); `StatusDot` instead of the admin's status pills; admin page titles bold.
+- **Step 2: charts**: chart tokens are the accent blue in both themes; the admin's server charts show the ink hover card from CSS hover areas (no native titles, still no client JavaScript); the Home visitors chart's hover card is the ink one; the Overview's visitors chart is the interactive `WeekChart` (daily); comparison lines grey; uptime keeps its colours; the public honest-numbers trend stays neutral.
+- **Step 3: cards and pages**: admin Home's project cards on the public card design (keeping visitors, change, numbers and uptime; → for the internal link; `CARD_HEIGHT`); headline figures as plain bold figures; the project header's numbers as text, not a pill; status text in `--critical-ink` and `--warning-ink` (the red status pill 5.4:1, the dark-mode amber pill and delete heading fixed), status icon glyphs at 3:1 or more.

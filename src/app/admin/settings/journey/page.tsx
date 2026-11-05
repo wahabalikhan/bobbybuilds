@@ -21,7 +21,7 @@ export default async function JourneyList({ searchParams }: { searchParams: Prom
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Journey" }]} />
 				<div className="flex flex-wrap items-center justify-between gap-3">
-					<h1 className="text-2xl font-semibold tracking-tight">Journey</h1>
+					<h1 className="text-2xl font-bold tracking-tight">Journey</h1>
 					<Link href={adminHref("/settings/journey/new")} className={buttonClass}>
 						New entry
 					</Link>

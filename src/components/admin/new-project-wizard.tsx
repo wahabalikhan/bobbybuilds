@@ -35,7 +35,7 @@ export function NewProjectWizard({ action }: { action: Action }) {
 								{pending ? "Setting up…" : "Continue"}
 							</button>
 							{state.status === "error" && state.message && (
-								<p role="alert" className="text-sm text-critical">
+								<p role="alert" className="text-sm text-critical-ink">
 									✕ {state.message}
 								</p>
 							)}
@@ -96,7 +96,7 @@ function Field({ name, label, hint, placeholder, type = "text", state }: { name:
 				aria-describedby={`${name}-hint`}
 				className={inputClass}
 			/>
-			<span id={`${name}-hint`} className={`mt-1 block ${error ? "text-critical" : "text-muted"}`}>
+			<span id={`${name}-hint`} className={`mt-1 block ${error ? "text-critical-ink" : "text-muted"}`}>
 				{error ?? hint}
 			</span>
 		</label>

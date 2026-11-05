@@ -76,7 +76,7 @@ export function Pill({ children, title }: { children: ReactNode; title?: string 
 
 /** Up is good for every number here, so a rise reads green and a fall red (always with an arrow). */
 export function Delta({ value, period }: { value: number | null; period?: string }) {
-	const tone = value === null || value === 0 ? "text-muted" : value > 0 ? "text-good-ink" : "text-critical";
+	const tone = value === null || value === 0 ? "text-muted" : value > 0 ? "text-good-ink" : "text-critical-ink";
 	const arrow = value === null || value === 0 ? "" : value > 0 ? "↑ " : "↓ ";
 	return (
 		<span className={`text-sm ${tone}`}>
@@ -156,25 +156,6 @@ export function Empty({ children }: { children: ReactNode }) {
 
 export function RawNote({ clipped }: { clipped: boolean }) {
 	return <>From raw data, kept for 90 days{clipped ? ", so this covers the last 90 days of your range" : ""}.</>;
-}
-
-const STATUS = {
-	live: { label: "Live", dot: "var(--good)" },
-	building: { label: "Building", dot: "var(--warning)" },
-	paused: { label: "Paused", dot: "var(--muted)" },
-	idea: { label: "Idea", dot: "var(--muted)" },
-	retired: { label: "Retired", dot: "var(--muted)" },
-} as const;
-
-/** Live / Building / Paused / Idea / Retired: a small pill with a dot and the word (never colour alone). */
-export function StatusPill({ status }: { status: string }) {
-	const s = STATUS[status as keyof typeof STATUS] ?? STATUS.idea;
-	return (
-		<span className="inline-flex items-center gap-1.5 rounded-full border border-line px-2 py-0.5 text-xs text-ink-2">
-			<span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ background: s.dot }} />
-			{s.label}
-		</span>
-	);
 }
 
 /** The project's logo from public/logos, or its first letter on a dark rounded square. */

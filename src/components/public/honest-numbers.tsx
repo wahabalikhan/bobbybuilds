@@ -25,8 +25,8 @@ function Trend({ months }: { months: Month[] }) {
 		<>
 			<svg aria-hidden viewBox={`0 0 ${w} ${h}`} width={w} height={h} className="overflow-visible">
 				<path d={`${line(points)} L${w} ${h} L0 ${h} Z`} fill="var(--chart-fill)" />
-				<path d={line(finished)} fill="none" stroke="var(--chart-line)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-				<path d={line(points.slice(-2))} fill="none" stroke="var(--chart-line)" strokeWidth="1.5" strokeDasharray="2 2.5" strokeLinecap="round" />
+				<path d={line(finished)} fill="none" stroke="var(--chart-neutral)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+				<path d={line(points.slice(-2))} fill="none" stroke="var(--chart-neutral)" strokeWidth="1.5" strokeDasharray="2 2.5" strokeLinecap="round" />
 			</svg>
 			<ul className="sr-only">
 				{months.map((m, i) => (

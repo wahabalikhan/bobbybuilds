@@ -14,7 +14,7 @@ export default async function NewJourneyEntry() {
 		<div className="max-w-3xl space-y-6">
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Journey", href: adminHref("/settings/journey") }, { label: "New entry" }]} />
-				<h1 className="text-2xl font-semibold tracking-tight">New entry</h1>
+				<h1 className="text-2xl font-bold tracking-tight">New entry</h1>
 			</div>
 			<section className="rounded-2xl border border-line bg-card p-5">
 				<JourneyForm projects={projects} />

@@ -14,7 +14,7 @@ export function SiteHeader({ showAfter }: { showAfter?: string } = {}) {
 	return (
 		<header className={`${PAGE} pt-6 sm:pt-8`}>
 			<Link href="/" className="inline-block rounded-sm" aria-label={`${site.name} home`}>
-				<Wordmark bold />
+				<Wordmark />
 			</Link>
 		</header>
 	);

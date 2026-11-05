@@ -19,8 +19,8 @@ export function statusTone(items: Attention[]): "good" | "warning" | "critical" 
 
 const TONE = {
 	good: "bg-[color-mix(in_srgb,var(--good)_12%,transparent)] text-good-ink",
-	warning: "bg-[color-mix(in_srgb,var(--warning)_22%,transparent)] text-[#6b4600]",
-	critical: "bg-[color-mix(in_srgb,var(--critical)_14%,transparent)] text-critical",
+	warning: "bg-[color-mix(in_srgb,var(--warning)_22%,transparent)] text-warning-ink",
+	critical: "bg-[color-mix(in_srgb,var(--critical)_14%,transparent)] text-critical-ink",
 } as const;
 
 /**

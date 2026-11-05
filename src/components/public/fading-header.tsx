@@ -59,7 +59,7 @@ export function FadingHeader({ showAfter, label }: { showAfter: string; label: s
 					}}
 					className="inline-block rounded-sm"
 				>
-					<Wordmark bold />
+					<Wordmark />
 				</Link>
 			</div>
 		</header>

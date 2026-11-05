@@ -49,14 +49,14 @@ describe("tab titles", () => {
 });
 
 describe("the wordmark", () => {
-	it("is the site's name in two halves, both semibold, the second in the accent blue", async () => {
+	it("is the site's name, bold and all in ink", async () => {
 		const { renderToStaticMarkup } = await import("react-dom/server");
 		const { createElement } = await import("react");
 		const { Wordmark } = await import("@/components/wordmark");
 		const { site } = await import("@/lib/site");
 		expect(site.wordmark.join("")).toBe(site.name);
 		const html = renderToStaticMarkup(createElement(Wordmark));
-		expect(html).toContain('<span class="font-semibold text-ink">Bobby</span><span class="font-semibold text-accent">Builds</span>');
+		expect(html).toContain('<span class="font-bold text-ink">BobbyBuilds</span>');
 		expect(html).not.toMatch(/bg-|15171C/);
 	});
 
@@ -69,9 +69,9 @@ describe("the wordmark", () => {
 		expect(html).toContain('<span class="font-normal text-muted">HQ</span>');
 	});
 
-	it("is bold in the public header (plain and fading), like the big heading, and has HQ in the admin top bar", () => {
-		expect(readFileSync("src/components/public/site-header.tsx", "utf8")).toMatch(/<Wordmark bold \/>/);
-		expect(readFileSync("src/components/public/fading-header.tsx", "utf8")).toMatch(/<Wordmark bold \/>/);
+	it("is in the public header (plain and fading) and, with HQ, in the admin top bar", () => {
+		expect(readFileSync("src/components/public/site-header.tsx", "utf8")).toMatch(/<Wordmark \/>/);
+		expect(readFileSync("src/components/public/fading-header.tsx", "utf8")).toMatch(/<Wordmark \/>/);
 		expect(readFileSync("src/app/admin/layout.tsx", "utf8")).toMatch(/<Wordmark suffix="HQ" \/>/);
 	});
 });

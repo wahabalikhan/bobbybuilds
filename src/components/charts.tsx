@@ -1,11 +1,13 @@
 /**
- * Small server-rendered SVG charts. No chart library and no client JavaScript:
- * hover tooltips are native SVG <title>s on generous hit areas, and every chart has a
- * table view. Monochrome marks: a dark line over a light grey fill, dark bars capped at 24px
- * with 4px rounded data ends, hairline gridlines. The latest, unfinished period (today, this
- * week, this month) is drawn dashed or lighter. Colours come from CSS variables in globals.css.
+ * Small server-rendered SVG charts. No chart library and no client JavaScript: hovering shows the
+ * same ink hover card as the public page (HOVER_CARD), from invisible hover areas laid over the
+ * chart and shown with CSS, and every chart has a table view. Marks are the accent blue: a blue
+ * line over a light grey fill, blue bars capped at 24px with 4px rounded data ends; grey axes,
+ * gridlines and labels; comparison lines grey. The latest, unfinished period (today, this week,
+ * this month) is drawn dashed or lighter. Colours come from CSS variables in globals.css.
  */
 import type { ReactNode } from "react";
+import { HOVER_CARD, HOVER_LABEL, HOVER_VALUE } from "@/lib/chart-style";
 import { formatCount, formatDay } from "@/lib/format";
 
 export type Point = { day: string; value: number | null };
@@ -15,6 +17,54 @@ type Format = (value: number) => string;
 
 const W = 720;
 const PAD = { top: 14, right: 12, bottom: 26, left: 60 };
+
+/**
+ * One invisible hover area over a chart (positions in % of the chart's box), showing the ink hover
+ * card on hover: optionally a highlighted band, a guide line and a dot on the main line.
+ */
+function HoverArea({
+	left,
+	width,
+	top,
+	height,
+	label,
+	value,
+	rows = [],
+	dot,
+	guide = false,
+	band = false,
+}: {
+	left: number;
+	width: number;
+	top: number;
+	height: number;
+	label: string;
+	value: string;
+	rows?: string[];
+	dot?: number;
+	guide?: boolean;
+	band?: boolean;
+}) {
+	const opensRight = left + width / 2 <= 50;
+	return (
+		<div className="group/hit absolute" style={{ left: `${left}%`, width: `${width}%`, top: `${top}%`, height: `${height}%` }}>
+			{band && <div className="absolute inset-0 rounded-lg bg-[color-mix(in_srgb,var(--ink)_6%,transparent)] opacity-0 group-hover/hit:opacity-100" />}
+			{guide && <div className="absolute inset-y-0 left-1/2 border-l border-dashed border-[var(--axis)] opacity-0 group-hover/hit:opacity-100" />}
+			{dot !== undefined && (
+				<div className="absolute left-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent)] ring-2 ring-[var(--card)] opacity-0 group-hover/hit:opacity-100" style={{ top: `${dot}%` }} />
+			)}
+			<div className={`absolute top-0 hidden group-hover/hit:block ${HOVER_CARD} ${opensRight ? "left-[calc(50%+12px)]" : "right-[calc(50%+12px)]"}`}>
+				<div className={HOVER_LABEL}>{label}</div>
+				<div className={HOVER_VALUE}>{value}</div>
+				{rows.map((row) => (
+					<div key={row} className="mt-1 text-[13px] opacity-80">
+						{row}
+					</div>
+				))}
+			</div>
+		</div>
+	);
+}
 
 /** A clean axis maximum and ticks (steps of 1, 2 or 5 × 10ⁿ). */
 export function niceTicks(max: number, count = 4): number[] {
@@ -132,8 +182,8 @@ export function TimeSeriesChart({
 	return (
 		<figure className="w-full">
 			<Legend series={series} />
+			<div className="relative">
 			<svg viewBox={`0 0 ${viewWidth} ${height}`} className="h-auto w-full" role="img" aria-label={summary}>
-				<title>{summary}</title>
 				{ticks.map((t) => (
 					<g key={t}>
 						<line x1={PAD.left} x2={viewWidth - PAD.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--axis)" : "var(--grid)"} strokeWidth={1} />
@@ -162,7 +212,7 @@ export function TimeSeriesChart({
 						<path
 							d={`M${x(n - 2).toFixed(1)},${y(main.points[n - 2].value!).toFixed(1)}L${x(n - 1).toFixed(1)},${y(main.points[n - 1].value!).toFixed(1)}`}
 							fill="none"
-							stroke="var(--muted)"
+							stroke="var(--chart-line)"
 							strokeWidth={1.5}
 							strokeDasharray="3 3"
 						/>
@@ -175,21 +225,27 @@ export function TimeSeriesChart({
 						{main.points[i] ? formatDay(main.points[i].day) : ""}
 					</text>
 				))}
-				{main.points.map((p, i) => (
-					<rect key={p.day} x={x(i) - hitW / 2} y={PAD.top} width={hitW} height={plotH} fill="transparent">
-						<title>
-							{`${formatDay(p.day, true)}${unfinishedLast && i === n - 1 ? " (so far)" : ""}: ${p.value === null ? "no data" : format(p.value)}${unitLabel ? ` ${unitLabel}` : ""}` +
-								series
-									.slice(1)
-									.map((s) => {
-										const prev = s.points[i];
-										return prev ? ` · ${s.label} (${formatDay(prev.day)}): ${prev.value === null ? "no data" : format(prev.value)}` : "";
-									})
-									.join("")}
-						</title>
-					</rect>
-				))}
 			</svg>
+			<div aria-hidden className="absolute inset-0">
+				{main.points.map((p, i) => (
+					<HoverArea
+						key={p.day}
+						left={((x(i) - hitW / 2) / viewWidth) * 100}
+						width={(hitW / viewWidth) * 100}
+						top={(PAD.top / height) * 100}
+						height={(plotH / height) * 100}
+						guide
+						dot={p.value === null ? undefined : ((y(p.value) - PAD.top) / plotH) * 100}
+						label={`${formatDay(p.day, true)}${unfinishedLast && i === n - 1 ? ", so far" : ""}`}
+						value={`${p.value === null ? "No data" : format(p.value)}${unitLabel && p.value !== null ? ` ${unitLabel}` : ""}`}
+						rows={series.slice(1).flatMap((s) => {
+							const prev = s.points[i];
+							return prev ? [`${s.label} (${formatDay(prev.day)}): ${prev.value === null ? "no data" : format(prev.value)}`] : [];
+						})}
+					/>
+				))}
+			</div>
+			</div>
 			<TableView
 				caption={title}
 				head={["Day", ...series.map((s) => s.label)]}
@@ -235,8 +291,8 @@ export function ColumnChart({
 
 	return (
 		<figure className="w-full">
+			<div className="relative">
 			<svg viewBox={`0 0 ${viewWidth} ${height}`} className="h-auto w-full" role="img" aria-label={`${title}. Total ${format(total)}.`}>
-				<title>{`${title}. Total ${format(total)}.`}</title>
 				{ticks.map((t) => (
 					<g key={t}>
 						<line x1={PAD.left} x2={viewWidth - PAD.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--axis)" : "var(--grid)"} strokeWidth={1} />
@@ -264,13 +320,25 @@ export function ColumnChart({
 									{b.label}
 								</text>
 							)}
-							<rect x={cx - band / 2} y={PAD.top} width={band} height={plotH} fill="transparent">
-								<title>{`${b.detail ?? b.label}${unfinished ? " (so far)" : ""}: ${format(b.value)}`}</title>
-							</rect>
 						</g>
 					);
 				})}
 			</svg>
+			<div aria-hidden className="absolute inset-0">
+				{bars.map((b, i) => (
+					<HoverArea
+						key={b.label}
+						left={((PAD.left + band * i) / viewWidth) * 100}
+						width={(band / viewWidth) * 100}
+						top={(PAD.top / height) * 100}
+						height={(plotH / height) * 100}
+						band
+						label={`${b.detail ?? b.label}${unfinishedLast && i === bars.length - 1 ? ", so far" : ""}`}
+						value={format(b.value)}
+					/>
+				))}
+			</div>
+			</div>
 			{showTable && <TableView caption={title} head={["", "Value"]} rows={bars.map((b) => [b.detail ?? b.label, format(b.value)])} />}
 		</figure>
 	);
@@ -382,7 +450,8 @@ export function StatusBadge({ status, label }: { status: Status; label?: string 
 			<span
 				aria-hidden
 				className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold"
-				style={{ background: colour, color: status === "warning" ? "#0b0b0b" : "#ffffff" }}
+				// Glyphs at 3:1 or more: dark on amber and orange, white on green and red, the page colour on grey.
+				style={{ background: colour, color: status === "warning" || status === "serious" ? "#0b0b0b" : status === "none" ? "var(--on-muted)" : "#ffffff" }}
 			>
 				{STATUS_ICON[status]}
 			</span>
@@ -418,17 +487,29 @@ export function UptimeStrip({ days }: { days: { day: string; checks: number; up:
 	const label = `Daily uptime for ${days.length} days: ${summaryChecks ? ((summaryUp / summaryChecks) * 100).toFixed(2) : "–"}% overall.`;
 	return (
 		<figure>
-			<svg viewBox={`0 0 ${width} 36`} className="h-auto w-full" role="img" aria-label={label}>
-				<title>{label}</title>
-				{days.map((d, i) => {
-					const status = uptimeStatus(d.checks, d.up);
-					return (
-						<rect key={d.day} x={i * (barW + gap)} y={0} width={barW} height={36} rx={2} fill={status === "none" ? "var(--grid)" : `var(--${status})`}>
-							<title>{`${formatDay(d.day, true)}: ${d.checks ? `${((d.up / d.checks) * 100).toFixed(2)}% up (${d.up} of ${d.checks} checks)` : "no checks"}`}</title>
-						</rect>
-					);
-				})}
-			</svg>
+			<div className="relative">
+				<svg viewBox={`0 0 ${width} 36`} className="h-auto w-full" role="img" aria-label={label}>
+					{days.map((d, i) => {
+						const status = uptimeStatus(d.checks, d.up);
+						return <rect key={d.day} x={i * (barW + gap)} y={0} width={barW} height={36} rx={2} fill={status === "none" ? "var(--grid)" : `var(--${status})`} />;
+					})}
+				</svg>
+				<div aria-hidden className="absolute inset-0">
+					{days.map((d, i) => (
+						<HoverArea
+							key={d.day}
+							left={((i * (barW + gap)) / width) * 100}
+							width={((barW + gap) / width) * 100}
+							top={0}
+							height={100}
+							band
+							label={formatDay(d.day, true)}
+							value={d.checks ? `${((d.up / d.checks) * 100).toFixed(2)}% up` : "No checks"}
+							rows={d.checks ? [`${d.up} of ${d.checks} checks`] : []}
+						/>
+					))}
+				</div>
+			</div>
 			<ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
 				{UPTIME_LEGEND.map((item) => (
 					<li key={item.status}>

@@ -3,28 +3,9 @@ import { CARD_HEIGHT } from "@/lib/layout";
 import { formatCount } from "@/lib/format";
 import type { TaglinePart } from "@/lib/public/product-line";
 import type { PublicProject } from "@/lib/public/snapshot";
+import { StatusDot } from "@/components/status-dot";
 import { ArrowIcon } from "./icons";
 import { WeekChart } from "./mono-charts";
-
-/** Live, building and paused: a coloured dot, always with its word. */
-type ProjectStatus = PublicProject["status"];
-
-const STATUS: Partial<Record<ProjectStatus, { label: string; dot: string }>> = {
-	live: { label: "Live", dot: "var(--good)" },
-	building: { label: "Building", dot: "var(--warning)" },
-	paused: { label: "Paused", dot: "var(--muted)" },
-};
-
-export function StatusDot({ status }: { status: ProjectStatus }) {
-	const s = STATUS[status];
-	if (!s) return null;
-	return (
-		<span className="inline-flex shrink-0 items-center gap-1.5 text-sm text-ink-2">
-			<span aria-hidden className="h-2 w-2 rounded-full" style={{ background: s.dot }} />
-			{s.label}
-		</span>
-	);
-}
 
 /** Text with its numbers in bold ink. */
 function Parts({ parts }: { parts: TaglinePart[] }) {

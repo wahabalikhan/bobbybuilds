@@ -5,16 +5,19 @@
  * a dark version, chosen by the system setting.
  * Look: white page, white cards with thin light-grey borders and 16px corners, no heavy shadows,
  * monochrome charts (light grey fill, dark line), small grey pills, black pill buttons.
- * --accent is #1D4ED8 in the admin (links, focus, selected states; never chart marks). Contrast:
- * 6.7:1 on white, hover #1E40AF 8.7:1; admin dark mode uses #6B8CF5 (6.3:1) with hover #93B0FF (9.3:1).
- * The public pages have one accent, a blue used sparingly (see :root:has(.public-theme) below).
+ * One design system for the public pages and the admin, with one accent blue used sparingly:
+ * --accent #2747D6 (7.1:1 on white, 6.8:1 on #FAFAFA); dark mode #8199F8 (7.4:1 on the page, 7.05:1
+ * on cards). For links on hover, a project card's title and ↗ on hover and focus, focus outlines,
+ * chart lines and bars, the GitHub grid's levels and the text selection tint (--accent-selection).
+ * Never backgrounds or filled buttons.
  * Status colours are reserved for state (always shown with a label).
  */
 :root {
 	color-scheme: light;
-	--accent: #1d4ed8;
-	--accent-hover: #1e40af;
-	--accent-wash: rgb(29 78 216 / 0.08);
+	--accent: #2747d6;
+	--accent-hover: #2747d6;
+	--accent-wash: rgb(39 71 214 / 0.08);
+	--accent-selection: rgb(39 71 214 / 0.18);
 	--page: #ffffff;
 	--surface: #fafafa;
 	--card: #ffffff;
@@ -25,10 +28,13 @@
 	--pill: #f4f4f5;
 	--grid: #ececee;
 	--axis: #d4d4d8;
-	--chart-line: #3f3f46;
+	/* Chart marks are the accent blue (lines and bars); this month's bar a lighter blue. */
+	--chart-line: var(--accent);
 	--chart-fill: #f1f1f2;
-	--chart-bar: #0a0a0a;
-	--chart-soft: #c7c7cc;
+	--chart-bar: var(--accent);
+	--chart-soft: color-mix(in srgb, var(--accent) 40%, #ffffff);
+	/* A neutral line, for the small trend in the public page's honest numbers. */
+	--chart-neutral: #3f3f46;
 	/* Social icons in their brand colours (LinkedIn #0A66C2: 5.7:1 on white; GitHub's black mark). */
 	--brand-linkedin: #0a66c2;
 	--brand-github: #181717;
@@ -44,31 +50,24 @@
 	--warning: #fab219;
 	--serious: #ec835a;
 	--critical: #d03b3b;
+	/* Status text (the red and amber of fills is too light for text): 4.5:1 or more on white and on their tints. */
+	--critical-ink: #b42323;
+	--warning-ink: #6b4600;
+	/* The glyph on a grey "none" status icon. */
+	--on-muted: #ffffff;
 	--background: var(--page);
 	--foreground: var(--ink);
-}
-
-/*
- * Public pages: one accent blue, used sparingly: links on hover,
- * focus outlines, the line in each card's chart
- * and the Shipping rhythm bars, and the text selection tint. Never backgrounds or filled buttons.
- * #2747D6 is 7.1:1 on white (6.8:1 on #FAFAFA); dark mode uses #8199F8 (7.4:1 on the page, 7.05:1 on cards).
- */
-:root:has(.public-theme) {
-	--accent: #2747d6;
-	--accent-hover: #2747d6;
-	--accent-wash: rgb(39 71 214 / 0.08);
-	--accent-selection: rgb(39 71 214 / 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
 	.admin-theme,
 	:root:has(.public-theme) {
 		color-scheme: dark;
-		/* #1d4ed8 is only 2.95:1 on the dark page, so dark mode uses a lighter step (6.3:1). */
-		--accent: #6b8cf5;
-		--accent-hover: #93b0ff;
-		--accent-wash: rgb(107 140 245 / 0.14);
+		/* The lighter blue: 7.4:1 on the dark page, 7.05:1 on cards. */
+		--accent: #8199f8;
+		--accent-hover: #8199f8;
+		--accent-wash: rgb(129 153 248 / 0.12);
+		--accent-selection: rgb(129 153 248 / 0.32);
 		--page: #0a0a0a;
 		--surface: #111111;
 		--card: #111111;
@@ -79,10 +78,15 @@
 		--pill: #1f1f22;
 		--grid: #222225;
 		--axis: #3a3a3f;
-		--chart-line: #d4d4d8;
+		--chart-line: var(--accent);
 		--chart-fill: #1c1c1f;
-		--chart-bar: #f4f4f5;
-		--chart-soft: #4a4a50;
+		--chart-bar: var(--accent);
+		--chart-soft: color-mix(in srgb, var(--accent) 40%, #111111);
+		--chart-neutral: #d4d4d8;
+		/* 7.2:1 and 9:1 on the dark page and on their tints. */
+		--critical-ink: #f87171;
+		--warning-ink: #fcd34d;
+		--on-muted: #0a0a0a;
 		--previous: #4a4a50;
 		--good-ink: #0ca30c;
 		/* LinkedIn's lighter blue (7.9:1 on the dark page); GitHub's mark is white on dark. */
@@ -96,13 +100,6 @@
 		--act-4: #8199f8;
 	}
 
-	/* Public dark mode: the lighter blue. */
-	:root:has(.public-theme) {
-		--accent: #8199f8;
-		--accent-hover: #8199f8;
-		--accent-wash: rgb(129 153 248 / 0.12);
-		--accent-selection: rgb(129 153 248 / 0.32);
-	}
 }
 
 @theme inline {
@@ -123,6 +120,8 @@
 	--color-warning: var(--warning);
 	--color-serious: var(--serious);
 	--color-critical: var(--critical);
+	--color-critical-ink: var(--critical-ink);
+	--color-warning-ink: var(--warning-ink);
 	--font-sans: var(--font-geist-sans);
 	--font-mono: var(--font-geist-mono);
 }
@@ -199,22 +198,13 @@ body {
 	*, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 
-.link { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
-.link:hover { color: var(--accent-hover); }
-.prose-bobby a { color: var(--accent); }
-.prose-bobby a:hover { color: var(--accent-hover); }
+/* Text links (public and admin): ink and underlined, so they're links without the colour, and blue on hover. */
+.link { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.link:hover { color: var(--accent); }
+.prose-bobby a { color: var(--ink); }
+.prose-bobby a:hover { color: var(--accent); }
 
-/* Public pages: text links are ink (underlined, so they're links without the colour) and turn blue on hover. */
-.public-theme .link,
-.public-theme .prose-bobby a {
-	color: var(--ink);
-}
-.public-theme .link:hover,
-.public-theme .prose-bobby a:hover {
-	color: var(--accent);
-}
-
-/* Public pages: the light blue tint for selected text. */
-:root:has(.public-theme) ::selection {
+/* The light blue tint for selected text, everywhere. */
+::selection {
 	background: var(--accent-selection);
 }

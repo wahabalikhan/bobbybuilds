@@ -9,6 +9,7 @@
  */
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { niceTicks } from "@/components/charts";
+import { HOVER_CARD, HOVER_LABEL, HOVER_VALUE } from "@/lib/chart-style";
 import { formatDay, formatMonth, formatWhole } from "@/lib/format";
 
 /** Width of an element, following resizes (the SVGs are drawn at their real size, so text stays crisp). */
@@ -32,9 +33,9 @@ function useWidth<T extends HTMLElement>(initial: number) {
 export function HoverCard({ x, top, label, value, children }: { x: number; top: number; label: string; value: ReactNode; children?: ReactNode }) {
 	const style: CSSProperties = x <= 0.5 ? { left: `calc(${x * 100}% + 12px)`, top } : { right: `calc(${(1 - x) * 100}% + 12px)`, top };
 	return (
-		<div aria-hidden className="pointer-events-none absolute z-20 w-max min-w-[140px] max-w-[260px] rounded-xl bg-ink px-3 py-2.5 text-page shadow-[0_10px_30px_rgba(0,0,0,0.18)]" style={style}>
-			<div className="text-[11px] font-medium uppercase tracking-[0.06em] opacity-70">{label}</div>
-			<div className="mt-0.5 text-sm font-semibold tabular">{value}</div>
+		<div aria-hidden className={`absolute ${HOVER_CARD}`} style={style}>
+			<div className={HOVER_LABEL}>{label}</div>
+			<div className={HOVER_VALUE}>{value}</div>
 			{children}
 		</div>
 	);
@@ -62,7 +63,24 @@ function HoverList({ items }: { items: string[] }) {
  * first and last weeks labelled, and this week (not over yet) dashed. Hovering, or the arrow keys
  * when it's focused, shows that week in the hover card.
  */
-export function WeekChart({ weeks, label, height = 64 }: { weeks: { day: string; value: number }[]; label: string; height?: number }) {
+export function WeekChart({
+	weeks,
+	label,
+	height = 64,
+	period = "week",
+	unit = ["visitor", "visitors"],
+	unfinishedLast = true,
+}: {
+	weeks: { day: string; value: number }[];
+	label: string;
+	height?: number;
+	period?: "week" | "day";
+	unit?: [string, string];
+	/** The last point is a period still in progress: its segment is dashed and it says "so far". */
+	unfinishedLast?: boolean;
+}) {
+	const pointName = (day: string, long = false) => (period === "week" ? `Week of ${formatDay(day, long)}` : formatDay(day, long));
+	const lastName = period === "week" ? "This week" : "Today";
 	const [box, width] = useWidth<HTMLDivElement>(300);
 	const [hover, setHover] = useState<number | null>(null);
 	const values = weeks.map((w) => w.value);
@@ -72,7 +90,7 @@ export function WeekChart({ weeks, label, height = 64 }: { weeks: { day: string;
 	const x = (i: number) => (n <= 1 ? width / 2 : 4 + (i / (n - 1)) * (width - 8));
 	const y = (v: number) => plotH - (v / max) * (plotH - 8);
 	const line = (from: number, to: number) => values.slice(from, to).map((v, i) => `${i ? "L" : "M"}${x(from + i).toFixed(1)},${y(v).toFixed(1)}`).join("");
-	const solidEnd = n >= 2 ? n - 1 : n;
+	const solidEnd = unfinishedLast && n >= 2 ? n - 1 : n;
 	const area = n > 1 ? `${line(0, n)}L${x(n - 1)},${plotH}L${x(0)},${plotH}Z` : "";
 
 	const onMove = (event: React.PointerEvent) => {
@@ -96,7 +114,7 @@ export function WeekChart({ weeks, label, height = 64 }: { weeks: { day: string;
 				className="block h-auto w-full rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
 				role="img"
 				tabIndex={0}
-				aria-label={`${label} Use the left and right arrow keys to read each week.`}
+				aria-label={`${label} Use the left and right arrow keys to read each ${period}.`}
 				onKeyDown={onKey}
 				onBlur={() => setHover(null)}
 			>
@@ -108,7 +126,7 @@ export function WeekChart({ weeks, label, height = 64 }: { weeks: { day: string;
 					{n ? formatDay(weeks[0].day) : ""}
 				</text>
 				<text x={width} y={height - 3} fontSize={11} fill="var(--muted)" textAnchor="end">
-					This week
+					{unfinishedLast ? lastName : n ? formatDay(weeks[n - 1].day) : ""}
 				</text>
 				{hover !== null && (
 					<>
@@ -118,10 +136,10 @@ export function WeekChart({ weeks, label, height = 64 }: { weeks: { day: string;
 				)}
 			</svg>
 			{hover !== null && (
-				<HoverCard x={x(hover) / width} top={-8} label={`Week of ${formatDay(weeks[hover].day)}${hover === n - 1 ? ", so far" : ""}`} value={`${formatWhole(values[hover])} visitor${values[hover] === 1 ? "" : "s"}`} />
+				<HoverCard x={x(hover) / width} top={-8} label={`${pointName(weeks[hover].day)}${unfinishedLast && hover === n - 1 ? ", so far" : ""}`} value={`${formatWhole(values[hover])} ${values[hover] === 1 ? unit[0] : unit[1]}`} />
 			)}
 			<p className="sr-only" aria-live="polite">
-				{hover !== null ? `Week of ${formatDay(weeks[hover].day, true)}: ${formatWhole(values[hover])} visitors` : ""}
+				{hover !== null ? `${pointName(weeks[hover].day, true)}: ${formatWhole(values[hover])} ${unit[1]}` : ""}
 			</p>
 		</div>
 	);

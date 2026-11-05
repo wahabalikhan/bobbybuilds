@@ -1,7 +1,8 @@
+import { StatusDot } from "@/components/status-dot";
 import type { Metadata } from "next";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
-import { Breadcrumb, Pill, ProjectLogo, StatusPill, Tabs } from "@/components/admin/ui";
+import { Breadcrumb, ProjectLogo, Tabs } from "@/components/admin/ui";
 import { ArrowIcon } from "@/components/public/icons";
 import { parseRange } from "@/lib/admin/range";
 import { requestTime } from "@/lib/admin/clock";
@@ -66,8 +67,8 @@ export default async function ProjectPage({
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="flex flex-wrap items-center gap-3">
 						<ProjectLogo name={project.name} logoPath={logoFor(project)} size={36} />
-						<h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
-						<StatusPill status={project.status} />
+						<h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
+						<StatusDot status={project.status} />
 						{!project.showPublic && <span className="text-sm text-muted">Not on your public page</span>}
 						{project.siteUrl && (
 							<a href={project.siteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
@@ -76,7 +77,11 @@ export default async function ProjectPage({
 							</a>
 						)}
 					</div>
-					{numbers && <Pill title="Its public numbers, as the public card shows them">{numbers}</Pill>}
+					{numbers && (
+						<p className="text-sm font-semibold tabular text-ink" title="Its public numbers, as the public card shows them">
+							{numbers}
+						</p>
+					)}
 				</div>
 			</div>
 			<div className="border-b border-line pb-4">

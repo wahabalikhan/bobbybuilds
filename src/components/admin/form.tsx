@@ -62,7 +62,7 @@ function StatusMessage({ state }: { state: FormState }) {
 	const ok = state.status === "ok";
 	return (
 		<div role={ok ? "status" : "alert"} className="text-sm">
-			<p className={ok ? "text-good-ink" : "text-critical"}>
+			<p className={ok ? "text-good-ink" : "text-critical-ink"}>
 				<span aria-hidden>{ok ? "✓ " : "✕ "}</span>
 				{state.message}
 			</p>
@@ -109,7 +109,7 @@ function Label({ id, label, hint, error, srOnly }: { id: string; label: string; 
 				</p>
 			)}
 			{error && (
-				<p id={`${id}-error`} className="mt-1 text-sm text-critical">
+				<p id={`${id}-error`} className="mt-1 text-sm text-critical-ink">
 					{error}
 				</p>
 			)}
@@ -206,7 +206,7 @@ export function CheckboxField({ name, label, defaultChecked, hint }: { name: str
 export function FieldError({ name }: { name: string }) {
 	const state = useContext(StateContext);
 	const error = state.errors?.[name];
-	return error ? <p className="text-sm text-critical">{error}</p> : null;
+	return error ? <p className="text-sm text-critical-ink">{error}</p> : null;
 }
 
 export function Hidden({ name, value }: { name: string; value: string | number }) {

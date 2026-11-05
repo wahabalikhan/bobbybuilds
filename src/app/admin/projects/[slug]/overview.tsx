@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CopyButton } from "@/components/admin/copy-button";
 import { buttonClass, Card, Delta, Empty, quietButtonClass, RangePicker } from "@/components/admin/ui";
-import { FunnelChart, RankedList, Sparkline, StatusBadge, UptimeStrip, type Status } from "@/components/charts";
+import { FunnelChart, RankedList, StatusBadge, UptimeStrip, type Status } from "@/components/charts";
 import { clampToRaw, type DateRange } from "@/lib/admin/range";
 import { sourceName } from "@/lib/admin/sources";
 import { addDays } from "@/lib/days";
@@ -24,6 +24,7 @@ import {
 	uptimeDays,
 } from "@/lib/db/dashboard";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { WeekChart } from "@/components/public/mono-charts";
 import { funnel, parseFunnel } from "@/lib/db/funnel";
 import type { Project } from "@/lib/db/projects";
 import { change, formatCount, formatDuration, formatPercent, formatTime, formatWhole } from "@/lib/format";
@@ -185,7 +186,7 @@ function Headline({
 		<section aria-label="Visitors" className="rounded-2xl border border-line bg-card p-5">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<p className="flex flex-wrap items-baseline gap-x-2 text-ink-2">
-					<span className="text-[28px] font-bold tracking-tight tabular text-ink">{formatWhole(visitors)}</span>
+					<span className="text-3xl font-semibold tracking-tight tabular text-ink">{formatWhole(visitors)}</span>
 					visitors, {range.label.toLowerCase()}
 					<Delta value={change(visitors, previous)} period="previous" />
 				</p>
@@ -194,7 +195,13 @@ function Headline({
 				</div>
 			</div>
 			<div className="mt-4">
-				<Sparkline points={series} height={64} unfinishedLast={range.to === today} label={`${project.name}: visitors per day, ${range.label.toLowerCase()}, ${formatCount(visitors)} in total.`} />
+				<WeekChart
+					period="day"
+					height={80}
+					unfinishedLast={range.to === today}
+					weeks={series}
+					label={`${project.name}: visitors per day, ${range.label.toLowerCase()}, ${formatCount(visitors)} in total.${range.to === today ? " Today so far is dashed." : ""}`}
+				/>
 			</div>
 		</section>
 	);
@@ -372,7 +379,7 @@ function LinkBuilder({ project, query, hrefFor }: { project: Project; query: Rec
 					</Link>
 				</div>
 			</form>
-			{problem && <p className="mt-3 text-sm text-critical">{problem}</p>}
+			{problem && <p className="mt-3 text-sm text-critical-ink">{problem}</p>}
 			{built && (
 				<div className="mt-4 flex flex-wrap items-center gap-2">
 					<input readOnly value={built} aria-label="Your tracked link" className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2 font-mono text-sm" />
