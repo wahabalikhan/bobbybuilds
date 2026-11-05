@@ -72,6 +72,6 @@ export const config = {
 	matcher: [
 		// Everything except build assets, static files (which carry no HTML), /internal/jobs and the /v1 collector,
 		// which sets its own headers (no-store, nosniff, CORS only for registered origins).
-		"/((?!_next/static|_next/image|v1/|internal/|favicon\\.svg|.*\\.(?:svg|png|jpg|jpeg|webp|ico|txt|xml|js)$).*)",
+		"/((?!_next/static|_next/image|v1/|internal/|.*\\.(?:svg|png|jpg|jpeg|webp|ico|txt|xml|js|webmanifest)$).*)",
 	],
 };

@@ -32,7 +32,8 @@
     "seed:demo": "node scripts/seed-demo.mts",
     "admin:live": "node scripts/admin-live.mts",
     "test:admin-live": "node scripts/test-admin-live.mts",
-    "build:logos": "node scripts/build-logos.mjs"
+    "build:logos": "node scripts/build-logos.mjs",
+    "build:icons": "node scripts/build-icons.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.3",
