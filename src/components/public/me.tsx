@@ -37,8 +37,7 @@ export function Me() {
 			</div>
 			<div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 sm:pt-2">
 				<h1 id="me-name" className="text-[min(44px,11vw)] font-bold leading-none tracking-tight sm:text-[64px]">
-					{site.wordmark[0]}
-					<span className="text-accent">{site.wordmark[1]}</span>
+					{site.name}
 				</h1>
 				<p className="text-sm text-muted">
 					{owner.name}, {owner.location}

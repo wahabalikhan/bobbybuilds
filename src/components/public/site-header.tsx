@@ -5,7 +5,7 @@ import { PAGE } from "@/lib/layout";
 import { FadingHeader } from "./fading-header";
 
 /**
- * The small wordmark at the top of every public page ("Bobby" ink, "Builds" blue, bold, like the big heading), linking home. No navigation bar.
+ * The small wordmark at the top of every public page (bold and all in ink, like the big heading), linking home. No navigation bar.
  * On the home page (`showAfter` = the Projects section) it's a fixed bar that only slides in once
  * the top of Projects has scrolled up to the top of the screen (FadingHeader); elsewhere it's always shown.
  */
