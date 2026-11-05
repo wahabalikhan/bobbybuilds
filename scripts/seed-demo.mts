@@ -299,16 +299,47 @@ for (const [projectId, day, title, note, isPublic] of [
 	await db.prepare("INSERT INTO milestones (project_id, day, title, note, is_public) VALUES (?1, ?2, ?3, ?4, ?5)").bind(projectId, day, title, note, isPublic).run();
 }
 await db.prepare("DELETE FROM journey_entries WHERE slug LIKE 'demo-%'").run();
-for (const [slug, title, body, projectId, published, daysAgo] of [
-	["demo-week-one", "Demo: week one of building in public", "I was made redundant in June. This week I started building the job board I wished I'd had.\n\n## What I shipped\n\n- the first scraper\n- a [simple list page](/p/job-board)\n\nNext week: alerts.", jobBoard.id, 1, 50],
-	["demo-what-honest-means", "Demo: what \"honest\" means for my tools", "No dark patterns, no fake urgency, no selling data. If a tool is free, it's free.", null, 1, 20],
-	["demo-draft-secret", "Draft: not ready yet", "This draft must never appear publicly.", portfolio.id, 0, 0],
+// One entry of each type, plus a draft that must never appear publicly.
+for (const [slug, type, title, body, link, projectId, published, daysAgo] of [
+	["demo-shipped-alerts", "shipped", "Demo: job alerts are live", "Pick a role and a city, and get one email a week. No account needed.", "https://techjobs.bobbybuilds.app", jobBoard.id, 1, 3],
+	["demo-decision-no-recruiters", "decision", "Demo: no recruiter listings", "Recruiter posts doubled the list but halved the trust. **Company careers pages only.**", null, jobBoard.id, 1, 9],
+	["demo-lesson-ghost-jobs", "lesson", "Demo: ghost jobs hide in plain sight", "A job open for 90 days with no changes is usually not a real opening.", null, jobBoard.id, 1, 16],
+	["demo-post-honest", "post", "Demo: what \"honest\" means for my tools", "No dark patterns, no fake urgency, no selling data. If a tool is free, it's free.", "https://linkedin.com/in/wahabalikhan", null, 1, 22],
+	["demo-inspired-calm", "inspired", "Demo: calm software", "Tools that do one thing and get out of the way.", "https://example.com", null, 1, 30],
+	["demo-report-october", "report", "Demo: October in numbers", "1,204 visitors, £12.40 in costs, £0 revenue. Next month: salaries.", null, null, 1, 5],
+	["demo-draft-secret", "post", "Draft: not ready yet", "This draft must never appear publicly.", null, portfolio.id, 0, 0],
 ] as const) {
-	const publishedAt = published ? Date.parse(`${addDays(today, -daysAgo)}T09:00:00Z`) : null;
+	const publishedAt = Date.parse(`${addDays(today, -daysAgo)}T09:00:00Z`);
 	await db
-		.prepare("INSERT INTO journey_entries (slug, title, body_md, project_id, is_published, published_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")
-		.bind(slug, title, body, projectId, published, publishedAt)
+		.prepare("INSERT INTO journey_entries (slug, type, title, body_md, link_url, project_id, is_published, published_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)")
+		.bind(slug, type, title, body, link, projectId, published, publishedAt)
 		.run();
+}
+
+console.log("Adding the demo profile, project cards, costs and revenue…");
+await db
+	.prepare("UPDATE profile SET this_week = ?1, building_since = ?2 WHERE id = 1")
+	.bind("Demo: working on the CV fit for Tech Jobs · open to product design roles", addDays(today, -128))
+	.run();
+await db.prepare("UPDATE projects SET emoji = '🎨', case_study_url = 'https://wahabalikhan.com' WHERE id = ?1").bind(portfolio.id).run();
+await db
+	.prepare("UPDATE projects SET emoji = '💼', outcomes = ?2 WHERE id = ?1")
+	.bind(jobBoard.id, // The demo job board only has returning_users as a product number.
+		JSON.stringify(["{returning_users} people came back", "{visitors} visitors in 30 days"]))
+	.run();
+const thisMonth = today.slice(0, 7);
+const lastMonth = addDays(`${thisMonth}-01`, -1).slice(0, 7);
+await db.prepare("DELETE FROM money WHERE month IN (?1, ?2)").bind(thisMonth, lastMonth).run();
+for (const month of [lastMonth, thisMonth]) {
+	for (const [kind, service, projectId, pence] of [
+		["cost", "Cloudflare", null, 500],
+		["cost", "Supabase", jobBoard.id, 0],
+		["cost", "Anthropic", jobBoard.id, month === thisMonth ? 640 : 410],
+		["cost", "Domains", null, 100],
+		["revenue", "Tech Jobs", jobBoard.id, 0],
+	] as const) {
+		await db.prepare("INSERT INTO money (month, kind, service, project_id, amount_pence) VALUES (?1, ?2, ?3, ?4, ?5)").bind(month, kind, service, projectId, pence).run();
+	}
 }
 // A private number with a value that's easy to spot: it must never reach a public page.
 await db.prepare("DELETE FROM metrics WHERE project_id = ?1 AND key = 'secret_revenue'").bind(jobBoard.id).run();

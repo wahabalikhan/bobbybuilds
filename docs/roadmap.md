@@ -13,6 +13,7 @@ BobbyBuilds is built in phases. Each phase starts with a plan and ends with a te
 | 7 | Connect my portfolio | ✅ Done (portfolio `cada9b5`, `5428cdb`) |
 | 8 | Connect the job board | Not started |
 | 9 | Launch | In progress: custom domain and Access done (`b2cbb96`, `09c5b40`, `fc88135`) |
+| 10 | Public page redesign | In progress: 10a (data and admin) built, not committed |
 
 ## 1. Setup ✅
 
@@ -162,3 +163,14 @@ Done in the job board repo during its Phase 10.
   - `7b18b94`: round logos drawn 1.1× in the same box.
   - `fe540d9`: migration 0011. Numbers in taglines (Tech Jobs: "**4,868** real tech jobs, straight from **838** companies", with a fallback), no separate numbers line on public cards, the admin card's numbers on the visitors line, every card the same height in each place (public 200px, admin 218px at 1440px), and a text-only wordmark ("Bobby" and "Builds" semibold, "Builds" in the accent blue; "HQ" in the admin).
   - Tested live: the migration first, then the deploy; the public tagline, bold numbers, wordmark and card heights, and the admin cards against live data.
+
+## 10. Public page redesign
+
+An original, single-column public page (no longer modelled on IndiePage): Me, Projects, The honest numbers, The journey, and an optional Shipping rhythm. Black, grey and white, with colour only from screenshots, project and journey emojis, status dots and social icons on hover. Light and dark mode.
+
+- **10a: data and admin** (built 5 November 2026, not committed yet):
+  - Migration 0012: `profile` (This week, building since, shipping rhythm switch), project emoji, screenshot and alt text, case study link, outcomes and `is_paused`, journey `type` and `link_url`, and `money` (monthly costs and revenue in pence).
+  - Admin: My public page on Home (Profile, Journey, Costs and revenue), the card form under each project's On your public page, Paused as a status, and the journey editor un-hidden with types, a short body and a link.
+  - Screenshots come from `public/screenshots/` (no uploads).
+  - The project Overview and Settings tabs read the database themselves instead of taking it as a prop (they hung under `next dev`).
+- **10b: the public page**: not started. It will add the snapshot (version 5), the new sections, dark mode, `/journey/*` → `/#journey`, removal of `site.showJourney` and of journey entry pages and share images, the blue accent dropped on public pages, and the rewrite of CLAUDE.md's Design and Public pages sections.

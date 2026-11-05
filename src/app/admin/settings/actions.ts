@@ -13,17 +13,17 @@ import { requireAdmin } from "@/lib/admin/access";
 import type { FormState } from "@/lib/admin/form-state";
 import * as core from "@/lib/admin/settings-core";
 import { formValues } from "@/lib/admin/validate";
-import { LOGOS } from "@/lib/logos.generated";
+import { LOGOS, SCREENSHOTS } from "@/lib/logos.generated";
 import { utcDay } from "@/lib/days";
 import { renderMarkdown } from "@/lib/markdown";
 import { publishSnapshot } from "@/lib/public/snapshot";
 import { adminHref } from "@/lib/site";
 
-type Core = (db: D1Database, prev: FormState, values: Record<string, string>, ctx: { logos: string[]; now: number }) => Promise<core.ActionResult>;
+type Core = (db: D1Database, prev: FormState, values: Record<string, string>, ctx: { logos: string[]; screenshots: string[]; now: number }) => Promise<core.ActionResult>;
 
 async function run(prev: FormState, form: FormData, fn: Core): Promise<FormState> {
 	const { env } = await getCloudflareContext({ async: true });
-	const result = await fn(env.DB, prev, formValues(form), { logos: LOGOS, now: Date.now() });
+	const result = await fn(env.DB, prev, formValues(form), { logos: LOGOS, screenshots: SCREENSHOTS, now: Date.now() });
 	if (result.state.status === "ok") {
 		// Show the change on the public pages straight away (written only if it changed them).
 		try {
@@ -91,6 +91,26 @@ export async function deleteMetricAction(prev: FormState, form: FormData) {
 export async function journeyAction(prev: FormState, form: FormData) {
 	await requireAdmin();
 	return run(prev, form, core.journeyCore);
+}
+
+export async function publicCardAction(prev: FormState, form: FormData) {
+	await requireAdmin();
+	return run(prev, form, core.publicCardCore);
+}
+
+export async function profileAction(prev: FormState, form: FormData) {
+	await requireAdmin();
+	return run(prev, form, core.profileCore);
+}
+
+export async function moneyAction(prev: FormState, form: FormData) {
+	await requireAdmin();
+	return run(prev, form, core.moneyCore);
+}
+
+export async function copyCostsAction(prev: FormState, form: FormData) {
+	await requireAdmin();
+	return run(prev, form, core.copyCostsCore);
 }
 
 /** Markdown preview for the journey editor, with the same sanitising as the public pages. */

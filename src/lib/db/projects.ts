@@ -3,7 +3,8 @@
  * JSON columns are parsed here so callers get plain arrays.
  */
 
-export type ProjectStatus = "live" | "building" | "idea" | "retired";
+/** "paused" is stored as is_paused (migration 0012) and shown instead of the stored status. */
+export type ProjectStatus = "live" | "building" | "paused" | "idea" | "retired";
 
 export type ProjectLink = { label: string; url: string };
 
@@ -32,6 +33,14 @@ export type Project = {
 	sortOrder: number;
 	/** Whether it appears on the public page at all (card, chart, totals, share images). */
 	showPublic: boolean;
+	/** Shown before the name on the public page, e.g. "💼". "" = none. */
+	emoji: string;
+	/** The hero screenshot: a file in public/screenshots/ (always with alt text). */
+	screenshotPath: string | null;
+	screenshotAlt: string;
+	caseStudyUrl: string | null;
+	/** Up to 3 lines with {key} placeholders, e.g. "{open_jobs} jobs made clear". */
+	outcomes: string[];
 };
 
 type ProjectRow = {
@@ -55,11 +64,18 @@ type ProjectRow = {
 	secret_key_hint: string | null;
 	sort_order: number;
 	show_public: number;
+	is_paused: number;
+	emoji: string;
+	screenshot_path: string | null;
+	screenshot_alt: string;
+	case_study_url: string | null;
+	outcomes: string;
 };
 
 // secret_key_hash is deliberately never selected into a Project.
 const PROJECT_COLUMNS = `id, slug, name, tagline, tagline_fallback, description_md, status, lesson, logo_path, site_url, health_url,
-	github_repo, links, allowed_origins, browser_events, funnel, public_key, secret_key_hint, sort_order, show_public`;
+	github_repo, links, allowed_origins, browser_events, funnel, public_key, secret_key_hint, sort_order, show_public,
+	is_paused, emoji, screenshot_path, screenshot_alt, case_study_url, outcomes`;
 
 function parseJsonArray<T>(value: string): T[] {
 	try {
@@ -78,7 +94,7 @@ function toProject(row: ProjectRow): Project {
 		tagline: row.tagline,
 		taglineFallback: row.tagline_fallback,
 		descriptionMd: row.description_md,
-		status: row.status,
+		status: row.is_paused === 1 ? "paused" : row.status,
 		lesson: row.lesson,
 		logoPath: row.logo_path,
 		siteUrl: row.site_url,
@@ -92,6 +108,11 @@ function toProject(row: ProjectRow): Project {
 		secretKeyHint: row.secret_key_hint,
 		sortOrder: row.sort_order,
 		showPublic: row.show_public === 1,
+		emoji: row.emoji,
+		screenshotPath: row.screenshot_path,
+		screenshotAlt: row.screenshot_alt,
+		caseStudyUrl: row.case_study_url,
+		outcomes: parseJsonArray<unknown>(row.outcomes).filter((o): o is string => typeof o === "string"),
 	};
 }
 

@@ -8,7 +8,10 @@ import { HeadlineCard } from "@/components/public/headline-card";
 import { requestTime } from "@/lib/admin/clock";
 import { utcDay } from "@/lib/days";
 import { monthlyVisitors, projectSummaries, publicProductNumbers, type ProjectSummary } from "@/lib/db/dashboard";
-import { change, formatCount, formatPercent } from "@/lib/format";
+import { listMonth } from "@/lib/db/money";
+import { getProfile } from "@/lib/db/profile";
+import { listJourney } from "@/lib/db/settings";
+import { change, formatCount, formatMonth, formatPence, formatPercent } from "@/lib/format";
 import { logoFor } from "@/lib/project-logo";
 import { productLine } from "@/lib/public/product-line";
 import { adminHref, site } from "@/lib/site";
@@ -21,12 +24,20 @@ export default async function AdminHome() {
 	const chart = await Promise.all(
 		summaries.map(async (s) => ({ slug: s.project.slug, name: s.project.name, logoPath: logoFor(s.project), monthly: await monthlyVisitors(env.DB, today, s.project.id) })),
 	);
-	const main = summaries.filter((s) => s.project.status === "live" || s.project.status === "building");
+	const main = summaries.filter((s) => ["live", "building", "paused"].includes(s.project.status));
 	// "Don't count my visits": a one-time link for each site other than this one.
 	const otherSites = summaries.flatMap((s) => {
 		const origin = s.project.siteUrl ? new URL(s.project.siteUrl).origin : null;
 		return origin && origin !== site.url ? [{ name: s.project.name, origin }] : [];
 	});
+	const [profile, journey, money] = await Promise.all([getProfile(env.DB), listJourney(env.DB), listMonth(env.DB, today.slice(0, 7))]);
+	const published = journey.filter((e) => e.isPublished).length;
+	const sum = (kind: "cost" | "revenue") => money.filter((r) => r.kind === kind).reduce((t, r) => t + r.amountPence, 0);
+	const publicPage = [
+		{ href: adminHref("/settings/profile"), label: "Profile", detail: profile.thisWeek ? `This week: ${profile.thisWeek}` : "This week and the date you started building" },
+		{ href: adminHref("/settings/journey"), label: "Journey", detail: journey.length ? `${published} published${journey.length > published ? `, ${journey.length - published} draft${journey.length - published === 1 ? "" : "s"}` : ""}` : "No entries yet" },
+		{ href: adminHref("/settings/money"), label: "Costs and revenue", detail: `${formatMonth(today.slice(0, 7))}: costs ${formatPence(sum("cost"))} · revenue ${formatPence(sum("revenue"))}` },
+	];
 	const lines = new Map(await Promise.all(main.map(async (s) => [s.project.id, productLine(await publicProductNumbers(env.DB, s.project.id, today), today)] as const)));
 
 	return (
@@ -52,6 +63,27 @@ export default async function AdminHome() {
 						<ProjectCard key={s.project.id} summary={s} numbers={lines.get(s.project.id) ?? null} />
 					))}
 				</div>
+			</section>
+
+			<section aria-labelledby="public-page-heading">
+				<h2 id="public-page-heading" className="mb-4 border-b border-line pb-3.5 text-[15px] font-medium tracking-tight">
+					My public page
+				</h2>
+				<ul className="divide-y divide-line rounded-2xl border border-line bg-card">
+					{publicPage.map((item) => (
+						<li key={item.href}>
+							<Link href={item.href} className="group flex items-center justify-between gap-4 px-5 py-3.5 hover:bg-surface">
+								<span className="min-w-0">
+									<span className="font-medium group-hover:underline">{item.label}</span>
+									<span className="block truncate text-sm text-muted">{item.detail}</span>
+								</span>
+								<span aria-hidden className="shrink-0 text-muted">
+									→
+								</span>
+							</Link>
+						</li>
+					))}
+				</ul>
 			</section>
 
 			<CountMyVisits sites={otherSites} />

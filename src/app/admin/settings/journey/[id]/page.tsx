@@ -1,17 +1,17 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { Hidden, SettingsForm } from "@/components/admin/form";
 import { JourneyForm } from "@/components/admin/journey-form";
+import { Breadcrumb } from "@/components/admin/ui";
 import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
 import { listProjects } from "@/lib/db/projects";
 import { getJourney } from "@/lib/db/settings";
-import { adminHref, site } from "@/lib/site";
+import { adminHref } from "@/lib/site";
 import { journeyAction } from "../../actions";
 
+export const metadata: Metadata = { title: "Journey entry" };
+
 export default async function EditJourneyEntry({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
-	// Hidden until the journey comes back (site.showJourney); the code and table stay. Shown as
-	// "not found" inside the admin layout, like any unknown admin address.
-	if (!site.showJourney) return <AdminNotFoundMessage />;
 	const { id } = await params;
 	const query = await searchParams;
 	const { env } = await getCloudflareContext({ async: true });
@@ -21,11 +21,9 @@ export default async function EditJourneyEntry({ params, searchParams }: { param
 	const projects = await listProjects(env.DB);
 	return (
 		<div className="max-w-3xl space-y-6">
-			<div>
-				<Link href={adminHref("/settings/journey")} className="text-sm text-muted hover:text-ink">
-					← Journey
-				</Link>
-				<h1 className="mt-2 text-2xl font-semibold tracking-tight">{entry.title}</h1>
+			<div className="space-y-3">
+				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Journey", href: adminHref("/settings/journey") }, { label: entry.title }]} />
+				<h1 className="text-2xl font-semibold tracking-tight">{entry.title}</h1>
 				{query.created && <p role="status" className="mt-1 text-sm text-good-ink">✓ Entry created.</p>}
 			</div>
 			<section className="rounded-2xl border border-line bg-card p-5">

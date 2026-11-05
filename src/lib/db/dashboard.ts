@@ -627,3 +627,31 @@ export async function brokenLinks(db: D1Database, projectId: number, from: strin
 		.first<{ n: number }>();
 	return row?.n ?? 0;
 }
+
+/**
+ * The numbers a project's outcomes can use, with their current values, for the settings form:
+ * each product number's latest value and visitors over the last 30 days.
+ */
+export async function outcomeNumbers(db: D1Database, projectId: number, today: string): Promise<{ key: string; label: string; value: number | null; isPublic: boolean; period: string }[]> {
+	const [{ results }, visitors] = await Promise.all([
+		db
+			.prepare(
+				`SELECT m.key, m.label, m.is_public, m.source, v.value FROM metrics m
+				 LEFT JOIN metric_values v ON v.metric_id = m.id AND v.day = (SELECT max(day) FROM metric_values WHERE metric_id = m.id AND day <= ?2)
+				 WHERE m.project_id = ?1 AND (m.source = 'product' OR (m.source = 'collector' AND m.key = 'visitors')) ORDER BY m.sort_order, m.id`,
+			)
+			.bind(projectId, today)
+			.all<{ key: string; label: string; is_public: number; source: string; value: number | null }>(),
+		db
+			.prepare("SELECT COALESCE(sum(visitors), 0) AS total FROM daily_totals WHERE project_id = ?1 AND day >= ?2 AND day <= ?3")
+			.bind(projectId, addDays(today, -29), today)
+			.first<{ total: number }>(),
+	]);
+	return results.map((r) => ({
+		key: r.key,
+		label: r.label,
+		value: r.source === "collector" ? (visitors?.total ?? 0) : r.value,
+		isPublic: r.is_public === 1,
+		period: r.source === "collector" ? "in 30 days" : "latest",
+	}));
+}

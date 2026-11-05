@@ -83,9 +83,9 @@ export default async function ProjectPage({
 				<Tabs tabs={[...PROJECT_TABS]} current={tab} hrefFor={(key) => (key === "settings" ? `${base}?tab=settings` : base)} />
 			</div>
 			{tab === "settings" ? (
-				<ProjectSettingsTab db={env.DB} project={project} />
+				<ProjectSettingsTab project={project} />
 			) : (
-				<Overview db={env.DB} project={project} range={parseRange(query, today)} today={today} now={now} query={query} hrefFor={hrefFor} />
+				<Overview project={project} range={parseRange(query, today)} today={today} now={now} query={query} hrefFor={hrefFor} />
 			)}
 		</div>
 	);

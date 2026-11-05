@@ -97,10 +97,10 @@ function useField(name: string, defaultValue: string | undefined) {
 	return { error, value, id: `field-${name}` };
 }
 
-function Label({ id, label, hint, error }: { id: string; label: string; hint?: ReactNode; error?: string }) {
+function Label({ id, label, hint, error, srOnly }: { id: string; label: string; hint?: ReactNode; error?: string; srOnly?: boolean }) {
 	return (
 		<>
-			<label htmlFor={id} className="block text-sm font-medium">
+			<label htmlFor={id} className={srOnly ? "sr-only" : "block text-sm font-medium"}>
 				{label}
 			</label>
 			{hint && (
@@ -117,17 +117,29 @@ function Label({ id, label, hint, error }: { id: string; label: string; hint?: R
 	);
 }
 
-type FieldProps = { name: string; label: string; defaultValue?: string; hint?: ReactNode; placeholder?: string; maxLength?: number; required?: boolean };
+type FieldProps = {
+	name: string;
+	label: string;
+	defaultValue?: string;
+	hint?: ReactNode;
+	placeholder?: string;
+	maxLength?: number;
+	required?: boolean;
+	/** For rows under a visible column heading: the label is for screen readers only. */
+	srLabel?: boolean;
+};
 
-export function TextField({ type = "text", ...props }: FieldProps & { type?: "text" | "url" | "number" | "date" }) {
+export function TextField({ type = "text", list, inputMode, ...props }: FieldProps & { type?: "text" | "url" | "number" | "date" | "month"; list?: string; inputMode?: "decimal" }) {
 	const { error, value, id } = useField(props.name, props.defaultValue);
 	return (
 		<div>
-			<Label id={id} label={props.label} hint={props.hint} error={error} />
+			<Label id={id} label={props.label} hint={props.hint} error={error} srOnly={props.srLabel} />
 			<input
 				id={id}
 				name={props.name}
 				type={type}
+				list={list}
+				inputMode={inputMode}
 				defaultValue={value}
 				placeholder={props.placeholder}
 				maxLength={props.maxLength}
@@ -144,7 +156,7 @@ export function TextArea({ rows = 4, mono = false, ...props }: FieldProps & { ro
 	const { error, value, id } = useField(props.name, props.defaultValue);
 	return (
 		<div>
-			<Label id={id} label={props.label} hint={props.hint} error={error} />
+			<Label id={id} label={props.label} hint={props.hint} error={error} srOnly={props.srLabel} />
 			<textarea
 				id={id}
 				name={props.name}
@@ -164,7 +176,7 @@ export function SelectField({ options, ...props }: FieldProps & { options: { val
 	const { error, value, id } = useField(props.name, props.defaultValue);
 	return (
 		<div>
-			<Label id={id} label={props.label} hint={props.hint} error={error} />
+			<Label id={id} label={props.label} hint={props.hint} error={error} srOnly={props.srLabel} />
 			<select id={id} name={props.name} defaultValue={value} aria-invalid={error ? true : undefined} className={inputClass}>
 				{options.map((o) => (
 					<option key={o.value} value={o.value}>

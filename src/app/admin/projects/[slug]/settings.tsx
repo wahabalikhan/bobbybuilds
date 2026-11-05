@@ -1,21 +1,30 @@
 import type { ReactNode } from "react";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { CopyButton } from "@/components/admin/copy-button";
 import { CheckboxField, FieldError, Hidden, SelectField, SettingsForm, TextArea, TextField } from "@/components/admin/form";
+import { Switch } from "@/components/admin/switch";
 import { Pill } from "@/components/admin/ui";
 import { BUILT_IN_EVENTS } from "@/lib/collector/validate";
-import { FUNNEL_ROWS } from "@/lib/admin/validate";
-import { listMetrics, type Metric } from "@/lib/db/dashboard";
+import { requestTime } from "@/lib/admin/clock";
+import { FUNNEL_ROWS, OUTCOME_ROWS } from "@/lib/admin/validate";
+import { listMetrics, outcomeNumbers, type Metric } from "@/lib/db/dashboard";
+import { utcDay } from "@/lib/days";
+import { formatWhole } from "@/lib/format";
+import { SCREENSHOTS } from "@/lib/logos.generated";
 import { parseFunnel } from "@/lib/db/funnel";
 import type { Project } from "@/lib/db/projects";
 import { site } from "@/lib/site";
-import { addMetricAction, deleteMetricAction, deleteProjectAction, eventsAction, funnelAction, keysAction, originsAction, saveDetailsAction, visibilityAction } from "../../settings/actions";
+import { addMetricAction, deleteMetricAction, deleteProjectAction, eventsAction, funnelAction, keysAction, originsAction, publicCardAction, saveDetailsAction, visibilityAction } from "../../settings/actions";
 
 /**
  * A project's settings, one scrolling page: About this project, On your public page, Connection
  * (closed by default), and Delete this project at the very bottom.
  */
-export async function ProjectSettingsTab({ db, project }: { db: D1Database; project: Project }) {
-	const metrics = await listMetrics(db, project.id);
+export async function ProjectSettingsTab({ project }: { project: Project }) {
+	// Read here, not passed in: in dev, React can't serialise the D1 binding as a prop.
+	const { env } = await getCloudflareContext({ async: true });
+	const db = env.DB;
+	const [metrics, numbers] = await Promise.all([listMetrics(db, project.id), outcomeNumbers(db, project.id, utcDay(requestTime()))]);
 	return (
 		<div className="max-w-3xl space-y-10">
 			<Section title="About this project">
@@ -30,6 +39,7 @@ export async function ProjectSettingsTab({ db, project }: { db: D1Database; proj
 							options={[
 								{ value: "live", label: "Live" },
 								{ value: "building", label: "Building" },
+								{ value: "paused", label: "Paused" },
 								{ value: "idea", label: "Idea" },
 								{ value: "retired", label: "Retired" },
 							]}
@@ -57,7 +67,10 @@ export async function ProjectSettingsTab({ db, project }: { db: D1Database; proj
 			</Section>
 
 			<Section title="On your public page">
-				<PublicSwitches project={project} metrics={metrics} />
+				<div className="space-y-8">
+					<PublicCard project={project} numbers={numbers} />
+					<PublicSwitches project={project} metrics={metrics} />
+				</div>
 			</Section>
 
 			<details className="group rounded-2xl border border-line bg-card">
@@ -100,20 +113,54 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 	);
 }
 
-/** A switch: a real checkbox (so the form posts it), drawn as a toggle. */
-function Switch({ id, name, label, hint, checked }: { id: string; name: string; label: string; hint: string; checked: boolean }) {
+/**
+ * The project's card on the public page: emoji, hero screenshot (from public/screenshots/, with
+ * alt text), case study link, and up to 3 outcomes with live numbers.
+ */
+function PublicCard({ project, numbers }: { project: Project; numbers: Awaited<ReturnType<typeof outcomeNumbers>> }) {
+	// A saved screenshot whose file has gone stays in the list, so saving doesn't drop it.
+	const files = project.screenshotPath && !SCREENSHOTS.includes(project.screenshotPath) ? [project.screenshotPath, ...SCREENSHOTS] : SCREENSHOTS;
 	return (
-		<label htmlFor={id} className="flex cursor-pointer items-start justify-between gap-4 px-4 py-3">
-			<span className="text-sm">
-				<span className="font-medium">{label}</span>
-				<span className="block text-muted">{hint}</span>
-			</span>
-			<span className="relative mt-0.5 inline-flex shrink-0">
-				<input type="checkbox" role="switch" id={id} name={name} defaultChecked={checked} className="peer sr-only" />
-				<span aria-hidden className="h-6 w-10 rounded-full bg-[var(--axis)] transition-colors peer-checked:bg-ink peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--accent)]" />
-				<span aria-hidden className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
-			</span>
-		</label>
+		<SettingsForm action={publicCardAction} submitLabel="Save card">
+			<Hidden name="project_id" value={project.id} />
+			<div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
+				<TextField name="emoji" label="Emoji" defaultValue={project.emoji} maxLength={16} placeholder="💼" hint="Before the name." />
+				<TextField type="url" name="case_study_url" label="Case study link" defaultValue={project.caseStudyUrl ?? ""} placeholder="https://wahabalikhan.com/…" hint={'Shows "Read the case study". Leave blank if there isn\u2019t one.'} />
+			</div>
+			<SelectField
+				name="screenshot_path"
+				label="Screenshot"
+				defaultValue={project.screenshotPath ?? ""}
+				hint={files.length ? "The big image on the card. Add files to public/screenshots/ (about 2,000px wide, 16:10)." : "No files yet. Add one to public/screenshots/ (about 2,000px wide, 16:10, WebP is smallest), then restart the dev server."}
+				options={[{ value: "", label: "No screenshot" }, ...files.map((f) => ({ value: f, label: f.replace("/screenshots/", "") }))]}
+			/>
+			<TextArea name="screenshot_alt" label="What the screenshot shows" rows={2} maxLength={300} defaultValue={project.screenshotAlt} hint="Alt text for people who can't see it. Needed with a screenshot." />
+			<div className="space-y-3">
+				<div>
+					<p className="text-sm font-medium">Outcomes</p>
+					<p className="mt-0.5 text-xs text-muted">
+						Up to 3, each with a live number in &#123;braces&#125;. One whose number is private or over a week old is left out.
+						{numbers.length > 0 ? (
+							<>
+								{" "}You can use:{" "}
+								{numbers.map((n, i) => (
+									<span key={n.key}>
+										{i > 0 && " · "}
+										<code>&#123;{n.key}&#125;</code> ({n.value === null ? "no value yet" : `${formatWhole(n.value)} ${n.period}`}
+										{!n.isPublic && ", private"})
+									</span>
+								))}
+							</>
+						) : (
+							" This project has no numbers yet."
+						)}
+					</p>
+				</div>
+				{Array.from({ length: OUTCOME_ROWS }, (_, i) => (
+					<TextField key={i} name={`outcome_${i}`} label={`Outcome ${i + 1}`} defaultValue={project.outcomes[i] ?? ""} maxLength={80} placeholder={i === 0 && numbers[0] ? `{${numbers[0].key}} …` : ""} />
+				))}
+			</div>
+		</SettingsForm>
 	);
 }
 

@@ -161,11 +161,12 @@ export function RawNote({ clipped }: { clipped: boolean }) {
 const STATUS = {
 	live: { label: "Live", dot: "var(--good)" },
 	building: { label: "Building", dot: "var(--warning)" },
+	paused: { label: "Paused", dot: "var(--muted)" },
 	idea: { label: "Idea", dot: "var(--muted)" },
 	retired: { label: "Retired", dot: "var(--muted)" },
 } as const;
 
-/** Live / Building / Idea / Retired: a small pill with a dot and the word (never colour alone). */
+/** Live / Building / Paused / Idea / Retired: a small pill with a dot and the word (never colour alone). */
 export function StatusPill({ status }: { status: string }) {
 	const s = STATUS[status as keyof typeof STATUS] ?? STATUS.idea;
 	return (

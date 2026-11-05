@@ -80,3 +80,14 @@ export function timeAgo(timestampMs: number, now: number = Date.now()): string {
 	const days = Math.round(hours / 24);
 	return `${days} days ago`;
 }
+
+/** Pence as pounds: "£12.40", "£1,200", "£0". Whole pounds drop the pence. */
+export function formatPence(pence: number): string {
+	const pounds = pence / 100;
+	return `£${pounds.toLocaleString("en-GB", { minimumFractionDigits: pence % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 })}`;
+}
+
+/** Pence as a form value: 1240 → "12.40". */
+export function penceInput(pence: number): string {
+	return (pence / 100).toFixed(2);
+}

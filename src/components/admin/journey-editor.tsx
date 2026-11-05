@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { previewMarkdownAction } from "@/app/admin/settings/actions";
+import { JOURNEY_BODY_MAX } from "@/lib/journey-types";
 import { TextArea } from "./form";
 
 /** Markdown body with a preview rendered on the server by the same sanitiser the public pages use. */
@@ -10,7 +11,14 @@ export function JourneyBody({ defaultValue }: { defaultValue: string }) {
 	const [pending, startTransition] = useTransition();
 	return (
 		<div className="space-y-2">
-			<TextArea name="body_md" label="Entry" rows={16} defaultValue={defaultValue} hint="Markdown: **bold**, _italic_, [links](https://…), lists, `code`. Raw HTML is shown as text." />
+			<TextArea
+				name="body_md"
+				label="A few sentences (optional)"
+				rows={4}
+				maxLength={JOURNEY_BODY_MAX}
+				defaultValue={defaultValue}
+				hint={`Up to ${JOURNEY_BODY_MAX} characters. Markdown: **bold**, _italic_, [links](https://…), \`code\`. Raw HTML is shown as text.`}
+			/>
 			<button
 				type="button"
 				onClick={(event) => {

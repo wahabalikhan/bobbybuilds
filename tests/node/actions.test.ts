@@ -61,10 +61,10 @@ describe("admin route handlers", () => {
 	});
 });
 
-describe("hidden journey", () => {
-	it("the admin journey pages are not found until site.showJourney is true", () => {
+describe("journey editor", () => {
+	it("the admin journey pages are open (no longer hidden behind site.showJourney)", () => {
 		for (const file of ["src/app/admin/settings/journey/page.tsx", "src/app/admin/settings/journey/new/page.tsx", "src/app/admin/settings/journey/[id]/page.tsx"]) {
-			expect(readFileSync(file, "utf8"), file).toContain("if (!site.showJourney) return <AdminNotFoundMessage />;");
+			expect(readFileSync(file, "utf8"), file).not.toContain("showJourney");
 		}
 	});
 });

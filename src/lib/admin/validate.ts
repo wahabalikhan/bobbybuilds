@@ -6,12 +6,16 @@
 import { BUILT_IN_EVENTS, isEventName } from "@/lib/collector/validate";
 import { isDay } from "@/lib/days";
 import type { FunnelStep } from "@/lib/db/funnel";
+import type { MoneyKind, MoneyRow } from "@/lib/db/money";
+import type { Profile } from "@/lib/db/profile";
 import type { ProjectLink, ProjectStatus } from "@/lib/db/projects";
+import { JOURNEY_BODY_MAX, JOURNEY_TYPES, type JourneyType } from "@/lib/journey-types";
+import { taglineKeys } from "@/lib/public/product-line";
 
 export type Errors = Record<string, string>;
 export type Result<T> = { ok: true; value: T; notes?: string[] } | { ok: false; errors: Errors };
 
-const STATUSES: ProjectStatus[] = ["live", "building", "idea", "retired"];
+const STATUSES: ProjectStatus[] = ["live", "building", "paused", "idea", "retired"];
 
 const text = (value: FormDataEntryValue | null | undefined) => (typeof value === "string" ? value.replace(/\r\n/g, "\n").trim() : "");
 
@@ -244,26 +248,36 @@ export function validateNewMetric(values: FormValues): Result<NewMetric> {
 
 // --- Journey entries and milestones -----------------------------------------------------
 
-export type JourneyInput = { title: string; slug: string; bodyMd: string; projectId: number | null; publish: boolean; publishedAt: number | null };
+export type JourneyInput = {
+	title: string;
+	type: JourneyType;
+	bodyMd: string;
+	linkUrl: string | null;
+	projectId: number | null;
+	publish: boolean;
+	publishedAt: number | null;
+};
 
+export { JOURNEY_BODY_MAX };
+
+/** A journey entry. Its date is the publish date (blank = today); the slug is made by the app. */
 export function validateJourney(values: FormValues, projectIds: number[], now: number): Result<JourneyInput> {
 	const errors: Errors = {};
 	const title = text(values.title);
 	if (!title || title.length > 120) errors.title = "Add a title of up to 120 characters.";
-	const slug = text(values.slug) || slugify(title, 80);
-	if (!/^[a-z0-9-]{1,80}$/.test(slug)) errors.slug = "Use lower-case letters, numbers and hyphens only, up to 80 characters.";
+	const type = text(values.type) as JourneyType;
+	if (!JOURNEY_TYPES.some((t) => t.value === type)) errors.type = "Choose a type.";
 	const bodyMd = text(values.body_md);
-	if (bodyMd.length > 50_000) errors.body_md = "Keep the entry to 50,000 characters or fewer.";
+	if (bodyMd.length > JOURNEY_BODY_MAX) errors.body_md = `Keep it to a few sentences: ${JOURNEY_BODY_MAX} characters or fewer (this is ${bodyMd.length}).`;
+	const linkUrl = httpsUrl(text(values.link_url), "link_url", errors, "The link");
 	const projectId = text(values.project_id) ? Number(values.project_id) : null;
 	if (projectId !== null && !projectIds.includes(projectId)) errors.project_id = "Choose a project from the list.";
 	const publish = values.publish === "on";
-	let publishedAt: number | null = null;
-	if (publish) {
-		const day = text(values.published_on);
-		if (day && !isDay(day)) errors.published_on = "Choose a date.";
-		publishedAt = day && isDay(day) ? Date.parse(`${day}T09:00:00Z`) : now;
-	}
-	return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value: { title, slug, bodyMd, projectId, publish, publishedAt } };
+	const day = text(values.published_on);
+	if (day && !isDay(day)) errors.published_on = "Choose a date.";
+	// The date is kept for drafts too, so it's there when the entry is published.
+	const publishedAt = day && isDay(day) ? Date.parse(`${day}T09:00:00Z`) : publish ? now : null;
+	return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value: { title, type, bodyMd, linkUrl, projectId, publish, publishedAt } };
 }
 
 export type MilestoneInput = { day: string; title: string; note: string; isPublic: boolean };
@@ -296,4 +310,101 @@ export function validateNewProject(values: FormValues): Result<NewProjectStart> 
 	if (!text(values.site_url)) errors.site_url = "Add the site's address, like https://example.com.";
 	if (Object.keys(errors).length || !siteUrl) return { ok: false, errors };
 	return { ok: true, value: { name, slug, siteUrl, origin: new URL(siteUrl).origin } };
+}
+
+// --- On your public page: the project's card ----------------------------------------------
+
+export type PublicCard = { emoji: string; screenshotPath: string | null; screenshotAlt: string; caseStudyUrl: string | null; outcomes: string[] };
+
+export const OUTCOME_ROWS = 3;
+
+const EMOJI = /^[\p{Extended_Pictographic}\p{Emoji_Component}\u200d\ufe0f]+$/u;
+
+/**
+ * The emoji, hero screenshot (a file from public/screenshots/, with alt text), case study link and
+ * up to 3 outcomes. Each outcome has at least one {key} from `numberKeys` (the project's numbers).
+ */
+export function validatePublicCard(values: FormValues, screenshots: string[], numberKeys: string[]): Result<PublicCard> {
+	const errors: Errors = {};
+	const emoji = text(values.emoji);
+	if (emoji && (!EMOJI.test(emoji) || [...emoji].length > 16)) errors.emoji = "Use one emoji, like 💼.";
+
+	const screenshotPath = text(values.screenshot_path) || null;
+	if (screenshotPath && !screenshots.includes(screenshotPath)) errors.screenshot_path = "Choose a screenshot from the list (add image files to public/screenshots/).";
+	const screenshotAlt = text(values.screenshot_alt);
+	if (screenshotAlt.length > 300) errors.screenshot_alt = "Keep the description to 300 characters or fewer.";
+	else if (screenshotPath && !screenshotAlt) errors.screenshot_alt = "Describe what the screenshot shows, for people who can't see it.";
+
+	const caseStudyUrl = httpsUrl(text(values.case_study_url), "case_study_url", errors, "The case study link");
+
+	const outcomes: string[] = [];
+	const known = numberKeys.map((k) => `{${k}}`).join(", ");
+	for (let i = 0; i < OUTCOME_ROWS; i += 1) {
+		const outcome = text(values[`outcome_${i}`]);
+		if (!outcome) continue;
+		const keys = taglineKeys(outcome);
+		if (outcome.length > 80) errors[`outcome_${i}`] = `Keep it to 80 characters or fewer (this is ${outcome.length}).`;
+		else if (!keys.length) errors[`outcome_${i}`] = known ? `Add a number, like ${numberKeys.map((k) => `{${k}}`)[0]}.` : "This project has no numbers to show yet.";
+		else {
+			const unknown = keys.find((k) => !numberKeys.includes(k));
+			if (unknown) errors[`outcome_${i}`] = `{${unknown}} isn't one of this project's numbers${known ? ` (it has ${known})` : ""}.`;
+			else outcomes.push(outcome);
+		}
+	}
+	return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value: { emoji, screenshotPath, screenshotAlt: screenshotPath ? screenshotAlt : "", caseStudyUrl, outcomes } };
+}
+
+// --- Profile ----------------------------------------------------------------------------
+
+export function validateProfile(values: FormValues): Result<Profile> {
+	const errors: Errors = {};
+	const thisWeek = text(values.this_week).replace(/\s+/g, " ");
+	if (thisWeek.length > 140) errors.this_week = `Keep it to one line: 140 characters or fewer (this is ${thisWeek.length}).`;
+	const since = text(values.building_since);
+	if (since && !isDay(since)) errors.building_since = "Choose a date.";
+	return Object.keys(errors).length
+		? { ok: false, errors }
+		: { ok: true, value: { thisWeek, buildingSince: since || null, showShippingRhythm: values.show_shipping_rhythm === "on" } };
+}
+
+// --- Costs and revenue ------------------------------------------------------------------
+
+export const MONEY_MAX_ROWS = 30;
+
+export function isMonth(value: string): boolean {
+	return /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+}
+
+/** "12.40", "£12.40", "1,200" → pence. Null if it isn't an amount. */
+export function parsePounds(value: string): number | null {
+	const clean = value.replace(/[£,\s]/g, "");
+	if (!/^\d{1,7}(\.\d{1,2})?$/.test(clean)) return null;
+	const [whole, fraction = ""] = clean.split(".");
+	const pence = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+	return pence <= 100_000_000 ? pence : null;
+}
+
+/** Rows kind_N, service_N, project_N, amount_N. Blank rows are skipped (that's how a row is removed). */
+export function validateMoney(values: FormValues, projectIds: number[]): Result<MoneyRow[]> {
+	const errors: Errors = {};
+	const rows: MoneyRow[] = [];
+	const seen = new Set<string>();
+	for (let i = 0; i < MONEY_MAX_ROWS; i += 1) {
+		const service = text(values[`service_${i}`]).replace(/\s+/g, " ");
+		const amount = text(values[`amount_${i}`]);
+		if (!service && !amount) continue;
+		const kind: MoneyKind = text(values[`kind_${i}`]) === "revenue" ? "revenue" : "cost";
+		const projectId = text(values[`project_${i}`]) ? Number(values[`project_${i}`]) : null;
+		const pence = parsePounds(amount);
+		if (!service || service.length > 40) errors[`row_${i}`] = "Add what it's for (up to 40 characters), like Cloudflare.";
+		else if (pence === null) errors[`row_${i}`] = `"${amount.slice(0, 20)}" isn't an amount. Write pounds and pence, like 12.40.`;
+		else if (projectId !== null && !projectIds.includes(projectId)) errors[`row_${i}`] = "Choose a project from the list.";
+		else {
+			const key = `${kind}|${service.toLowerCase()}|${projectId ?? ""}`;
+			if (seen.has(key)) errors[`row_${i}`] = `${service} is already listed for this month${projectId ? " and project" : ""}. Add the amounts together on one row.`;
+			seen.add(key);
+			rows.push({ kind, service, projectId, amountPence: pence });
+		}
+	}
+	return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value: rows };
 }

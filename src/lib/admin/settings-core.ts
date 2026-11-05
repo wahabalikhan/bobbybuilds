@@ -16,11 +16,16 @@ import {
 	setBrowserEvents,
 	setFunnel,
 	setMetricVisibility,
+	listJourney,
 	setOrigins,
+	setPublicCard,
 	setShowPublic,
 	SlugTakenError,
 	updateProjectDetails,
 } from "@/lib/db/settings";
+import { listMonth, replaceMonth } from "@/lib/db/money";
+import { saveProfile } from "@/lib/db/profile";
+import { addDays } from "@/lib/days";
 import { createPublicKey, createSecretKey, hashSecretKey, secretKeyHint } from "@/lib/keys";
 import { adminHref, site } from "@/lib/site";
 import { failed, ok, type FormState } from "./form-state";
@@ -32,11 +37,16 @@ import {
 	validateNewProject,
 	validateOrigins,
 	validateProjectDetails,
+	validateMoney,
+	validateProfile,
+	validatePublicCard,
+	isMonth,
+	slugify,
 	type FormValues,
 } from "./validate";
 
 export type ActionResult = { state: FormState; redirectTo?: string };
-type Context = { logos: string[]; now: number };
+type Context = { logos: string[]; screenshots?: string[]; now: number };
 
 const settingsHref = (slug: string) => adminHref(`/projects/${slug}?tab=settings`);
 
@@ -237,13 +247,80 @@ export async function journeyCore(db: D1Database, prev: FormState, values: FormV
 	const projects = await listProjects(db);
 	const result = validateJourney(values, projects.map((p) => p.id), ctx.now);
 	if (!result.ok) return { state: failed(prev, values, result.errors) };
+	// Entries have no pages of their own, so the slug is only an id: made from the title, made unique.
+	let slug: string | undefined;
+	if (id === null) {
+		const taken = new Set((await listJourney(db)).map((e) => e.slug));
+		const base = slugify(result.value.title, 72) || "entry";
+		slug = base;
+		for (let n = 2; taken.has(slug); n += 1) slug = `${base}-${n}`;
+	}
 	try {
-		const saved = await saveJourney(db, id, result.value);
+		const saved = await saveJourney(db, id, result.value, slug);
 		const message = result.value.publish ? "Saved and published." : "Saved as a draft.";
 		return { state: ok(prev, message), redirectTo: id === null ? adminHref(`/settings/journey/${saved}?created=1`) : undefined };
 	} catch (error) {
-		if (error instanceof SlugTakenError) return { state: failed(prev, values, { slug: "Another entry already uses this slug." }) };
+		if (error instanceof SlugTakenError) return { state: failed(prev, values, {}, "Another entry was saved at the same moment. Please try again.") };
 		throw error;
 	}
 }
 
+// --- On your public page: the card --------------------------------------------------------
+
+/** The keys a project's outcomes can use: its product numbers, and visitors (30 days). */
+export async function outcomeKeys(db: D1Database, projectId: number): Promise<string[]> {
+	const metrics = await listMetrics(db, projectId);
+	return metrics.filter((m) => m.source === "product" || (m.source === "collector" && m.key === "visitors")).map((m) => m.key);
+}
+
+export async function publicCardCore(db: D1Database, prev: FormState, values: FormValues, ctx: Context): Promise<ActionResult> {
+	const project = await projectFrom(db, values);
+	if (!project) return missing(prev);
+	// A saved screenshot stays valid even if its file has since gone.
+	const screenshots = [...(ctx.screenshots ?? []), ...(project.screenshotPath ? [project.screenshotPath] : [])];
+	const result = validatePublicCard(values, screenshots, await outcomeKeys(db, project.id));
+	if (!result.ok) return { state: failed(prev, values, result.errors) };
+	await setPublicCard(db, project.id, result.value);
+	const metrics = await listMetrics(db, project.id);
+	const privateKey = result.value.outcomes.flatMap(taglineKeys).find((key) => !metrics.find((m) => m.key === key)?.isPublic);
+	const notes = privateKey ? [`{${privateKey}} isn't public, so outcomes using it are left out until it is (the switches below).`] : [];
+	return { state: ok(prev, "Saved.", notes) };
+}
+
+// --- Profile ----------------------------------------------------------------------------
+
+export async function profileCore(db: D1Database, prev: FormState, values: FormValues): Promise<ActionResult> {
+	const result = validateProfile(values);
+	if (!result.ok) return { state: failed(prev, values, result.errors) };
+	await saveProfile(db, result.value);
+	return { state: ok(prev, "Saved.") };
+}
+
+// --- Costs and revenue ------------------------------------------------------------------
+
+export async function moneyCore(db: D1Database, prev: FormState, values: FormValues): Promise<ActionResult> {
+	const month = values.month ?? "";
+	if (!isMonth(month)) return { state: failed(prev, values, {}, "Choose a month.") };
+	const result = validateMoney(values, (await listProjects(db)).map((p) => p.id));
+	if (!result.ok) return { state: failed(prev, values, result.errors) };
+	await replaceMonth(db, month, result.value);
+	return { state: ok(prev, result.value.length ? "Saved." : "Saved. Nothing is listed for this month.") };
+}
+
+/** The month before 'YYYY-MM'. */
+export function previousMonth(month: string): string {
+	return addDays(`${month}-01`, -1).slice(0, 7);
+}
+
+/** Copies last month's costs (not revenue) into a month that has no costs yet: most bills repeat. */
+export async function copyCostsCore(db: D1Database, prev: FormState, values: FormValues): Promise<ActionResult> {
+	const month = values.month ?? "";
+	if (!isMonth(month)) return { state: failed(prev, values, {}, "Choose a month.") };
+	const current = await listMonth(db, month);
+	if (current.some((r) => r.kind === "cost")) return { state: failed(prev, values, {}, "This month already has costs, so nothing was copied.") };
+	const last = (await listMonth(db, previousMonth(month))).filter((r) => r.kind === "cost");
+	if (!last.length) return { state: failed(prev, values, {}, "Last month has no costs to copy.") };
+	await replaceMonth(db, month, [...current, ...last]);
+	// The copy form goes once the month has costs, so the message is shown by the page.
+	return { state: ok(prev, "Copied."), redirectTo: adminHref(`/settings/money?month=${month}&copied=${last.length}`) };
+}

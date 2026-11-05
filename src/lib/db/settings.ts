@@ -2,7 +2,8 @@
  * Writes for the settings pages. Every query uses bound parameters; multi-step changes go in one
  * D1 batch (a transaction).
  */
-import type { JourneyInput, MilestoneInput, NewMetric, ProjectDetails } from "@/lib/admin/validate";
+import type { JourneyInput, MilestoneInput, NewMetric, ProjectDetails, PublicCard } from "@/lib/admin/validate";
+import type { JourneyType } from "@/lib/journey-types";
 import type { FunnelStep } from "./funnel";
 
 export class SlugTakenError extends Error {}
@@ -19,8 +20,8 @@ export async function createProject(db: D1Database, details: ProjectDetails): Pr
 	try {
 		const row = await db
 			.prepare(
-				`INSERT INTO projects (slug, name, tagline, description_md, status, lesson, logo_path, site_url, health_url, github_repo, links, sort_order, tagline_fallback)
-				 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13) RETURNING id`,
+				`INSERT INTO projects (slug, name, tagline, description_md, status, lesson, logo_path, site_url, health_url, github_repo, links, sort_order, tagline_fallback, is_paused)
+				 VALUES (?1, ?2, ?3, ?4, CASE WHEN ?5 = 'paused' THEN 'building' ELSE ?5 END, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?5 = 'paused') RETURNING id`,
 			)
 			.bind(
 				details.slug,
@@ -54,7 +55,10 @@ export async function updateProjectDetails(db: D1Database, id: number, details: 
 	try {
 		await db
 			.prepare(
-				`UPDATE projects SET slug = ?2, name = ?3, tagline = ?4, description_md = ?5, status = ?6, lesson = ?7, logo_path = ?8,
+				// "paused" is stored as is_paused, keeping the stored status (live or building) underneath.
+				`UPDATE projects SET slug = ?2, name = ?3, tagline = ?4, description_md = ?5,
+				   status = CASE WHEN ?6 = 'paused' THEN (CASE WHEN status IN ('live', 'building') THEN status ELSE 'building' END) ELSE ?6 END,
+				   is_paused = (?6 = 'paused'), lesson = ?7, logo_path = ?8,
 				   site_url = ?9, health_url = ?10, github_repo = ?11, links = ?12, sort_order = ?13, updated_at = ?14, tagline_fallback = ?15
 				 WHERE id = ?1`,
 			)
@@ -97,6 +101,14 @@ export async function setFunnel(db: D1Database, id: number, steps: FunnelStep[])
 /** "Show on my public page": whether the project appears on the public page at all. */
 export async function setShowPublic(db: D1Database, id: number, show: boolean): Promise<void> {
 	await db.prepare("UPDATE projects SET show_public = ?2, updated_at = ?3 WHERE id = ?1").bind(id, show ? 1 : 0, now()).run();
+}
+
+/** The project's public card: emoji, hero screenshot and its alt text, case study link and outcomes. */
+export async function setPublicCard(db: D1Database, id: number, card: PublicCard): Promise<void> {
+	await db
+		.prepare("UPDATE projects SET emoji = ?2, screenshot_path = ?3, screenshot_alt = ?4, case_study_url = ?5, outcomes = ?6, updated_at = ?7 WHERE id = ?1")
+		.bind(id, card.emoji, card.screenshotPath, card.screenshotAlt, card.caseStudyUrl, JSON.stringify(card.outcomes), now())
+		.run();
 }
 
 /** Deletes a project and, through the foreign keys, all of its data. Journey entries are kept. */
@@ -145,54 +157,76 @@ export type JourneyEntry = {
 	id: number;
 	slug: string;
 	title: string;
+	type: JourneyType;
 	bodyMd: string;
+	linkUrl: string | null;
 	projectId: number | null;
 	isPublished: boolean;
+	/** The entry's date (also kept for drafts). */
 	publishedAt: number | null;
 	updatedAt: number;
 };
 
-type JourneyRow = { id: number; slug: string; title: string; body_md: string; project_id: number | null; is_published: number; published_at: number | null; updated_at: number };
+type JourneyRow = {
+	id: number;
+	slug: string;
+	title: string;
+	type: JourneyType;
+	body_md: string;
+	link_url: string | null;
+	project_id: number | null;
+	is_published: number;
+	published_at: number | null;
+	updated_at: number;
+};
 const toEntry = (r: JourneyRow): JourneyEntry => ({
 	id: r.id,
 	slug: r.slug,
 	title: r.title,
+	type: r.type,
 	bodyMd: r.body_md,
+	linkUrl: r.link_url,
 	projectId: r.project_id,
 	isPublished: r.is_published === 1,
 	publishedAt: r.published_at,
 	updatedAt: r.updated_at,
 });
 
+const JOURNEY_COLUMNS = "id, slug, title, type, body_md, link_url, project_id, is_published, published_at, updated_at";
+
 export async function listJourney(db: D1Database): Promise<JourneyEntry[]> {
-	const { results } = await db.prepare("SELECT * FROM journey_entries ORDER BY COALESCE(published_at, updated_at) DESC, id DESC").all<JourneyRow>();
+	const { results } = await db.prepare(`SELECT ${JOURNEY_COLUMNS} FROM journey_entries ORDER BY COALESCE(published_at, updated_at) DESC, id DESC`).all<JourneyRow>();
 	return results.map(toEntry);
 }
 
 export async function getJourney(db: D1Database, id: number): Promise<JourneyEntry | null> {
-	const row = await db.prepare("SELECT * FROM journey_entries WHERE id = ?1").bind(id).first<JourneyRow>();
+	const row = await db.prepare(`SELECT ${JOURNEY_COLUMNS} FROM journey_entries WHERE id = ?1`).bind(id).first<JourneyRow>();
 	return row ? toEntry(row) : null;
 }
 
-export async function saveJourney(db: D1Database, id: number | null, input: JourneyInput): Promise<number> {
+/**
+ * Creates (id null) or updates an entry. A new entry needs a `slug` (unique; entries have no pages
+ * of their own now, but the column stays). An existing entry keeps its slug.
+ */
+export async function saveJourney(db: D1Database, id: number | null, input: JourneyInput, slug?: string): Promise<number> {
 	try {
 		if (id === null) {
 			const row = await db
 				.prepare(
-					`INSERT INTO journey_entries (slug, title, body_md, project_id, is_published, published_at, created_at, updated_at)
-					 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7) RETURNING id`,
+					`INSERT INTO journey_entries (slug, title, type, body_md, link_url, project_id, is_published, published_at, created_at, updated_at)
+					 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?9) RETURNING id`,
 				)
-				.bind(input.slug, input.title, input.bodyMd, input.projectId, input.publish ? 1 : 0, input.publishedAt, now())
+				.bind(slug, input.title, input.type, input.bodyMd, input.linkUrl, input.projectId, input.publish ? 1 : 0, input.publishedAt, now())
 				.first<{ id: number }>();
 			return row!.id;
 		}
 		await db
 			.prepare(
-				`UPDATE journey_entries SET slug = ?2, title = ?3, body_md = ?4, project_id = ?5, is_published = ?6,
-				   published_at = CASE WHEN ?6 = 1 THEN COALESCE(?7, published_at) ELSE NULL END, updated_at = ?8
+				`UPDATE journey_entries SET title = ?2, type = ?3, body_md = ?4, link_url = ?5, project_id = ?6, is_published = ?7,
+				   published_at = COALESCE(?8, CASE WHEN ?7 = 1 THEN COALESCE(published_at, ?9) ELSE published_at END), updated_at = ?9
 				 WHERE id = ?1`,
 			)
-			.bind(id, input.slug, input.title, input.bodyMd, input.projectId, input.publish ? 1 : 0, input.publishedAt, now())
+			.bind(id, input.title, input.type, input.bodyMd, input.linkUrl, input.projectId, input.publish ? 1 : 0, input.publishedAt, now())
 			.run();
 		return id;
 	} catch (error) {

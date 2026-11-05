@@ -24,6 +24,9 @@ export async function checkLiveBanner(origin, extraPaths = []) {
 		"/admin/projects/no-such-project",
 		"/admin/does-not-exist",
 		"/admin/settings/journey",
+		"/admin/settings/journey/new",
+		"/admin/settings/profile",
+		"/admin/settings/money",
 		...extraPaths,
 	];
 

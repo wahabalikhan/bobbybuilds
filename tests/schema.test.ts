@@ -392,3 +392,67 @@ describe("journey_entries and milestones", () => {
 		await expectRejected(insert("milestones", { project_id: projectId, day: "2026-11-02", title: "x".repeat(121) }));
 	});
 });
+
+describe("phase 10: profile, project cards, journey types and money", () => {
+	it("has exactly one profile row", async () => {
+		const row = await db.prepare("SELECT count(*) AS n FROM profile").first<{ n: number }>();
+		expect(row!.n).toBe(1);
+		await expectRejected(insert("profile", { id: 2 }));
+	});
+
+	it.each([
+		["a This week line over 140 characters", "this_week = ?1", "x".repeat(141)],
+		["a building date that isn't a date", "building_since = ?1", "2026-02-30"],
+		["a shipping rhythm switch that isn't 0 or 1", "show_shipping_rhythm = ?1", 2],
+	])("rejects %s", async (_label, set, value) => {
+		await expectRejected(db.prepare(`UPDATE profile SET ${set} WHERE id = 1`).bind(value).run());
+	});
+
+	it("needs alt text with a screenshot, and only takes files in /screenshots/", async () => {
+		await expectRejected(createProject({ screenshot_path: "/screenshots/tech-jobs.webp" }));
+		await expectRejected(createProject({ screenshot_path: "/screenshots/tech-jobs.webp", screenshot_alt: "   " }));
+		await expectRejected(createProject({ screenshot_path: "/logos/tech-jobs.svg", screenshot_alt: "Logo" }));
+		await expectRejected(createProject({ screenshot_path: "/screenshots/../t.js", screenshot_alt: "Sneaky" }));
+		await expect(createProject({ screenshot_path: "/screenshots/tech-jobs.webp", screenshot_alt: "The job list" })).resolves.toBeGreaterThan(0);
+	});
+
+	it.each([
+		["more than 3 outcomes", { outcomes: '["a","b","c","d"]' }],
+		["outcomes that aren't a JSON array", { outcomes: '{"a":1}' }],
+		["an emoji field over 16 characters", { emoji: "x".repeat(17) }],
+		["a case study link that isn't https", { case_study_url: "http://example.com" }],
+		["a paused flag that isn't 0 or 1", { is_paused: 2 }],
+	])("rejects a project with %s", async (_label, values) => {
+		await expectRejected(createProject(values));
+	});
+
+	it("takes a known journey type and an https link only", async () => {
+		await expect(insert("journey_entries", { slug: "shipped-it", title: "Shipped", type: "shipped", link_url: "https://example.com" })).resolves.toBeTruthy();
+		await expectRejected(insert("journey_entries", { slug: "rant", title: "Rant", type: "rant" }));
+		await expectRejected(insert("journey_entries", { slug: "plain-link", title: "Link", link_url: "http://example.com" }));
+	});
+
+	it("defaults existing journey entries to Post", async () => {
+		await insert("journey_entries", { slug: "old-entry", title: "Old entry" });
+		const row = await db.prepare("SELECT type FROM journey_entries WHERE slug = 'old-entry'").first<{ type: string }>();
+		expect(row!.type).toBe("post");
+	});
+
+	it("keeps money to real months, known kinds and amounts from £0 to £1,000,000", async () => {
+		await expect(insert("money", { month: "2026-11", kind: "cost", service: "Cloudflare", amount_pence: 500 })).resolves.toBeTruthy();
+		await expect(insert("money", { month: "2026-11", kind: "revenue", service: "Tech Jobs", amount_pence: 0 })).resolves.toBeTruthy();
+		for (const values of [
+			{ month: "2026-13", kind: "cost", service: "Cloudflare", amount_pence: 500 },
+			{ month: "2026-1", kind: "cost", service: "Cloudflare", amount_pence: 500 },
+			{ month: "2026-11-01", kind: "cost", service: "Cloudflare", amount_pence: 500 },
+			{ month: "2026-11", kind: "refund", service: "Cloudflare", amount_pence: 500 },
+			{ month: "2026-11", kind: "cost", service: "", amount_pence: 500 },
+			{ month: "2026-11", kind: "cost", service: " Cloudflare", amount_pence: 500 },
+			{ month: "2026-11", kind: "cost", service: "x".repeat(41), amount_pence: 500 },
+			{ month: "2026-11", kind: "cost", service: "Cloudflare", amount_pence: -1 },
+			{ month: "2026-11", kind: "cost", service: "Cloudflare", amount_pence: 100_000_001 },
+		]) {
+			await expectRejected(insert("money", values));
+		}
+	});
+});

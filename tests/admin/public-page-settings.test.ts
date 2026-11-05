@@ -1,0 +1,95 @@
+import { describe, expect, it } from "vitest";
+import type { FormState } from "@/lib/admin/form-state";
+import * as core from "@/lib/admin/settings-core";
+import { parsePounds, validateMoney, validateProfile, validatePublicCard } from "@/lib/admin/validate";
+import { listMonth } from "@/lib/db/money";
+import { getProfile } from "@/lib/db/profile";
+import { getProjectBySlug } from "@/lib/db/projects";
+import { db } from "../helpers";
+
+const idle: FormState = { status: "idle", version: 0 };
+const ctx = { logos: [], screenshots: ["/screenshots/tech-jobs.webp"], now: Date.UTC(2026, 10, 5, 12) };
+
+async function newProject() {
+	const result = await core.startProjectCore(db, idle, { name: `Card test ${crypto.randomUUID().slice(0, 8)}`, site_url: "https://card.example" });
+	return (await getProjectBySlug(db, result.state.setup!.slug))!;
+}
+
+describe("the public card", () => {
+	const keys = ["open_jobs", "visitors"];
+
+	it("takes an emoji, a listed screenshot with alt text, a case study link and outcomes with known numbers", () => {
+		const result = validatePublicCard(
+			{ emoji: "💼", screenshot_path: "/screenshots/tech-jobs.webp", screenshot_alt: "The job list", case_study_url: "https://wahabalikhan.com/tech-jobs", outcome_0: "{open_jobs} jobs made clear", outcome_2: "{visitors} visitors" },
+			ctx.screenshots,
+			keys,
+		);
+		expect(result).toMatchObject({ ok: true, value: { emoji: "💼", screenshotAlt: "The job list", outcomes: ["{open_jobs} jobs made clear", "{visitors} visitors"] } });
+	});
+
+	it.each([
+		["a word instead of an emoji", { emoji: "jobs" }, "emoji"],
+		["a screenshot that isn't in public/screenshots/", { screenshot_path: "/screenshots/missing.png", screenshot_alt: "x" }, "screenshot_path"],
+		["a screenshot without alt text", { screenshot_path: "/screenshots/tech-jobs.webp" }, "screenshot_alt"],
+		["a case study link that isn't https", { case_study_url: "http://example.com" }, "case_study_url"],
+		["an outcome without a number", { outcome_0: "Jobs made clear" }, "outcome_0"],
+		["an outcome with someone else's number", { outcome_1: "{salaries_found} salaries found" }, "outcome_1"],
+	])("refuses %s", (_label, values, field) => {
+		expect(validatePublicCard(values, ctx.screenshots, keys)).toMatchObject({ ok: false, errors: { [field]: expect.any(String) } });
+	});
+
+	it("saves the card, and notes when an outcome's number is private", async () => {
+		const project = await newProject();
+		const result = await core.publicCardCore(db, idle, { project_id: String(project.id), emoji: "🎨", outcome_0: "{visitors} people visited" }, ctx);
+		expect(result.state.status).toBe("ok");
+		expect(await getProjectBySlug(db, project.slug)).toMatchObject({ emoji: "🎨", outcomes: ["{visitors} people visited"], screenshotPath: null });
+	});
+});
+
+describe("paused", () => {
+	it("is stored alongside the status and shown instead of it", async () => {
+		const project = await newProject();
+		const values = { project_id: String(project.id), name: project.name, status: "paused", site_url: project.siteUrl ?? "" };
+		expect((await core.saveDetailsCore(db, idle, values, ctx)).state.status).toBe("ok");
+		expect((await getProjectBySlug(db, project.slug))!.status).toBe("paused");
+		await core.saveDetailsCore(db, idle, { ...values, status: "live" }, ctx);
+		expect((await getProjectBySlug(db, project.slug))!.status).toBe("live");
+	});
+});
+
+describe("profile", () => {
+	it("saves This week, the start date and the shipping rhythm switch", async () => {
+		expect(validateProfile({ this_week: "x".repeat(141) })).toMatchObject({ ok: false, errors: { this_week: expect.any(String) } });
+		expect(validateProfile({ building_since: "2026-02-30" })).toMatchObject({ ok: false, errors: { building_since: expect.any(String) } });
+		await core.profileCore(db, idle, { this_week: "Working on  the CV fit", building_since: "2026-06-30", show_shipping_rhythm: "on" });
+		expect(await getProfile(db)).toEqual({ thisWeek: "Working on the CV fit", buildingSince: "2026-06-30", showShippingRhythm: true });
+	});
+});
+
+describe("costs and revenue", () => {
+	it("reads pounds and pence", () => {
+		expect([parsePounds("12.40"), parsePounds("£1,200"), parsePounds("0"), parsePounds("12.5"), parsePounds("-3"), parsePounds("1.234"), parsePounds("ten")]).toEqual([1240, 120000, 0, 1250, null, null, null]);
+	});
+
+	it("skips blank rows and refuses duplicates and unknown projects", () => {
+		expect(validateMoney({ service_0: "Cloudflare", amount_0: "5", service_2: "", amount_2: "" }, [])).toEqual({ ok: true, value: [{ kind: "cost", service: "Cloudflare", projectId: null, amountPence: 500 }] });
+		expect(validateMoney({ service_0: "Cloudflare", amount_0: "5", service_1: "cloudflare", amount_1: "1" }, [])).toMatchObject({ ok: false, errors: { row_1: expect.any(String) } });
+		expect(validateMoney({ service_0: "Anthropic", amount_0: "5", project_0: "999999" }, [])).toMatchObject({ ok: false, errors: { row_0: expect.any(String) } });
+		expect(validateMoney({ service_0: "Anthropic", amount_0: "lots" }, [])).toMatchObject({ ok: false, errors: { row_0: expect.any(String) } });
+	});
+
+	it("replaces a month, and copies last month's costs into an empty month", async () => {
+		await core.moneyCore(db, idle, { month: "2031-01", service_0: "Cloudflare", amount_0: "5", kind_1: "revenue", service_1: "Tech Jobs", amount_1: "0" });
+		expect(await listMonth(db, "2031-01")).toHaveLength(2);
+		const copied = await core.copyCostsCore(db, idle, { month: "2031-02" });
+		expect(copied).toMatchObject({ state: { status: "ok" }, redirectTo: "/admin/settings/money?month=2031-02&copied=1" });
+		expect(await listMonth(db, "2031-02")).toEqual([{ kind: "cost", service: "Cloudflare", projectId: null, amountPence: 500 }]);
+		expect((await core.copyCostsCore(db, idle, { month: "2031-02" })).state.status).toBe("error");
+		await core.moneyCore(db, idle, { month: "2031-02" });
+		expect(await listMonth(db, "2031-02")).toEqual([]);
+	});
+
+	it("knows the month before", () => {
+		expect([core.previousMonth("2026-01"), core.previousMonth("2026-11")]).toEqual(["2025-12", "2026-10"]);
+	});
+});

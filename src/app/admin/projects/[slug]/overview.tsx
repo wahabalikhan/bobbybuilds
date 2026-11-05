@@ -23,13 +23,13 @@ import {
 	uptimeChecks,
 	uptimeDays,
 } from "@/lib/db/dashboard";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { funnel, parseFunnel } from "@/lib/db/funnel";
 import type { Project } from "@/lib/db/projects";
 import { change, formatCount, formatDuration, formatPercent, formatTime, formatWhole } from "@/lib/format";
 import { adminHref } from "@/lib/site";
 
 export type OverviewProps = {
-	db: D1Database;
 	project: Project;
 	range: DateRange;
 	today: string;
@@ -46,7 +46,11 @@ const DETAIL_PARAMS = ["build", "name", "source", "page"];
  * searches, the funnel and health, each only when there's something to show. Everything else
  * is in "More detail", closed by default.
  */
-export async function Overview({ db, project, range, today, now, query, hrefFor }: OverviewProps) {
+export async function Overview({ project, range, today, now, query, hrefFor }: OverviewProps) {
+	// The database is read here rather than passed in: in dev, React tries to serialise a
+	// server component's props for its debug info, and the D1 binding can't be serialised.
+	const { env } = await getCloudflareContext({ async: true });
+	const db = env.DB;
 	const raw = clampToRaw(range, today);
 	const steps = parseFunnel(project.funnel);
 	const ninetyDaysAgo = addDays(today, -89);
@@ -120,7 +124,7 @@ export async function Overview({ db, project, range, today, now, query, hrefFor 
 					</svg>
 				</summary>
 				<div className="space-y-6 border-t border-line p-5">
-					<MoreDetail db={db} project={project} range={range} today={today} now={now} query={query} hrefFor={hrefFor} pages={pages} sources={sources} topSearches={topSearches} emptySearches={emptySearches} funnelResult={funnelResult} days={days} checks={checks} />
+					<MoreDetail project={project} range={range} today={today} now={now} query={query} hrefFor={hrefFor} pages={pages} sources={sources} topSearches={topSearches} emptySearches={emptySearches} funnelResult={funnelResult} days={days} checks={checks} />
 				</div>
 			</details>
 		</div>
@@ -219,7 +223,6 @@ function Health({ project, days, latestUp, broken }: { project: Project; days: {
 // --- More detail -------------------------------------------------------------------------
 
 async function MoreDetail({
-	db,
 	project,
 	range,
 	today,
@@ -241,6 +244,7 @@ async function MoreDetail({
 	days: Awaited<ReturnType<typeof uptimeDays>>;
 	checks: Awaited<ReturnType<typeof uptimeChecks>>;
 }) {
+	const db = (await getCloudflareContext({ async: true })).env.DB;
 	const raw = clampToRaw(range, today);
 	const [outbound, downloads, notFound, totals] = await Promise.all([
 		eventBreakdown(db, project.id, "outbound_click", raw.from, raw.to),
@@ -307,7 +311,7 @@ async function MoreDetail({
 				</div>
 			</Card>
 			<LinkBuilder project={project} query={query} hrefFor={hrefFor} />
-			<Events db={db} project={project} range={range} today={today} query={query} hrefFor={hrefFor} />
+			<Events project={project} range={range} today={today} query={query} hrefFor={hrefFor} />
 		</>
 	);
 }
@@ -379,7 +383,8 @@ function LinkBuilder({ project, query, hrefFor }: { project: Project; query: Rec
 	);
 }
 
-async function Events({ db, project, range, today, query, hrefFor }: Pick<OverviewProps, "db" | "project" | "range" | "today" | "query" | "hrefFor">) {
+async function Events({ project, range, today, query, hrefFor }: Pick<OverviewProps, "project" | "range" | "today" | "query" | "hrefFor">) {
+	const db = (await getCloudflareContext({ async: true })).env.DB;
 	const raw = clampToRaw(range, today);
 	const name = query.name && /^[a-z][a-z0-9_.-]{0,63}$/.test(query.name) ? query.name : null;
 	const source: "browser" | "server" | null = query.source === "browser" || query.source === "server" ? query.source : null;
