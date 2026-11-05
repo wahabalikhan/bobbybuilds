@@ -113,6 +113,11 @@ export async function copyCostsAction(prev: FormState, form: FormData) {
 	return run(prev, form, core.copyCostsCore);
 }
 
+export async function refreshIconAction(prev: FormState, form: FormData) {
+	await requireAdmin();
+	return run(prev, form, core.refreshIconCore);
+}
+
 /** Markdown preview for the journey editor, with the same sanitising as the public pages. */
 export async function previewMarkdownAction(source: string): Promise<string> {
 	await requireAdmin();

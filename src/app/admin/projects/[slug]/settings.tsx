@@ -3,18 +3,20 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { CopyButton } from "@/components/admin/copy-button";
 import { CheckboxField, FieldError, Hidden, SelectField, SettingsForm, TextArea, TextField } from "@/components/admin/form";
 import { Switch } from "@/components/admin/switch";
-import { Pill } from "@/components/admin/ui";
+import { Pill, ProjectLogo } from "@/components/admin/ui";
+import { adminIcons } from "@/lib/admin/icons";
+import { getIconMeta } from "@/lib/db/icons";
 import { BUILT_IN_EVENTS } from "@/lib/collector/validate";
 import { requestTime } from "@/lib/admin/clock";
 import { FUNNEL_ROWS, OUTCOME_ROWS } from "@/lib/admin/validate";
 import { listMetrics, outcomeNumbers, type Metric } from "@/lib/db/dashboard";
 import { utcDay } from "@/lib/days";
-import { formatWhole } from "@/lib/format";
+import { formatTime, formatWhole, timeAgo } from "@/lib/format";
 import { SCREENSHOTS } from "@/lib/logos.generated";
 import { parseFunnel } from "@/lib/db/funnel";
 import type { Project } from "@/lib/db/projects";
 import { site } from "@/lib/site";
-import { addMetricAction, deleteMetricAction, deleteProjectAction, eventsAction, funnelAction, keysAction, originsAction, publicCardAction, saveDetailsAction, visibilityAction } from "../../settings/actions";
+import { addMetricAction, deleteMetricAction, deleteProjectAction, eventsAction, funnelAction, keysAction, originsAction, publicCardAction, refreshIconAction, saveDetailsAction, visibilityAction } from "../../settings/actions";
 
 /**
  * A project's settings, one scrolling page: About this project, On your public page, Connection
@@ -67,6 +69,10 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 				</SettingsForm>
 			</Section>
 
+			<Section title="Icon">
+				<IconBlock project={project} db={db} />
+			</Section>
+
 			<Section title="On your public page">
 				<div className="space-y-8">
 					<PublicCard project={project} numbers={numbers} />
@@ -101,6 +107,39 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 					<TextField name="confirm_slug" label={`Type ${project.slug} to confirm`} />
 				</SettingsForm>
 			</section>
+		</div>
+	);
+}
+
+const KIND = { svg: "its SVG icon", "apple-touch-icon": "its apple-touch-icon", manifest: "its web manifest", favicon: "its favicon" } as const;
+
+/** The project's current icon, where it came from and when it was last checked, with "Refresh icon now". */
+async function IconBlock({ project, db }: { project: Project; db: D1Database }) {
+	const [meta, iconFor] = await Promise.all([getIconMeta(db, project.id), adminIcons(db)]);
+	const src = iconFor(project);
+	const now = requestTime();
+	return (
+		<div className="space-y-4">
+			<div className="flex items-start gap-4">
+				<ProjectLogo name={project.name} logoPath={src} size={44} />
+				<div className="min-w-0 text-sm">
+					<p className="text-ink">
+						{meta?.hash && meta.kind
+							? <>From {KIND[meta.kind]}{meta.sourceUrl && <span className="block truncate text-muted" title={meta.sourceUrl}>{meta.sourceUrl}</span>}</>
+							: src
+								? "None found on its site yet, so its file in public/logos is used."
+								: "None found on its site yet, so its first letter is shown."}
+					</p>
+					<p className="mt-1 text-muted">
+						{meta ? <span title={formatTime(meta.checkedAt)}>Last checked {timeAgo(meta.checkedAt, now)}</span> : "Not checked yet"}
+						{meta?.lastError && <span className="block text-critical-ink">{meta.lastError}</span>}
+					</p>
+				</div>
+			</div>
+			<SettingsForm action={refreshIconAction} submitLabel="Refresh icon now">
+				<Hidden name="project_id" value={project.id} />
+				<p className="text-xs text-muted">Checked every day from {project.siteUrl ?? "its site address"}: its SVG icon, then its apple-touch-icon, then the largest icon in its web manifest, then its favicon. A copy is kept here, so the cards never depend on its site being up.</p>
+			</SettingsForm>
 		</div>
 	);
 }

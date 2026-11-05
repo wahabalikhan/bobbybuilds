@@ -24,6 +24,7 @@ import {
 	updateProjectDetails,
 } from "@/lib/db/settings";
 import { listMonth, replaceMonth } from "@/lib/db/money";
+import { refreshProjectIcon } from "@/lib/icons/refresh";
 import { saveProfile } from "@/lib/db/profile";
 import { addDays } from "@/lib/days";
 import { createPublicKey, createSecretKey, hashSecretKey, secretKeyHint } from "@/lib/keys";
@@ -325,4 +326,19 @@ export async function copyCostsCore(db: D1Database, prev: FormState, values: For
 	await replaceMonth(db, month, [...current, ...last]);
 	// The copy form goes once the month has costs, so the message is shown by the page.
 	return { state: ok(prev, "Copied."), redirectTo: adminHref(`/settings/money?month=${month}&copied=${last.length}`) };
+}
+
+// --- Icon -------------------------------------------------------------------------------
+
+const KIND_LABEL = { svg: "its SVG icon", "apple-touch-icon": "its apple-touch-icon", manifest: "its web manifest", favicon: "its favicon" } as const;
+
+/** "Refresh icon now": checks the project's live site for its current icon and stores it if it changed. */
+export async function refreshIconCore(db: D1Database, prev: FormState, values: FormValues, ctx: Context & { fetch?: typeof fetch }): Promise<ActionResult> {
+	const project = await projectFrom(db, values);
+	if (!project) return missing(prev);
+	const result = await refreshProjectIcon(db, ctx.fetch ?? fetch, project, ctx.now);
+	if (result.status === "none") return { state: failed(prev, values, {}, `No icon found: ${result.error ?? "nothing usable on the site"} The current icon is kept.`) };
+	const from = result.kind ? KIND_LABEL[result.kind] : "the site";
+	const message = result.status === "same" ? `The icon is up to date (from ${from}).` : `Icon ${result.status === "new" ? "saved" : "updated"}: ${from}.`;
+	return { state: ok(prev, message, result.sourceUrl ? [result.sourceUrl] : []) };
 }

@@ -8,8 +8,8 @@ import { parseRange } from "@/lib/admin/range";
 import { requestTime } from "@/lib/admin/clock";
 import { utcDay } from "@/lib/days";
 import { latestUptime, publicProductNumbers } from "@/lib/db/dashboard";
+import { adminIcons } from "@/lib/admin/icons";
 import { getProjectBySlug } from "@/lib/db/projects";
-import { logoFor } from "@/lib/project-logo";
 import { productLine } from "@/lib/public/product-line";
 import { adminHref } from "@/lib/site";
 import { Overview } from "./overview";
@@ -60,6 +60,7 @@ export default async function ProjectPage({
 	};
 	const numbers = productLine(await publicProductNumbers(env.DB, project.id, today), today);
 	const up = (await latestUptime(env.DB, now)).get(project.id) ?? null;
+	const iconFor = await adminIcons(env.DB);
 
 	return (
 		<div className="space-y-6">
@@ -67,7 +68,7 @@ export default async function ProjectPage({
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: project.name }]} />
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="flex flex-wrap items-center gap-3">
-						<ProjectLogo name={project.name} logoPath={logoFor(project)} size={36} />
+						<ProjectLogo name={project.name} logoPath={iconFor(project)} size={36} />
 						<h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
 						<StatusDot status={project.status} up={up} />
 						{!project.showPublic && <span className="text-sm text-muted">Not on your public page</span>}

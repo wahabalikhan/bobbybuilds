@@ -4,6 +4,7 @@ import { type Fetch, syncGithubContributions } from "./github";
 import { cleanUp, rotateDailySecret } from "./maintenance";
 import { rollupDay } from "./rollup";
 import { pingAll } from "./uptime";
+import { refreshAllIcons } from "@/lib/icons/refresh";
 import { publishSnapshot } from "@/lib/public/snapshot";
 import { owner } from "@/lib/site";
 
@@ -13,7 +14,7 @@ import { owner } from "@/lib/site";
  *   contribution calendar; every 10 minutes, today's roll-up and the public snapshot (written to
  *   KV only if it changed)
  * - daily (00:10 UTC): finalise yesterday's roll-up, refresh today's, rotate the daily
- *   secret, 90-day clean-up, public snapshot
+ *   secret, 90-day clean-up, project icons from their sites, public snapshot
  */
 
 export const TASKS = ["daily", "frequent"] as const;
@@ -47,6 +48,8 @@ async function daily(deps: JobDeps, at: number) {
 		rollups: [await rollupDay(deps.db, addDays(today, -1), at), await rollupDay(deps.db, today, at)],
 		secret: await rotateDailySecret(deps.db, today),
 		cleanup: await cleanUp(deps.db, today),
+		// Each project's icon from its live site (replaced only when it changed), before the snapshot.
+		icons: await refreshAllIcons(deps.db, deps.fetch, at),
 	};
 	if (deps.kv) {
 		const { written, bytes } = await publishSnapshot(deps.db, deps.kv, today, at);

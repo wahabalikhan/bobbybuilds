@@ -14,7 +14,7 @@ import { listMonth } from "@/lib/db/money";
 import { getProfile } from "@/lib/db/profile";
 import { listJourney } from "@/lib/db/settings";
 import { change, formatCount, formatDay, formatMonth, formatPence, formatPercent } from "@/lib/format";
-import { logoFor } from "@/lib/project-logo";
+import { adminIcons } from "@/lib/admin/icons";
 import { productLine } from "@/lib/public/product-line";
 import { CARD_HEIGHT } from "@/lib/layout";
 import { trackingNote } from "@/lib/trend";
@@ -24,9 +24,9 @@ import { adminHref, site } from "@/lib/site";
 export default async function AdminHome() {
 	const { env } = await getCloudflareContext({ async: true });
 	const today = utcDay(requestTime());
-	const summaries = await projectSummaries(env.DB, today);
+	const [summaries, iconFor] = await Promise.all([projectSummaries(env.DB, today), adminIcons(env.DB)]);
 	const chart = await Promise.all(
-		summaries.map(async (s) => ({ slug: s.project.slug, name: s.project.name, logoPath: logoFor(s.project), monthly: await monthlyVisitors(env.DB, today, s.project.id) })),
+		summaries.map(async (s) => ({ slug: s.project.slug, name: s.project.name, logoPath: iconFor(s.project), monthly: await monthlyVisitors(env.DB, today, s.project.id) })),
 	);
 	const main = summaries.filter((s) => ["live", "building", "paused"].includes(s.project.status));
 	// "Don't count my visits": a one-time link for each site other than this one.
@@ -64,7 +64,7 @@ export default async function AdminHome() {
 				</div>
 				<div className="grid auto-rows-fr gap-4 md:grid-cols-2">
 					{main.map((s) => (
-						<ProjectCard key={s.project.id} summary={s} numbers={lines.get(s.project.id) ?? null} />
+						<ProjectCard key={s.project.id} summary={s} numbers={lines.get(s.project.id) ?? null} logoPath={iconFor(s.project)} />
 					))}
 				</div>
 			</section>
@@ -107,9 +107,9 @@ export default async function AdminHome() {
  * name and a → turn blue, the border darkens, and focus draws an outline round the card. Every card
  * is the same height (CARD_HEIGHT from md up).
  */
-function ProjectCard({ summary: s, numbers }: { summary: ProjectSummary; numbers: string | null }) {
+function ProjectCard({ summary: s, numbers, logoPath }: { summary: ProjectSummary; numbers: string | null; logoPath: string | null }) {
 	const uptime: Status = s.uptime.lastUp === null ? "none" : s.uptime.lastUp ? "good" : "critical";
-	const project = { slug: s.project.slug, name: s.project.name, logoPath: logoFor(s.project) };
+	const project = { slug: s.project.slug, name: s.project.name, logoPath };
 	return (
 		<article
 			data-project-card

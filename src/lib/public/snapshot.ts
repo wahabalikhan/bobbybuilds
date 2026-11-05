@@ -13,6 +13,7 @@
  */
 import { addDays, weekStart } from "@/lib/days";
 import { latestUptime, listMetrics, metricSeries, type Metric } from "@/lib/db/dashboard";
+import { iconPath, listIcons, toBase64 } from "@/lib/db/icons";
 import { getProfile } from "@/lib/db/profile";
 import { firstTrackedDays, listPublicProjects, type ProjectLink, type ProjectStatus } from "@/lib/db/projects";
 import { chartStart, trendFrom, type Trend } from "@/lib/trend";
@@ -24,7 +25,7 @@ import { owner } from "@/lib/site";
 import { fillOutcome, fillTaglineParts, type TaglinePart } from "./product-line";
 
 export const SNAPSHOT_KEY = "public-snapshot";
-export const SNAPSHOT_VERSION = 9;
+export const SNAPSHOT_VERSION = 10;
 
 export type Point = { day: string; value: number };
 export type Month = { month: string; value: number };
@@ -122,6 +123,8 @@ export type PublicSnapshot = {
 	projects: PublicProject[];
 	journey: PublicEntry[];
 	activity: PublicActivity | null;
+	/** Each public project's stored icon (fetched from its own site), by its URL path (/i/<slug>-<hash>.<ext>), served by src/app/i/[file]/route.ts. */
+	icons: Record<string, { contentType: string; base64: string }>;
 };
 
 const sum = (points: { value: number }[]) => points.reduce((t, p) => t + p.value, 0);
@@ -183,7 +186,8 @@ async function publicNumber(db: D1Database, metric: Metric, today: string): Prom
 
 /** Builds the snapshot from the roll-ups and public settings only. */
 export async function buildSnapshot(db: D1Database, today: string, now: number = Date.now()): Promise<PublicSnapshot> {
-	const [projects, metrics, profile, firstTracked, uptime] = await Promise.all([listPublicProjects(db), listMetrics(db), getProfile(db), firstTrackedDays(db), latestUptime(db, now)]);
+	const [projects, metrics, profile, firstTracked, uptime, storedIcons] = await Promise.all([listPublicProjects(db), listMetrics(db), getProfile(db), firstTrackedDays(db), latestUptime(db, now), listIcons(db)]);
+	const icons: PublicSnapshot["icons"] = {};
 	const firstMonthDay = `${months(today)[0]}-01`;
 
 	const publicProjects: PublicProject[] = [];
@@ -209,7 +213,14 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			taglineParts,
 			status: project.status,
 			lesson: project.lesson,
-			logoPath: logoFor(project),
+			// Its own current icon when one has been fetched, else its file in public/logos, else its initial.
+			logoPath: (() => {
+				const icon = storedIcons.get(project.id);
+				if (!icon) return logoFor(project);
+				const path = iconPath(project.slug, icon);
+				icons[path] = { contentType: icon.contentType, base64: toBase64(icon.data) };
+				return path;
+			})(),
 			siteUrl: project.siteUrl,
 			links: project.links,
 			descriptionHtml: renderMarkdown(project.descriptionMd),
@@ -270,6 +281,7 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			excerpt: excerpt(e.body_md),
 		})),
 		activity: profile.showActivity ? await activity(db, today, entries) : null,
+		icons,
 	};
 }
 

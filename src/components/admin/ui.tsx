@@ -159,7 +159,7 @@ export function RawNote({ clipped }: { clipped: boolean }) {
 	return <>From raw data, kept for 90 days{clipped ? ", so this covers the last 90 days of your range" : ""}.</>;
 }
 
-/** The project's logo from public/logos, or its first letter on a dark rounded square. */
+/** The project's icon (its stored copy from its own site, else its file in public/logos), or its first letter on a neutral square. */
 export function ProjectLogo({ name, logoPath, size = 28 }: { name: string; logoPath: string | null; size?: number }) {
 	if (logoPath) {
 		// No container: the logo keeps its own shape (a circle, a rounded square…), fitted inside a
@@ -170,7 +170,8 @@ export function ProjectLogo({ name, logoPath, size = 28 }: { name: string; logoP
 		return <img src={logoPath} alt="" width={size} height={size} className="block shrink-0 object-contain" style={{ width: size, height: size, ...(scale !== 1 && { transform: `scale(${scale})` }) }} />;
 	}
 	return (
-		<span aria-hidden className="inline-flex shrink-0 items-center justify-center rounded-lg bg-ink font-semibold text-page" style={{ width: size, height: size, fontSize: size * 0.48 }}>
+		// No icon: a neutral placeholder with the first letter, never a broken image.
+		<span aria-hidden className="inline-flex shrink-0 items-center justify-center rounded-lg border border-line bg-pill font-semibold text-ink-2" style={{ width: size, height: size, fontSize: size * 0.48 }}>
 			{name.slice(0, 1).toUpperCase()}
 		</span>
 	);

@@ -474,3 +474,17 @@ describe("a project's Started on date", () => {
 		await expectRejected(createProject({ started_on: "31/10/2026" }));
 	});
 });
+
+describe("project icons", () => {
+	it("keeps an icon whole: data, type, hash, kind and source together, an https source and at most 256 KB", async () => {
+		const projectId = await createProject();
+		const good = { project_id: projectId, content_type: "image/png", data: new Uint8Array([1, 2, 3]), hash: "a".repeat(64), kind: "favicon", source_url: "https://a.example/f.png", changed_at: 1, checked_at: 1 };
+		await expectRejected(insert("project_icons", { ...good, hash: null }));
+		await expectRejected(insert("project_icons", { ...good, content_type: "text/html" }));
+		await expectRejected(insert("project_icons", { ...good, source_url: "http://a.example/f.png" }));
+		await expectRejected(insert("project_icons", { ...good, data: new Uint8Array(262145) }));
+		await expect(insert("project_icons", good)).resolves.toBeTruthy();
+		const other = await createProject();
+		await expect(insert("project_icons", { project_id: other, checked_at: 1, last_error: "No usable icon on the site." })).resolves.toBeTruthy();
+	});
+});
