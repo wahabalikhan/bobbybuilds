@@ -10,3 +10,9 @@ export const PAGE = "mx-auto w-full max-w-[900px] px-5 sm:px-6";
  * side by side (md and up), so they all line up. On phones they're stacked and keep their own height.
  */
 export const CARD_HEIGHT = "md:h-[216px]";
+
+/**
+ * The hairline under the public page's section headings (Projects, Honest numbers, Activity,
+ * Journey). Off for now; set to true to bring the lines back. The admin's headings keep theirs.
+ */
+export const PUBLIC_SECTION_DIVIDERS = false;

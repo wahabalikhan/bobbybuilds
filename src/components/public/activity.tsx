@@ -1,6 +1,6 @@
 import { SectionHeading } from "@/components/admin/ui";
 import { formatWhole } from "@/lib/format";
-import { CARD_HEIGHT } from "@/lib/layout";
+import { CARD_HEIGHT, PUBLIC_SECTION_DIVIDERS } from "@/lib/layout";
 import type { PublicActivity } from "@/lib/public/snapshot";
 import { ContributionGrid, MonthBars } from "./mono-charts";
 
@@ -18,7 +18,7 @@ export function Activity({ activity }: { activity: PublicActivity }) {
 	const github = activity.github;
 	return (
 		<section id="activity" aria-labelledby="activity-heading" className="scroll-mt-20">
-			<SectionHeading id="activity-heading" relaxed>
+			<SectionHeading id="activity-heading" relaxed divider={PUBLIC_SECTION_DIVIDERS}>
 				Activity
 			</SectionHeading>
 			<div className="grid gap-3 md:grid-cols-2">

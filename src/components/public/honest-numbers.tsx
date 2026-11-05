@@ -1,4 +1,5 @@
 import { SectionHeading } from "@/components/admin/ui";
+import { PUBLIC_SECTION_DIVIDERS } from "@/lib/layout";
 import { addDays } from "@/lib/days";
 import { formatMonth, formatPence, formatWhole } from "@/lib/format";
 import type { Month, PublicSnapshot } from "@/lib/public/snapshot";
@@ -61,7 +62,7 @@ export function HonestNumbers({ snapshot }: { snapshot: PublicSnapshot }) {
 	const month = money ? formatMonth(money.month) : null;
 	return (
 		<section id="numbers" aria-labelledby="numbers-heading" className="scroll-mt-20">
-			<SectionHeading id="numbers-heading" relaxed>
+			<SectionHeading id="numbers-heading" relaxed divider={PUBLIC_SECTION_DIVIDERS}>
 				The honest numbers
 			</SectionHeading>
 			<dl className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4">
@@ -81,7 +82,7 @@ export function HonestNumbers({ snapshot }: { snapshot: PublicSnapshot }) {
 				)}
 			</dl>
 			{money && money.costs.length > 0 && (
-				<details className="group mt-8 border-t border-line pt-4">
+				<details className="group mt-8">
 					<summary className="inline-flex list-none items-center gap-2 rounded-sm text-sm font-medium text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
 						Where the money goes
 						<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="text-muted transition-transform group-open:rotate-180">

@@ -30,9 +30,10 @@ export function Card({ title, note, children, className = "", action }: { title?
 }
 
 /** "My projects ………… 3": a small heading, a hairline, and something on the right. */
-export function SectionHeading({ id, children, aside, relaxed = false }: { id?: string; children: ReactNode; aside?: ReactNode; relaxed?: boolean }) {
+export function SectionHeading({ id, children, aside, relaxed = false, divider = true }: { id?: string; children: ReactNode; aside?: ReactNode; relaxed?: boolean; divider?: boolean }) {
+	// Without the hairline the heading sits 16px above its content (mb-4), so it still reads as its title.
 	return (
-		<div className={`flex items-baseline justify-between gap-3 border-b border-line ${relaxed ? "mb-4 pb-3" : "mb-4 pb-2"}`}>
+		<div className={`flex items-baseline justify-between gap-3 ${divider ? `border-b border-line ${relaxed ? "mb-4 pb-3" : "mb-4 pb-2"}` : "mb-4"}`}>
 			<h2 id={id} className="text-[15px] font-medium tracking-tight">
 				{children}
 			</h2>

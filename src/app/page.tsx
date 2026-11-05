@@ -10,7 +10,7 @@ import { SiteHeader, SkipLink } from "@/components/public/site-header";
 import { PublicTracker } from "@/components/public/tracker";
 import { getSnapshot } from "@/lib/public/get";
 import { homeTitle, owner } from "@/lib/site";
-import { PAGE } from "@/lib/layout";
+import { PAGE, PUBLIC_SECTION_DIVIDERS } from "@/lib/layout";
 
 // Reads the public snapshot (rebuilt from the roll-ups every 10 minutes) on each request.
 export const dynamic = "force-dynamic";
@@ -22,6 +22,11 @@ export const metadata: Metadata = {
 	description: `${owner.firstName}'s free, honest tools, built in public.`,
 	alternates: { canonical: "/" },
 };
+
+/** The hairline between two sections (Projects, The honest numbers, Activity, The journey), not under the hero. */
+function SectionRule() {
+	return <hr className="border-line" />;
+}
 
 /** Statuses shown on the public page. Ideas and retired projects aren't, for now. */
 const SHOWN = new Set(["live", "building", "paused"]);
@@ -41,15 +46,16 @@ export default async function Home() {
 			<PublicTracker />
 			<SkipLink />
 			<SiteHeader showAfter="projects" />
-			<main id="content" className={`${PAGE} space-y-14 pb-16 pt-[72px] sm:space-y-16 sm:pt-[88px]`}>
-				{/* The hero keeps its own, larger space below (64px, 80px from sm); the other sections are closer. */}
+			<main id="content" className={`${PAGE} space-y-10 pb-16 pt-[72px] sm:space-y-12 sm:pt-[88px]`}>
+				{/* The hero keeps its own, larger space below (64px, 80px from sm). The other sections are 80px
+				    apart (96px from sm), with a hairline halfway between each (SectionRule). */}
 				<div className="mb-16! sm:mb-20!">
 					<Me />
 				</div>
 
 				{projects.length > 0 && (
 					<section id="projects" aria-labelledby="projects-heading" className="scroll-mt-20">
-						<SectionHeading id="projects-heading" aside={projects.length} relaxed>
+						<SectionHeading id="projects-heading" aside={projects.length} relaxed divider={PUBLIC_SECTION_DIVIDERS}>
 							Projects
 						</SectionHeading>
 						<div className="grid auto-rows-fr gap-3 md:grid-cols-2">
@@ -60,15 +66,20 @@ export default async function Home() {
 					</section>
 				)}
 
+				{projects.length > 0 && <SectionRule />}
 				<HonestNumbers snapshot={snapshot} />
 
+				{snapshot.activity && (
+					<>
+						<SectionRule />
+						<Activity activity={snapshot.activity} />
+					</>
+				)}
 
-
-				{snapshot.activity && <Activity activity={snapshot.activity} />}
-
+				{snapshot.journey.length > 0 && <SectionRule />}
 				{snapshot.journey.length > 0 && (
 					<section id="journey" aria-labelledby="journey-heading" className="scroll-mt-20">
-						<SectionHeading id="journey-heading" aside={snapshot.journey.length} relaxed>
+						<SectionHeading id="journey-heading" aside={snapshot.journey.length} relaxed divider={PUBLIC_SECTION_DIVIDERS}>
 							The journey
 						</SectionHeading>
 						<Journey

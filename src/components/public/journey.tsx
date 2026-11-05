@@ -52,7 +52,7 @@ export function Journey({ entries }: { entries: Pick<PublicEntry, "slug" | "type
 					{types.map((t) => chip(t.value, t.label, t.emoji))}
 				</div>
 			)}
-			<ol className="space-y-6 border-l border-line pl-6 sm:pl-8">
+			<ol className="space-y-8 border-l border-line pl-6 sm:space-y-10 sm:pl-8">
 				{visible.map((e) => {
 					const t = journeyType(e.type);
 					return (
@@ -72,13 +72,13 @@ export function Journey({ entries }: { entries: Pick<PublicEntry, "slug" | "type
 									</>
 								)}
 							</p>
-							<h3 className="mt-1 text-lg font-semibold tracking-tight">{e.title}</h3>
+							<h3 className="mt-1.5 text-lg font-semibold tracking-tight">{e.title}</h3>
 							{e.html && (
 								// Safe: renderMarkdown never passes raw HTML through (src/lib/markdown.ts).
-								<div className="prose-bobby mt-1.5 max-w-[65ch] text-ink-2" dangerouslySetInnerHTML={{ __html: e.html }} />
+								<div className="prose-bobby mt-2 max-w-[65ch] text-ink-2" dangerouslySetInnerHTML={{ __html: e.html }} />
 							)}
 							{e.linkUrl && (
-								<a href={e.linkUrl} target="_blank" rel="noopener noreferrer" className="link mt-2 inline-flex items-center gap-1 text-sm">
+								<a href={e.linkUrl} target="_blank" rel="noopener noreferrer" className="link mt-2.5 inline-flex items-center gap-1 text-sm">
 									{domain(e.linkUrl)} <ArrowIcon />
 									<span className="sr-only">(opens in a new tab)</span>
 								</a>
