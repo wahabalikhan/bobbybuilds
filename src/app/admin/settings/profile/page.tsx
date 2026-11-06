@@ -11,9 +11,9 @@ import { formatWhole } from "@/lib/format";
 import { adminHref } from "@/lib/site";
 import { profileAction } from "../actions";
 
-export const metadata: Metadata = { title: "Profile" };
+export const metadata: Metadata = { title: "Public page settings" };
 
-/** The profile bits of the public page: the days building and the Activity switch. ("This week" is now each project's Now, in its Settings.) */
+/** Public page settings (stored as the profile): the days building and the Activity switch. ("This week" is now each project's Now, in its Settings.) */
 export default async function ProfilePage() {
 	const { env } = await getCloudflareContext({ async: true });
 	const profile = await getProfile(env.DB);
@@ -22,8 +22,8 @@ export default async function ProfilePage() {
 	return (
 		<div className="max-w-2xl space-y-6">
 			<div className="space-y-3">
-				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Profile" }]} />
-				<h1 className="text-2xl font-bold tracking-tight">Profile</h1>
+				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Public page settings" }]} />
+				<h1 className="text-2xl font-bold tracking-tight">Public page settings</h1>
 			</div>
 			<SettingsForm action={profileAction}>
 				<div className="sm:w-56">

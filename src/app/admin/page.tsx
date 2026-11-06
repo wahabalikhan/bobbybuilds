@@ -2,14 +2,15 @@ import Link from "next/link";
 import { StatusDot } from "@/components/status-dot";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { CountMyVisits } from "@/components/admin/count-my-visits";
-import { Delta, ProjectLogo } from "@/components/admin/ui";
-import { StatusBadge, type Status } from "@/components/charts";
+import { Delta, ProjectLogo, quietButtonClass } from "@/components/admin/ui";
+import { StatusStrip } from "@/components/admin/status-menu";
 import { ArrowRightIcon } from "@/components/public/icons";
 import { WeekChart } from "@/components/public/mono-charts";
 import { HeadlineCard } from "@/components/public/headline-card";
 import { requestTime } from "@/lib/admin/clock";
 import { utcDay } from "@/lib/days";
-import { monthlyVisitors, projectSummaries, publicProductNumbers, type ProjectSummary } from "@/lib/db/dashboard";
+import { attentionItems, listMetrics, monthlyVisitors, projectSummaries, publicProductNumbers, type ProjectSummary } from "@/lib/db/dashboard";
+import { listPublicProjects } from "@/lib/db/projects";
 import { listMonth } from "@/lib/db/money";
 import { getProfile } from "@/lib/db/profile";
 import { listJourney } from "@/lib/db/settings";
@@ -20,13 +21,20 @@ import { CARD_HEIGHT } from "@/lib/layout";
 import { trackingNote } from "@/lib/trend";
 import { adminHref, site } from "@/lib/site";
 
-/** Home: the visitors chart, then the projects. Whether everything's OK is the pill in the top bar. */
+/**
+ * Home, top to bottom: the status (one line, or the problems listed open), my projects, visitors in
+ * 12 months (public projects only, so it matches the public total), my public page, and this browser.
+ */
 export default async function AdminHome() {
 	const { env } = await getCloudflareContext({ async: true });
-	const today = utcDay(requestTime());
-	const [summaries, iconFor] = await Promise.all([projectSummaries(env.DB, today), adminIcons(env.DB)]);
+	const now = requestTime();
+	const today = utcDay(now);
+	const [summaries, iconFor, attention, publicProjects, metrics] = await Promise.all([projectSummaries(env.DB, today), adminIcons(env.DB), attentionItems(env.DB, now), listPublicProjects(env.DB), listMetrics(env.DB)]);
+	// The same projects as the public total: on the public page, with their visitors public.
+	const publicIds = new Set(publicProjects.map((p) => p.id));
+	const counted = summaries.filter((s) => publicIds.has(s.project.id) && metrics.some((m) => m.projectId === s.project.id && m.source === "collector" && m.key === "visitors" && m.isPublic));
 	const chart = await Promise.all(
-		summaries.map(async (s) => ({ slug: s.project.slug, name: s.project.name, logoPath: iconFor(s.project), monthly: await monthlyVisitors(env.DB, today, s.project.id) })),
+		counted.map(async (s) => ({ slug: s.project.slug, name: s.project.name, logoPath: iconFor(s.project), monthly: await monthlyVisitors(env.DB, today, s.project.id) })),
 	);
 	const main = summaries.filter((s) => ["live", "building", "paused"].includes(s.project.status));
 	// "Don't count my visits": a one-time link for each site other than this one.
@@ -38,7 +46,7 @@ export default async function AdminHome() {
 	const published = journey.filter((e) => e.isPublished).length;
 	const sum = (kind: "cost" | "revenue") => money.filter((r) => r.kind === kind).reduce((t, r) => t + r.amountPence, 0);
 	const publicPage = [
-		{ href: adminHref("/settings/profile"), label: "Profile", detail: [profile.buildingSince ? `building since ${profile.buildingSince}` : "no start date yet", profile.showActivity ? "Activity shown" : "Activity hidden"].join(" · ") },
+		{ href: adminHref("/settings/profile"), label: "Public page settings", detail: [profile.buildingSince ? `building since ${profile.buildingSince}` : "no start date yet", profile.showActivity ? "Activity shown" : "Activity hidden"].join(" · ") },
 		{ href: adminHref("/settings/journey"), label: "Journey", detail: journey.length ? `${published} published${journey.length > published ? `, ${journey.length - published} draft${journey.length - published === 1 ? "" : "s"}` : ""}` : "No entries yet" },
 		{ href: adminHref("/settings/money"), label: "Costs and revenue", detail: `${formatMonth(today.slice(0, 7))}: costs ${formatPence(sum("cost"))} · revenue ${formatPence(sum("revenue"))}` },
 	];
@@ -46,20 +54,15 @@ export default async function AdminHome() {
 
 	return (
 		<div className="space-y-10">
-			{chart.length > 0 && <HeadlineCard projects={chart} />}
+			<StatusStrip items={attention} />
 
 			<section aria-labelledby="projects-heading">
 				<div className="mb-6 flex items-center justify-between gap-3 border-b border-line pb-3.5">
 					<h2 id="projects-heading" className="text-[15px] font-medium tracking-tight">
 						My projects <span className="font-normal text-muted">({main.length})</span>
 					</h2>
-					<Link
-						href={adminHref("/projects/new")}
-						aria-label="New project"
-						title="New project"
-						className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-line text-lg leading-none text-ink hover:bg-pill"
-					>
-						<span aria-hidden>+</span>
+					<Link href={adminHref("/projects/new")} aria-label="New project" className={quietButtonClass}>
+						<span aria-hidden>+</span> New project
 					</Link>
 				</div>
 				<div className="grid auto-rows-fr gap-4 md:grid-cols-2">
@@ -68,6 +71,13 @@ export default async function AdminHome() {
 					))}
 				</div>
 			</section>
+
+			{chart.length > 0 && (
+				<section aria-label="Visitors in 12 months" className="space-y-2">
+					<HeadlineCard projects={chart} />
+					<p className="text-xs text-muted">Only projects shown on your public page, so it matches the public total.</p>
+				</section>
+			)}
 
 			<section aria-labelledby="public-page-heading">
 				<h2 id="public-page-heading" className="mb-4 border-b border-line pb-3.5 text-[15px] font-medium tracking-tight">
@@ -90,11 +100,10 @@ export default async function AdminHome() {
 				</ul>
 			</section>
 
-			<CountMyVisits sites={otherSites} />
-
-			<p className="text-xs text-muted">
-				Detailed records are deleted after 90 days. Daily totals are kept. No cookies, and no IP addresses, names or emails are stored.
-			</p>
+			<div className="space-y-3">
+				<CountMyVisits sites={otherSites} />
+				<p className="text-xs text-muted">Detailed records are deleted after 90 days. Daily totals are kept. No cookies, and no IP addresses, names or emails are stored.</p>
+			</div>
 		</div>
 	);
 }
@@ -108,7 +117,6 @@ export default async function AdminHome() {
  * is the same height (CARD_HEIGHT from md up).
  */
 function ProjectCard({ summary: s, numbers, logoPath }: { summary: ProjectSummary; numbers: string | null; logoPath: string | null }) {
-	const uptime: Status = s.uptime.lastUp === null ? "none" : s.uptime.lastUp ? "good" : "critical";
 	const project = { slug: s.project.slug, name: s.project.name, logoPath };
 	return (
 		<article
@@ -129,7 +137,10 @@ function ProjectCard({ summary: s, numbers, logoPath }: { summary: ProjectSummar
 				</div>
 				<span className="flex shrink-0 items-center gap-3">
 					{!s.project.showPublic && <span className="text-xs text-muted">{s.project.showOnFirstVisit ? "Hidden until its first visit" : "Hidden from public page"}</span>}
-					<StatusDot status={s.project.status} up={s.uptime.lastUp} />
+					{/* Uptime is folded into the dot ("Down" when the latest check failed), with the last 7 days on hover. */}
+					<span title={s.uptime.lastUp === null ? "Uptime not checked yet" : s.uptime.uptime7 === null ? undefined : `Up ${formatPercent(s.uptime.uptime7, 2)} over the last 7 days`}>
+						<StatusDot status={s.project.status} up={s.uptime.lastUp} />
+					</span>
 				</span>
 			</div>
 			{/* One line, so every card is the same height: the public numbers follow the visitors and are cut with "…" if there's no room (full text on hover). */}
@@ -157,9 +168,6 @@ function ProjectCard({ summary: s, numbers, logoPath }: { summary: ProjectSummar
 					weeks={s.trend.points}
 					label={`${project.name}: visitors per ${s.trend.period} since ${formatDay(s.trend.points[0]?.day ?? "", true)}, ${formatCount(s.trend.points.reduce((t, w) => t + w.value, 0))} in total. ${s.trend.period === "day" ? "Today" : "This week"} so far is dashed.`}
 				/>
-			</div>
-			<div className="mt-4 text-xs text-muted [&_span]:text-xs" title={s.uptime.uptime7 === null ? undefined : `${formatPercent(s.uptime.uptime7, 2)} up over 7 days`}>
-				<StatusBadge status={uptime} label={s.uptime.lastUp === null ? "Uptime not checked yet" : s.uptime.lastUp ? "Up" : "Down"} />
 			</div>
 		</article>
 	);

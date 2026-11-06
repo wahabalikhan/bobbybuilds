@@ -3,6 +3,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { CopyButton } from "@/components/admin/copy-button";
 import { CheckboxField, FieldError, Hidden, SelectField, SettingsForm, TextArea, TextField } from "@/components/admin/form";
 import { Switch } from "@/components/admin/switch";
+import { TaglineFields } from "@/components/admin/tagline-fields";
 import { Pill, ProjectLogo } from "@/components/admin/ui";
 import { adminIcons } from "@/lib/admin/icons";
 import { getIconMeta } from "@/lib/db/icons";
@@ -14,20 +15,20 @@ import { formatTime, formatWhole, timeAgo } from "@/lib/format";
 import { parseFunnel } from "@/lib/db/funnel";
 import type { Project } from "@/lib/db/projects";
 import { site } from "@/lib/site";
-import { addMetricAction, deleteMetricAction, deleteProjectAction, eventsAction, funnelAction, keysAction, originsAction, refreshIconAction, saveDetailsAction, visibilityAction } from "../../settings/actions";
+import { addMetricAction, deleteMetricAction, deleteProjectAction, eventsAction, funnelAction, keysAction, originsAction, publicPageAction, refreshIconAction, saveDetailsAction } from "../../settings/actions";
 
 /**
- * A project's settings, one scrolling page: About this project, On your public page, Connection
- * (closed by default), and Delete this project at the very bottom.
+ * A project's settings, one scrolling page: About, On the public page, "Advanced: connecting the
+ * site" (closed), and the Danger zone at the very bottom.
  */
 export async function ProjectSettingsTab({ project }: { project: Project }) {
 	// Read here, not passed in: in dev, React can't serialise the D1 binding as a prop.
 	const { env } = await getCloudflareContext({ async: true });
 	const db = env.DB;
-	const [metrics, numbers] = await Promise.all([listMetrics(db, project.id), outcomeNumbers(db, project.id, utcDay(requestTime()))]);
+	const [metrics, numbers, iconMeta] = await Promise.all([listMetrics(db, project.id), outcomeNumbers(db, project.id, utcDay(requestTime())), getIconMeta(db, project.id)]);
 	return (
 		<div className="max-w-3xl space-y-10">
-			<Section title="About this project">
+			<Section title="About">
 				<SettingsForm action={saveDetailsAction}>
 					<Hidden name="project_id" value={project.id} />
 					<div className="grid gap-4 sm:grid-cols-2">
@@ -45,41 +46,22 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 							]}
 						/>
 					</div>
-					<TextField
-						name="tagline"
-						label="Tagline"
-						defaultValue={project.tagline}
-						maxLength={120}
-						hint="Shown on your public page, up to two lines. Public product numbers can go in it, like {open_jobs}, filled in with the latest value."
-					/>
-					<TextField
-						name="tagline_fallback"
-						label="Fallback tagline"
-						defaultValue={project.taglineFallback}
-						maxLength={120}
-						hint="Used when a number in the tagline can't be shown (it's private or over a week old)."
-					/>
-					<Outcomes project={project} numbers={numbers} />
 					<TextField type="url" name="site_url" label="Site address" defaultValue={project.siteUrl ?? ""} placeholder="https://" hint="Where the public card links to. It's checked every 5 minutes to see if it's up." />
-					<div className="grid gap-4 sm:grid-cols-[10rem_14rem]">
-						<TextField type="number" name="sort_order" label="Order" defaultValue={String(project.sortOrder)} hint="Position in lists. 1 is first." />
+					<div className="grid gap-4 sm:grid-cols-[14rem_10rem]">
 						<TextField type="date" name="started_on" label="Live since" defaultValue={project.startedOn ?? ""} hint="The day it went live. Its charts start here (or when tracking started, if that's later)." />
+						<TextField type="number" name="sort_order" label="Order" defaultValue={String(project.sortOrder)} hint="Position in lists. 1 is first." />
 					</div>
 				</SettingsForm>
 			</Section>
 
-			<Section title="Icon">
-				<IconBlock project={project} db={db} />
+			<Section title="On the public page">
+				<PublicPage project={project} metrics={metrics} numbers={numbers} />
 			</Section>
 
-			<Section title="On your public page">
-				<PublicSwitches project={project} metrics={metrics} />
-			</Section>
-
-			<details className="group rounded-2xl border border-line bg-card">
+			<details id="advanced" open={Boolean(iconMeta?.lastError)} className="group rounded-2xl border border-line bg-card">
 				<summary className="flex list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
 					<span>
-						<span className="font-medium">Connection</span>
+						<span className="font-medium">Advanced: connecting the site</span>
 						<span className="block text-sm text-muted">Tracking code and the technical setup. You&rsquo;ll rarely need this.</span>
 					</span>
 					<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="shrink-0 text-muted transition-transform group-open:rotate-180">
@@ -87,22 +69,14 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 					</svg>
 				</summary>
 				<div className="space-y-8 border-t border-line p-5">
-					<Connection project={project} metrics={metrics} />
+					<Advanced project={project} />
+					<Sub title="Icon">
+						<IconBlock project={project} db={db} />
+					</Sub>
 				</div>
 			</details>
 
-			<section aria-labelledby="delete-heading" className="mt-16 border-t-2 border-[color-mix(in_srgb,var(--critical)_35%,transparent)] pt-8">
-				<h2 id="delete-heading" className="text-[15px] font-medium tracking-tight text-critical-ink">
-					Delete this project
-				</h2>
-				<p className="mb-4 mt-1 text-sm text-ink-2">
-					Deletes the project and everything recorded for it. Journey entries stay. This can&rsquo;t be undone.
-				</p>
-				<SettingsForm action={deleteProjectAction} submitLabel="Delete project for good" danger>
-					<Hidden name="project_id" value={project.id} />
-					<TextField name="confirm_slug" label={`Type ${project.slug} to confirm`} />
-				</SettingsForm>
-			</section>
+			<DangerZone project={project} metrics={metrics} />
 		</div>
 	);
 }
@@ -150,8 +124,49 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /**
+ * One form, saved together (publicPageAction): Show on my public page; the tagline (its fallback
+ * only while it uses {numbers}); the switches for the numbers it can use, next to it; Show
+ * visitors; and the extra lines for the chart's hover card.
+ */
+function PublicPage({ project, metrics, numbers }: { project: Project; metrics: Metric[]; numbers: Awaited<ReturnType<typeof outcomeNumbers>> }) {
+	const visitors = metrics.find((m) => m.source === "collector" && m.key === "visitors");
+	const products = metrics.filter((m) => m.source === "product");
+	return (
+		<SettingsForm action={publicPageAction}>
+			<Hidden name="project_id" value={project.id} />
+			<div className="rounded-2xl border border-line">
+				<Switch
+					id="show_public"
+					name="show_public"
+					label="Show on my public page"
+					hint={project.showOnFirstVisit ? "Hidden from your public page until its first visit. You can show it any time." : "Its card and its visitors. Turning it off only hides it from the public."}
+					checked={project.showPublic}
+				/>
+			</div>
+			<TaglineFields tagline={project.tagline} fallback={project.taglineFallback} />
+			{products.length > 0 && (
+				<div>
+					<p className="text-sm font-medium">Numbers the tagline can use</p>
+					<div className="mt-1.5 divide-y divide-line rounded-2xl border border-line">
+						{products.map((m) => (
+							<Switch key={m.id} id={`public_${m.id}`} name={`public_${m.id}`} label={m.label} hint={`Lets the tagline and extra lines use {${m.key}}. Hidden if it's over a week old.`} checked={m.isPublic} />
+						))}
+					</div>
+				</div>
+			)}
+			{visitors && (
+				<div className="rounded-2xl border border-line">
+					<Switch id={`public_${visitors.id}`} name={`public_${visitors.id}`} label="Show visitors" hint="Its chart on the card, and in the public visitor totals." checked={visitors.isPublic} />
+				</div>
+			)}
+			<Outcomes project={project} numbers={numbers} />
+		</SettingsForm>
+	);
+}
+
+/**
  * Up to 3 extra lines for the card chart's hover card, each with a live number in {braces}, under
- * the tagline (saved with About this project). Closed while there are none.
+ * the tagline (saved with On the public page). Closed while there are none.
  */
 function Outcomes({ project, numbers }: { project: Project; numbers: Awaited<ReturnType<typeof outcomeNumbers>> }) {
 	return (
@@ -190,33 +205,6 @@ function Outcomes({ project, numbers }: { project: Project; numbers: Awaited<Ret
 	);
 }
 
-/**
- * "Show on my public page" (the project at all), then "Show visitors" (the public chart and
- * sparkline) and a switch for each product number (the card's line).
- */
-function PublicSwitches({ project, metrics }: { project: Project; metrics: Metric[] }) {
-	const visitors = metrics.find((m) => m.source === "collector" && m.key === "visitors");
-	const products = metrics.filter((m) => m.source === "product");
-	return (
-		<SettingsForm action={visibilityAction} submitLabel="Save">
-			<Hidden name="project_id" value={project.id} />
-			<div className="divide-y divide-line rounded-2xl border border-line">
-				<Switch
-					id="show_public"
-					name="show_public"
-					label="Show on my public page"
-					hint={project.showOnFirstVisit ? "Hidden from your public page until its first visit. You can show it any time." : "Its card and its visitors. Turning it off only hides it from the public."}
-					checked={project.showPublic}
-				/>
-				{visitors && <Switch id={`public_${visitors.id}`} name={`public_${visitors.id}`} label="Show visitors" hint="Its chart on the card, and in the public visitor totals." checked={visitors.isPublic} />}
-				{products.map((m) => (
-					<Switch key={m.id} id={`public_${m.id}`} name={`public_${m.id}`} label={m.label} hint={`Lets the tagline and extra lines use {${m.key}}. Hidden if it's over a week old.`} checked={m.isPublic} />
-				))}
-			</div>
-		</SettingsForm>
-	);
-}
-
 function Sub({ title, children }: { title: string; children: ReactNode }) {
 	return (
 		<div className="space-y-3">
@@ -226,10 +214,10 @@ function Sub({ title, children }: { title: string; children: ReactNode }) {
 	);
 }
 
-function Connection({ project, metrics }: { project: Project; metrics: Metric[] }) {
+/** "Advanced: connecting the site": the tracking code, the sites allowed to send visits, the actions it sends, funnel steps and adding a number. */
+function Advanced({ project }: { project: Project }) {
 	const snippet = project.publicKey ? `<script defer src="${site.url}/t.js" data-key="${project.publicKey}"></script>` : null;
 	const steps = parseFunnel(project.funnel);
-	const products = metrics.filter((m) => m.source === "product");
 	return (
 		<>
 			<Sub title="Tracking code">
@@ -242,9 +230,18 @@ function Connection({ project, metrics }: { project: Project; metrics: Metric[] 
 						</p>
 					</>
 				) : (
-					<p className="text-sm text-muted">No tracking code yet. Make one under Secret key below.</p>
+					<p className="text-sm text-muted">No tracking code yet. Make it under Secret key below.</p>
 				)}
 			</Sub>
+
+			{!project.secretKeyHint && (
+				<Sub title="Secret key">
+					<p className="text-sm text-ink-2">Makes the tracking code if it&rsquo;s missing, and a secret key for the product&rsquo;s server (shown once only).</p>
+					<SettingsForm action={keysAction} submitLabel={project.publicKey ? "Make a secret key" : "Make the keys"}>
+						<Hidden name="project_id" value={project.id} />
+					</SettingsForm>
+				</Sub>
+			)}
 
 			<Sub title="Sites allowed to send visits">
 				<SettingsForm action={originsAction}>
@@ -291,27 +288,6 @@ function Connection({ project, metrics }: { project: Project; metrics: Metric[] 
 				</SettingsForm>
 			</Sub>
 
-			<Sub title="Secret key">
-				<p className="text-sm text-ink-2">
-					{project.secretKeyHint ? (
-						<>
-							Lets the product&rsquo;s server send numbers. The current one ends in <Pill>…{project.secretKeyHint}</Pill>. A new one is shown once only.
-						</>
-					) : (
-						"Makes the tracking code, and a secret key for the product's server (shown once only)."
-					)}
-				</p>
-				<SettingsForm action={keysAction} submitLabel={project.secretKeyHint ? "Replace secret key" : "Create keys"} danger={Boolean(project.secretKeyHint)}>
-					<Hidden name="project_id" value={project.id} />
-					{project.secretKeyHint && (
-						<>
-							<CheckboxField name="confirm_rotate" label="I understand the old secret key stops working straight away." />
-							<FieldError name="confirm_rotate" />
-						</>
-					)}
-				</SettingsForm>
-			</Sub>
-
 			<Sub title="Add a product number">
 				<p className="text-sm text-ink-2">{project.name}&rsquo;s server sends this number each day. It&rsquo;s private until you switch it on.</p>
 				<SettingsForm action={addMetricAction} submitLabel="Add number">
@@ -322,20 +298,54 @@ function Connection({ project, metrics }: { project: Project; metrics: Metric[] 
 						<TextField name="key" label="Code name" maxLength={40} hint="Made from the label if left blank." />
 					</div>
 				</SettingsForm>
-				{products.length > 0 && (
-					<details className="rounded-2xl border border-line p-4">
-						<summary className="text-sm font-medium">Remove a product number</summary>
-						<div className="mt-4">
-							<SettingsForm action={deleteMetricAction} submitLabel="Remove number" danger>
-								<Hidden name="project_id" value={project.id} />
-								<SelectField name="metric_id" label="Number" options={products.map((m) => ({ value: String(m.id), label: `${m.label} (${m.key})` }))} />
-								<p className="text-sm text-critical-ink">If the product still sends this number, its other numbers will stop updating too.</p>
-								<CheckboxField name="confirm" label="Remove it and its history." />
-							</SettingsForm>
-						</div>
-					</details>
-				)}
 			</Sub>
 		</>
+	);
+}
+
+/**
+ * The Danger zone, at the very bottom and visibly separate: replace the secret key, remove a
+ * number and delete the project, each with what it does in one plain line and its own check.
+ */
+function DangerZone({ project, metrics }: { project: Project; metrics: Metric[] }) {
+	const products = metrics.filter((m) => m.source === "product");
+	return (
+		<section aria-labelledby="danger-heading" className="mt-16 space-y-8 border-t-2 border-[color-mix(in_srgb,var(--critical)_35%,transparent)] pt-8">
+			<h2 id="danger-heading" className="text-[15px] font-medium tracking-tight text-critical-ink">
+				Danger zone
+			</h2>
+
+			{project.secretKeyHint && (
+				<Sub title="Replace the secret key">
+					<p className="text-sm text-ink-2">
+						The current one ends in <Pill>…{project.secretKeyHint}</Pill>. It stops working straight away, so {project.name}&rsquo;s server can&rsquo;t send numbers until you give it the new one (shown once only).
+					</p>
+					<SettingsForm action={keysAction} submitLabel="Replace secret key" danger>
+						<Hidden name="project_id" value={project.id} />
+						<CheckboxField name="confirm_rotate" label="I understand the old secret key stops working straight away." />
+						<FieldError name="confirm_rotate" />
+					</SettingsForm>
+				</Sub>
+			)}
+
+			{products.length > 0 && (
+				<Sub title="Remove a number">
+					<p className="text-sm text-ink-2">Its history is deleted. If the product still sends this number, its other numbers will stop updating too.</p>
+					<SettingsForm action={deleteMetricAction} submitLabel="Remove number" danger>
+						<Hidden name="project_id" value={project.id} />
+						<SelectField name="metric_id" label="Number" options={products.map((m) => ({ value: String(m.id), label: `${m.label} (${m.key})` }))} />
+						<CheckboxField name="confirm" label="Remove it and its history." />
+					</SettingsForm>
+				</Sub>
+			)}
+
+			<Sub title="Delete this project">
+				<p className="text-sm text-ink-2">Deletes the project and everything recorded for it. Journey entries stay. This can&rsquo;t be undone.</p>
+				<SettingsForm action={deleteProjectAction} submitLabel="Delete project for good" danger>
+					<Hidden name="project_id" value={project.id} />
+					<TextField name="confirm_slug" label={`Type ${project.slug} to confirm`} />
+				</SettingsForm>
+			</Sub>
+		</section>
 	);
 }

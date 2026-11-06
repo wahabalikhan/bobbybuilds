@@ -65,9 +65,17 @@ const missing = (prev: FormState): ActionResult => ({ state: { status: "error", 
 export async function saveDetailsCore(db: D1Database, prev: FormState, values: FormValues, ctx: Context): Promise<ActionResult> {
 	const project = await projectFrom(db, values);
 	if (!project) return missing(prev);
-	// Fields "About this project" doesn't show keep their saved values (slug, description, lesson,
-	// links, logo, health address, GitHub repo), so saving never wipes or renames them.
+	// Fields a form doesn't send keep their saved values, so saving never wipes or renames them:
+	// About sends name, status, site address, order and live date; On the public page sends the
+	// tagline, its fallback and the extra lines; neither sends the slug, description, lesson,
+	// links, logo, health address or GitHub repo.
 	const kept: FormValues = {
+		name: project.name,
+		status: project.status,
+		site_url: project.siteUrl ?? "",
+		started_on: project.startedOn ?? "",
+		tagline: project.tagline,
+		tagline_fallback: project.taglineFallback,
 		slug: project.slug,
 		description_md: project.descriptionMd,
 		lesson: project.lesson ?? "",
@@ -237,6 +245,30 @@ export async function visibilityCore(db: D1Database, prev: FormState, values: Fo
 	await setShowPublic(db, project.id, values.show_public === "on");
 	const notes = headline && !publicIds.includes(headline) ? ["The headline number is shown on the public card, so it was made public too."] : [];
 	return { state: ok(prev, values.show_public === "on" ? "Saved." : `Saved. ${project.name} isn't on your public page.`, notes) };
+}
+
+/**
+ * "On the public page", one form: the tagline, its fallback and the extra lines (checked and saved
+ * like About this project), then Show on my public page, Show visitors and the number switches.
+ * Nothing is saved if the tagline or a line has a problem. The notes say which {numbers} in them
+ * aren't public, as the switches now stand.
+ */
+export async function publicPageCore(db: D1Database, prev: FormState, values: FormValues, ctx: Context): Promise<ActionResult> {
+	const project = await projectFrom(db, values);
+	if (!project) return missing(prev);
+	const textValues = Object.fromEntries(Object.entries(values).filter(([key]) => key === "project_id" || key === "tagline" || key === "tagline_fallback" || /^outcome_\d+$/.test(key)));
+	const text = await saveDetailsCore(db, prev, textValues, ctx);
+	if (text.state.status !== "ok") return { state: { ...text.state, values } };
+	const visibility = await visibilityCore(db, prev, values);
+	const saved = (await listProjects(db)).find((p) => p.id === project.id)!;
+	const metrics = await listMetrics(db, project.id);
+	const isPublic = (key: string) => metrics.find((m) => m.key === key)?.isPublic ?? false;
+	const notes = [...(visibility.state.notes ?? [])];
+	const taglineKey = taglineKeys(saved.tagline).find((key) => !isPublic(key));
+	if (taglineKey) notes.push(`{${taglineKey}} isn't public, so your public page shows the fallback tagline until you switch it on.`);
+	const lineKey = saved.outcomes.flatMap(taglineKeys).find((key) => !isPublic(key));
+	if (lineKey) notes.push(`{${lineKey}} isn't public, so extra lines using it are left out until you switch it on.`);
+	return { state: ok(prev, visibility.state.message ?? "Saved.", notes) };
 }
 
 export async function addMetricCore(db: D1Database, prev: FormState, values: FormValues): Promise<ActionResult> {

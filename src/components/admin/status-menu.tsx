@@ -64,3 +64,41 @@ export function StatusMenu({ items }: { items: Attention[] }) {
 		</details>
 	);
 }
+
+/**
+ * Home's status, at the top of the page: one clear line when everything's running normally, or
+ * the list of problems shown open (each linking to its project). The top bar's pill stays too.
+ */
+export function StatusStrip({ items }: { items: Attention[] }) {
+	const tone = statusTone(items);
+	if (items.length === 0) {
+		return (
+			<p role="status" className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium ${TONE[tone]}`}>
+				<span aria-hidden>●</span> {statusText(items)}
+			</p>
+		);
+	}
+	return (
+		<section aria-labelledby="status-heading" className={`rounded-2xl px-4 py-3 ${TONE[tone]}`}>
+			<h2 id="status-heading" className="flex items-center gap-2 text-sm font-medium">
+				<span aria-hidden>●</span> {statusText(items)}
+			</h2>
+			<ul className="mt-2 space-y-2">
+				{items.map((item, i) => (
+					<li key={i} className="flex items-start gap-2 text-sm text-ink">
+						<span className="shrink-0">
+							<StatusBadge status={item.level as Status} label={LABEL[item.level]} />
+						</span>
+						{item.projectSlug ? (
+							<Link className="underline decoration-line underline-offset-4 hover:decoration-ink" href={adminHref(`/projects/${item.projectSlug}`)}>
+								{item.message}
+							</Link>
+						) : (
+							<span>{item.message}</span>
+						)}
+					</li>
+				))}
+			</ul>
+		</section>
+	);
+}

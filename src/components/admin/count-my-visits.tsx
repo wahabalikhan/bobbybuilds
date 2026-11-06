@@ -44,12 +44,12 @@ export function CountMyVisits({ sites }: { sites: { name: string; origin: string
 	return (
 		<section aria-labelledby="count-heading" className="space-y-4">
 			<h2 id="count-heading" className="border-b border-line pb-3.5 text-[15px] font-medium tracking-tight">
-				Don&rsquo;t count my visits
+				This browser
 			</h2>
 			<div className="divide-y divide-line rounded-2xl border border-line bg-card">
 				<div className="flex items-start justify-between gap-4 px-5 py-4">
 					<span className="text-sm" id="count-label">
-						<span className="font-medium">Ignore this browser on {host || "this site"}</span>
+						<span className="font-medium">Don&rsquo;t count my visits on {host || "this site"}</span>
 						<span className="block text-muted">
 							{ignored === null
 								? "This browser won't let us remember this setting."

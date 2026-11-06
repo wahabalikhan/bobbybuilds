@@ -119,7 +119,7 @@ export function Tabs({ tabs, current, hrefFor }: { tabs: { key: string; label: s
 	);
 }
 
-/** Preset range pills plus a custom range form (plain GET, no JavaScript needed). */
+/** Preset range pills, then "Custom…", which opens the From/To dates (plain GET, no JavaScript needed; open while a custom range is shown). */
 export function RangePicker({ range, hrefFor, hidden = {} }: { range: DateRange; hrefFor: (params: Record<string, string>) => string; hidden?: Record<string, string> }) {
 	return (
 		<div className="flex flex-wrap items-center gap-2">
@@ -135,18 +135,26 @@ export function RangePicker({ range, hrefFor, hidden = {} }: { range: DateRange;
 					</Link>
 				))}
 			</div>
-			<form method="get" className="flex items-center gap-1 text-sm">
-				{Object.entries(hidden).map(([name, value]) => (
-					<input key={name} type="hidden" name={name} value={value} />
-				))}
-				<input type="hidden" name="range" value="custom" />
-				<label className="sr-only" htmlFor="range-from">From</label>
-				<input id="range-from" type="date" name="from" defaultValue={range.from} className="rounded-full border border-line bg-card px-3 py-1" />
-				<span className="text-muted">to</span>
-				<label className="sr-only" htmlFor="range-to">To</label>
-				<input id="range-to" type="date" name="to" defaultValue={range.to} className="rounded-full border border-line bg-card px-3 py-1" />
-				<button className={quietButtonClass}>Apply</button>
-			</form>
+			<details open={range.key === "custom"}>
+				<summary
+					aria-current={range.key === "custom" ? "true" : undefined}
+					className={`list-none rounded-full px-3 py-1 text-sm [&::-webkit-details-marker]:hidden ${range.key === "custom" ? "bg-ink font-medium text-page" : "text-ink-2 hover:text-ink"}`}
+				>
+					Custom…
+				</summary>
+				<form method="get" className="mt-2 flex items-center gap-1 text-sm">
+					{Object.entries(hidden).map(([name, value]) => (
+						<input key={name} type="hidden" name={name} value={value} />
+					))}
+					<input type="hidden" name="range" value="custom" />
+					<label className="sr-only" htmlFor="range-from">From</label>
+					<input id="range-from" type="date" name="from" defaultValue={range.from} className="rounded-full border border-line bg-card px-3 py-1" />
+					<span className="text-muted">to</span>
+					<label className="sr-only" htmlFor="range-to">To</label>
+					<input id="range-to" type="date" name="to" defaultValue={range.to} className="rounded-full border border-line bg-card px-3 py-1" />
+					<button className={quietButtonClass}>Apply</button>
+				</form>
+			</details>
 		</div>
 	);
 }

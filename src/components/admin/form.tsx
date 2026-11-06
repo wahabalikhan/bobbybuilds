@@ -96,6 +96,11 @@ function SecretOnce({ secret }: { secret: string }) {
 	);
 }
 
+/** A field's error and current value (what was typed, after a failed save), for custom fields. */
+export function useFieldState(name: string, defaultValue: string | undefined) {
+	return useField(name, defaultValue);
+}
+
 function useField(name: string, defaultValue: string | undefined) {
 	const state = useContext(StateContext);
 	const error = state.errors?.[name];

@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CopyButton } from "@/components/admin/copy-button";
 import { buttonClass, Card, Delta, Empty, quietButtonClass, RangePicker } from "@/components/admin/ui";
-import { FunnelChart, RankedList, StatusBadge, UptimeStrip, type Status } from "@/components/charts";
+import { RankedList, StatusBadge, UptimeStrip, type Status } from "@/components/charts";
 import { clampToRaw, type DateRange } from "@/lib/admin/range";
 import { sourceName } from "@/lib/admin/sources";
 import { addDays } from "@/lib/days";
@@ -41,13 +41,15 @@ export type OverviewProps = {
 	hrefFor: (changes: Record<string, string>) => string;
 };
 
-/** Query values that mean "More detail" was being used, so it opens again after the page reloads. */
-const DETAIL_PARAMS = ["build", "name", "source", "page"];
+/** Query values that mean "Advanced" (the events table) was being used, so it opens again after the page reloads. */
+const ADVANCED_PARAMS = ["name", "source", "page"];
 
 /**
- * A project at a glance, one scrolling page: visitors, top pages and sources, tracked links,
- * searches, the funnel and health, each only when there's something to show. Everything else
- * is in "More detail", closed by default.
+ * A project at a glance, one scrolling page, top to bottom: visitors; top pages and sources (each
+ * with "See all"); Searches (projects that send them, like Tech Jobs: counts and search health on
+ * one line, top searches, found nothing, and companies waiting for review); tracked links, with
+ * "Make a link"; the funnel as one line; uptime as one line. Then "All the detail" and "Advanced",
+ * both closed.
  */
 export async function Overview({ project, range, today, now, query, hrefFor }: OverviewProps) {
 	// The database is read here rather than passed in: in dev, React tries to serialise a
@@ -61,8 +63,8 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 		rangeTotals(db, project.id, range.from, range.to),
 		rangeTotals(db, project.id, range.previousFrom, range.previousTo),
 		dailySeries(db, project.id, "visitors", range.from, range.to),
-		ranked(db, "pages", project.id, range.from, range.to, 10),
-		ranked(db, "referrers", project.id, range.from, range.to, 10),
+		ranked(db, "pages", project.id, range.from, range.to, 50),
+		ranked(db, "referrers", project.id, range.from, range.to, 50),
 		trackedLinks(db, project.id, range.from, range.to, raw.from, raw.to),
 		hasEvent(db, project.id, "search", ninetyDaysAgo, today),
 		steps.length ? funnel(db, project.id, steps, raw.from, raw.to) : Promise.resolve([]),
@@ -74,68 +76,69 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 	const [searches, topSearches, emptySearches] = sendsSearches
 		? await Promise.all([searchCounts(db, project.id, raw.from, raw.to), searchTerms(db, project.id, "search", raw.from, raw.to), searchTerms(db, project.id, "search_no_results", raw.from, raw.to)])
 		: [null, [], []];
-	const detailOpen = DETAIL_PARAMS.some((key) => query[key]);
+	const rawNote = raw.clipped ? "From the last 90 days (detail older than that is deleted)." : undefined;
 
 	return (
 		<div className="space-y-8">
 			<Headline project={project} range={range} today={today} visitors={totals.visitors} previous={previous.visitors} series={visitors} hrefFor={hrefFor} />
 
 			<div className="grid gap-6 md:grid-cols-2">
-				<Top title="Top pages" rows={pages.slice(0, 5).map((p) => ({ label: p.key, value: p.visitors }))} empty="No page views in this range." />
-				<Top title="Top sources" rows={sources.slice(0, 5).map((r) => ({ label: sourceName(r.key), value: r.visitors }))} empty="No visits in this range." />
+				<Top
+					title="Top pages"
+					rows={pages.slice(0, 5).map((p) => ({ label: p.key, value: p.visitors }))}
+					empty="No page views in this range."
+					all={<RankedList title="All pages" keyLabel="Page" rows={pages.map((r) => ({ key: r.key, value: r.visitors, secondary: r.pageviews }))} />}
+				/>
+				<Top
+					title="Top sources"
+					rows={sources.slice(0, 5).map((r) => ({ label: sourceName(r.key), value: r.visitors }))}
+					empty="No visits in this range."
+					all={
+						<>
+							<p className="mb-2 text-sm text-muted">Direct means we couldn&rsquo;t tell (typed in, bookmarked, or an app).</p>
+							<RankedList title="All sources" keyLabel="Source" rows={sources.map((r) => ({ key: r.key, value: r.visitors, secondary: r.pageviews }))} formatKey={sourceName} />
+						</>
+					}
+				/>
 			</div>
 
-			{links.length > 0 && (
-				<Section title="Tracked links" note="Visitors who arrived through a tagged link, and what they read.">
-					<ul className="divide-y divide-line rounded-2xl border border-line bg-card">
-						{links.map((l) => (
-							<li key={`${l.kind}:${l.label}`} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm">
-								<span className="min-w-0">
-									<span className="font-medium">{l.label}</span>
-									{l.read.length > 0 && <span className="block truncate text-muted">Read {l.read.join(", ")}</span>}
-								</span>
-								<span className="tabular text-ink-2">
-									{formatCount(l.visitors)} visitor{l.visitors === 1 ? "" : "s"}
-								</span>
-							</li>
-						))}
-					</ul>
-				</Section>
-			)}
+			<Searches project={project} range={range} today={today} searches={searches} topSearches={topSearches} emptySearches={emptySearches} numbers={numbers} rawNote={rawNote} />
 
-			{searches && (
-				<Section title="Searches" note={`${formatWhole(searches.searches)} searches in ${range.label.toLowerCase()}${searches.noResults ? `, ${formatWhole(searches.noResults)} found nothing` : ""}.`}>
-					<div className="grid gap-6 md:grid-cols-2">
-						<Top title="Top searches" rows={topSearches.slice(0, 5).map((t) => ({ label: t.words || "(no words, just filters)", value: t.count }))} empty="No searches in this range." />
-						<Top title="Found nothing" rows={emptySearches.slice(0, 5).map((t) => ({ label: t.words || "(no words, just filters)", value: t.count }))} empty="Every search found something." />
-					</div>
-				</Section>
-			)}
-
-			<SearchHealth numbers={numbers} today={today} />
-
-			<ReviewWaiting project={project} numbers={numbers} />
+			<TrackedLinks links={links} project={project} query={query} hrefFor={hrefFor} />
 
 			{funnelResult.length > 0 && (
-				<Section title="Funnel">
-					<p className="text-sm text-ink-2">{funnelResult.map((step) => `${step.label} ${formatWhole(step.visitors)}`).join(" → ")}</p>
+				<Section title="Funnel" note="Each step counts people who did it after the step before, on the same day.">
+					<p className="text-sm text-ink-2">
+						{funnelResult.map((step) => `${step.label} ${formatWhole(step.visitors)}${step.fromPrevious === null ? "" : ` (${formatPercent(step.fromPrevious)})`}`).join(" → ")}
+					</p>
 				</Section>
 			)}
 
-			<Health project={project} days={days} latestUp={checks.at(-1)?.up ?? null} broken={broken} />
+			<Uptime project={project} days={days} latestUp={checks.at(-1)?.up ?? null} broken={broken} />
 
-			<details open={detailOpen} className="group rounded-2xl border border-line bg-card">
-				<summary className="flex list-none items-center justify-between gap-3 px-5 py-4 font-medium [&::-webkit-details-marker]:hidden">
-					More detail
-					<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="text-muted transition-transform group-open:rotate-180">
-						<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-					</svg>
-				</summary>
-				<div className="space-y-6 border-t border-line p-5">
-					<MoreDetail project={project} range={range} today={today} now={now} query={query} hrefFor={hrefFor} pages={pages} sources={sources} topSearches={topSearches} emptySearches={emptySearches} funnelResult={funnelResult} days={days} checks={checks} />
-				</div>
-			</details>
+			<Disclosure title="All the detail">
+				<AllTheDetail project={project} range={range} today={today} days={days} checks={checks} rawNote={rawNote} />
+			</Disclosure>
+
+			<Disclosure title="Advanced" open={ADVANCED_PARAMS.some((key) => query[key])}>
+				<Events project={project} range={range} today={today} query={query} hrefFor={hrefFor} />
+			</Disclosure>
 		</div>
+	);
+}
+
+/** A closed section with a chevron: "All the detail" and "Advanced". */
+function Disclosure({ title, open = false, children }: { title: string; open?: boolean; children: ReactNode }) {
+	return (
+		<details open={open} className="group rounded-2xl border border-line bg-card">
+			<summary className="flex list-none items-center justify-between gap-3 px-5 py-4 font-medium [&::-webkit-details-marker]:hidden">
+				{title}
+				<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="text-muted transition-transform group-open:rotate-180">
+					<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+				</svg>
+			</summary>
+			<div className="space-y-6 border-t border-line p-5">{children}</div>
+		</details>
 	);
 }
 
@@ -149,10 +152,13 @@ function Section({ title, note, children }: { title: string; note?: string; chil
 	);
 }
 
-/** A short ranked list: label on the left, visitors (or count) on the right. */
-function Top({ title, rows, empty }: { title: string; rows: { label: string; value: number }[]; empty: string }) {
+/**
+ * A short ranked list: label on the left, visitors (or count) on the right. With `all`, "See all"
+ * opens the full table in its place ("Show fewer" closes it).
+ */
+function Top({ title, rows, empty, all }: { title: string; rows: { label: string; value: number }[]; empty: string; all?: ReactNode }) {
 	return (
-		<section>
+		<section className="[&:has(>details[open])>ol]:hidden">
 			<h2 className="text-[15px] font-medium tracking-tight">{title}</h2>
 			{rows.length === 0 ? (
 				<p className="mt-2 text-sm text-muted">{empty}</p>
@@ -167,6 +173,15 @@ function Top({ title, rows, empty }: { title: string; rows: { label: string; val
 						</li>
 					))}
 				</ol>
+			)}
+			{all && rows.length > 0 && (
+				<details className="group/all mt-2">
+					<summary className="link list-none text-sm [&::-webkit-details-marker]:hidden">
+						<span className="group-open/all:hidden">See all</span>
+						<span className="hidden group-open/all:inline">Show fewer</span>
+					</summary>
+					<div className="mt-2">{all}</div>
+				</details>
 			)}
 		</section>
 	);
@@ -197,7 +212,7 @@ function Headline({
 					visitors, {range.label.toLowerCase()}
 					<Delta value={change(visitors, previous)} period="previous" />
 				</p>
-				<div className="text-xs [&_a]:text-xs">
+				<div className="text-xs [&_a]:text-xs [&_summary]:text-xs">
 					<RangePicker range={range} hrefFor={hrefFor} />
 				</div>
 			</div>
@@ -214,8 +229,8 @@ function Headline({
 	);
 }
 
-/** One line: uptime over 90 days and broken links. Amber or red only when there's a problem. */
-function Health({ project, days, latestUp, broken }: { project: Project; days: { checks: number; up: number }[]; latestUp: boolean | null; broken: number }) {
+/** One line: uptime over 90 days and pages not found. Amber or red only when there's a problem. */
+function Uptime({ project, days, latestUp, broken }: { project: Project; days: { checks: number; up: number }[]; latestUp: boolean | null; broken: number }) {
 	const checks = days.reduce((t, d) => t + d.checks, 0);
 	const up = days.reduce((t, d) => t + d.up, 0);
 	const ratio = checks ? up / checks : null;
@@ -226,7 +241,7 @@ function Health({ project, days, latestUp, broken }: { project: Project; days: {
 	];
 	if (latestUp === false) parts.unshift("Down right now");
 	return (
-		<Section title="Health">
+		<Section title="Uptime">
 			<p className={`text-sm ${status === "good" || status === "none" ? "text-ink-2" : ""}`}>
 				{status === "good" || status === "none" ? parts.join(" · ") : <StatusBadge status={status} label={parts.join(" · ")} />}
 			</p>
@@ -235,50 +250,120 @@ function Health({ project, days, latestUp, broken }: { project: Project; days: {
 }
 
 /**
- * Search health as one line, from the product numbers a project's server sends each day
- * (Tech Jobs: searches_failed, median_search_ms). Admin only. Only when either has a value; amber
- * when any search failed.
+ * Searches, for projects that send them (Tech Jobs): the counts and search health on one line
+ * (amber when a search failed), top searches and found nothing (each with "See all"), and
+ * companies waiting for review at the end, linking to the project's own admin.
  */
-function SearchHealth({ numbers, today }: { numbers: Map<string, { value: number; day: string }>; today: string }) {
+function Searches({
+	project,
+	range,
+	today,
+	searches,
+	topSearches,
+	emptySearches,
+	numbers,
+	rawNote,
+}: {
+	project: Project;
+	range: DateRange;
+	today: string;
+	searches: { searches: number; noResults: number } | null;
+	topSearches: { words: string; count: number }[];
+	emptySearches: { words: string; count: number }[];
+	numbers: Map<string, { value: number; day: string }>;
+	rawNote?: string;
+}) {
 	const failed = numbers.get("searches_failed");
 	const median = numbers.get("median_search_ms");
-	if (!failed && !median) return null;
-	const day = [failed?.day, median?.day].filter((d): d is string => !!d).sort().at(-1)!;
-	const when = day === today ? "today" : day === addDays(today, -1) ? "yesterday" : `on ${formatDay(day)}`;
-	const parts = [
-		failed && `${formatWhole(failed.value)} failed search${failed.value === 1 ? "" : "es"}`,
-		median && `searches typically take ${formatSeconds(median.value)}`,
-	].filter((p): p is string => !!p);
-	const text = `${parts.join(" · ").replace(/^./, (c) => c.toUpperCase())} ${when}`;
+	const waiting = numbers.get("review_waiting");
+	if (!searches && !failed && !median && !waiting) return null;
+	const counts = searches ? `${formatWhole(searches.searches)} searches in ${range.label.toLowerCase()}${searches.noResults ? `, ${formatWhole(searches.noResults)} found nothing` : ""}` : null;
+	let health: string | null = null;
+	if (failed || median) {
+		const day = [failed?.day, median?.day].filter((d): d is string => !!d).sort().at(-1)!;
+		const when = day === today ? "today" : day === addDays(today, -1) ? "yesterday" : `on ${formatDay(day)}`;
+		health = `${[failed && `${formatWhole(failed.value)} failed search${failed.value === 1 ? "" : "es"}`, median && `searches typically take ${formatSeconds(median.value)}`].filter(Boolean).join(" · ")} ${when}`;
+	}
+	const words = (w: string) => w || "(no words, just filters)";
+	const admin = waiting && project.siteUrl ? `${new URL(project.siteUrl).origin}/admin` : null;
 	return (
-		<Section title="Search health">
-			<p className={`text-sm ${failed && failed.value > 0 ? "" : "text-ink-2"}`}>{failed && failed.value > 0 ? <StatusBadge status="warning" label={text} /> : text}</p>
+		<Section title="Searches">
+			{(counts || health) && (
+				<p className="text-sm text-ink-2">
+					{counts}
+					{counts && health && " · "}
+					{health && (failed && failed.value > 0 ? <StatusBadge status="warning" label={health} /> : health)}
+				</p>
+			)}
+			{searches && (
+				<div className="mt-4 grid gap-6 md:grid-cols-2">
+					<Top
+						title="Top searches"
+						rows={topSearches.slice(0, 5).map((t) => ({ label: words(t.words), value: t.count }))}
+						empty="No searches in this range."
+						all={
+							<>
+								{rawNote && <p className="mb-2 text-sm text-muted">{rawNote}</p>}
+								<RankedList title="All searches" keyLabel="Search" valueLabel="Searches" rows={topSearches.map((t) => ({ key: t.words, value: t.count }))} formatKey={words} />
+							</>
+						}
+					/>
+					<Top
+						title="Found nothing"
+						rows={emptySearches.slice(0, 5).map((t) => ({ label: words(t.words), value: t.count }))}
+						empty="Every search found something."
+						all={<RankedList title="Searches that found nothing" keyLabel="Search" valueLabel="Searches" rows={emptySearches.map((t) => ({ key: t.words, value: t.count }))} formatKey={words} />}
+					/>
+				</div>
+			)}
+			{waiting && (
+				<p className="mt-4 text-sm text-ink-2" title={`Sent ${formatDay(waiting.day, true)}`}>
+					{admin ? (
+						<a href={admin} target="_blank" rel="noopener noreferrer" className="link inline-flex items-center gap-1">
+							Companies waiting for review: {formatWhole(waiting.value)} <ArrowIcon />
+							<span className="sr-only">(opens {project.name}&rsquo;s admin in a new tab)</span>
+						</a>
+					) : (
+						`Companies waiting for review: ${formatWhole(waiting.value)}`
+					)}
+				</p>
+			)}
 		</Section>
 	);
 }
 
-/**
- * Companies waiting for review, from the admin-only product number a project's server sends
- * (Tech Jobs: review_waiting), linking to the project's own admin (its site address + /admin).
- * Only when it has a value.
- */
-function ReviewWaiting({ project, numbers }: { project: Project; numbers: Map<string, { value: number; day: string }> }) {
-	const waiting = numbers.get("review_waiting");
-	if (!waiting) return null;
-	const text = `Companies waiting for review: ${formatWhole(waiting.value)}`;
-	const admin = project.siteUrl ? `${new URL(project.siteUrl).origin}/admin` : null;
+/** Visitors who arrived through a tagged link, and what they read, with "Make a link" (open while it's being used). */
+function TrackedLinks({ links, project, query, hrefFor }: { links: Awaited<ReturnType<typeof trackedLinks>>; project: Project; query: Record<string, string>; hrefFor: OverviewProps["hrefFor"] }) {
 	return (
-		<Section title="Review">
-			<p className="text-sm text-ink-2" title={`Sent ${formatDay(waiting.day, true)}`}>
-				{admin ? (
-					<a href={admin} target="_blank" rel="noopener noreferrer" className="link inline-flex items-center gap-1">
-						{text} <ArrowIcon />
-						<span className="sr-only">(opens {project.name}&rsquo;s admin in a new tab)</span>
-					</a>
-				) : (
-					text
-				)}
-			</p>
+		<Section title="Tracked links" note="Visitors who arrived through a tagged link, and what they read.">
+			{links.length > 0 ? (
+				<ul className="divide-y divide-line rounded-2xl border border-line bg-card">
+					{links.map((l) => (
+						<li key={`${l.kind}:${l.label}`} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm">
+							<span className="min-w-0">
+								<span className="font-medium">{l.label}</span>
+								{l.read.length > 0 && <span className="block truncate text-muted">Read {l.read.join(", ")}</span>}
+							</span>
+							<span className="tabular text-ink-2">
+								{formatCount(l.visitors)} visitor{l.visitors === 1 ? "" : "s"}
+							</span>
+						</li>
+					))}
+				</ul>
+			) : (
+				<p className="text-sm text-muted">No visits from tracked links in this range.</p>
+			)}
+			<details open={Boolean(query.build)} className="group mt-3 rounded-2xl border border-line bg-card">
+				<summary className="flex list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
+					Make a link
+					<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="text-muted transition-transform group-open:rotate-180">
+						<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+					</svg>
+				</summary>
+				<div className="border-t border-line p-4">
+					<LinkBuilder project={project} query={query} hrefFor={hrefFor} />
+				</div>
+			</details>
 		</Section>
 	);
 }
@@ -293,30 +378,17 @@ function extraInfo(props: string): string {
 	}
 }
 
-// --- More detail -------------------------------------------------------------------------
+// --- All the detail ----------------------------------------------------------------------
 
-async function MoreDetail({
+/** Outbound clicks, downloads, pages not found, and the uptime strip with its outages (both the last 30 days). */
+async function AllTheDetail({
 	project,
 	range,
 	today,
-	query,
-	hrefFor,
-	pages,
-	sources,
-	topSearches,
-	emptySearches,
-	funnelResult,
 	days,
 	checks,
-}: OverviewProps & {
-	pages: { key: string; visitors: number; pageviews: number }[];
-	sources: { key: string; visitors: number; pageviews: number }[];
-	topSearches: { words: string; count: number }[];
-	emptySearches: { words: string; count: number }[];
-	funnelResult: Awaited<ReturnType<typeof funnel>>;
-	days: Awaited<ReturnType<typeof uptimeDays>>;
-	checks: Awaited<ReturnType<typeof uptimeChecks>>;
-}) {
+	rawNote,
+}: Pick<OverviewProps, "project" | "range" | "today"> & { days: Awaited<ReturnType<typeof uptimeDays>>; checks: Awaited<ReturnType<typeof uptimeChecks>>; rawNote?: string }) {
 	const db = (await getCloudflareContext({ async: true })).env.DB;
 	const raw = clampToRaw(range, today);
 	const [outbound, downloads, notFound, totals] = await Promise.all([
@@ -326,8 +398,6 @@ async function MoreDetail({
 		rangeTotals(db, project.id, range.from, range.to),
 	]);
 	const found = outages(checks).slice(0, 10);
-	const words = (w: string) => w || "(no words, just filters)";
-	const rawNote = raw.clipped ? "From the last 90 days (detail older than that is deleted)." : undefined;
 
 	return (
 		<>
@@ -336,39 +406,18 @@ async function MoreDetail({
 				{formatPercent(totals.avgScrollPct === null ? null : totals.avgScrollPct / 100)}
 			</p>
 			<div className="grid gap-6 lg:grid-cols-2">
-				<Card title="Pages">
-					<RankedList title="Pages" keyLabel="Page" rows={pages.map((r) => ({ key: r.key, value: r.visitors, secondary: r.pageviews }))} />
-				</Card>
-				<Card title="Sources" note="Where visitors came from. Direct means we couldn't tell (typed in, bookmarked, or an app).">
-					<RankedList title="Sources" keyLabel="Source" rows={sources.map((r) => ({ key: r.key, value: r.visitors, secondary: r.pageviews }))} formatKey={sourceName} />
-				</Card>
 				<Card title="Outbound clicks" note={rawNote}>
 					<RankedList title="Outbound clicks" keyLabel="Domain" valueLabel="Clicks" rows={outbound.map((r) => ({ key: r.key, value: r.count }))} emptyText="No outbound clicks yet." />
 				</Card>
 				<Card title="Downloads" note={rawNote}>
 					<RankedList title="Downloads" keyLabel="File" valueLabel="Downloads" rows={downloads.map((r) => ({ key: r.key, value: r.count }))} emptyText="No downloads yet." />
 				</Card>
-				{(topSearches.length > 0 || emptySearches.length > 0) && (
-					<>
-						<Card title="All searches" note={rawNote}>
-							<RankedList title="All searches" keyLabel="Search" valueLabel="Searches" rows={topSearches.map((t) => ({ key: t.words, value: t.count }))} formatKey={words} />
-						</Card>
-						<Card title="Searches that found nothing">
-							<RankedList title="Searches that found nothing" keyLabel="Search" valueLabel="Searches" rows={emptySearches.map((t) => ({ key: t.words, value: t.count }))} formatKey={words} emptyText="Every search found something." />
-						</Card>
-					</>
-				)}
 				<Card title="Pages not found" note={rawNote}>
 					<RankedList title="Pages not found" keyLabel="Path" valueLabel="Times" rows={notFound.map((r) => ({ key: r.key, value: r.count }))} emptyText="No missing pages visited." />
 				</Card>
 			</div>
-			{funnelResult.length > 0 && (
-				<Card title="Funnel" note="Each step counts people who did it after the step before, on the same day.">
-					<FunnelChart steps={funnelResult} />
-				</Card>
-			)}
-			<Card title="Uptime" note="The last 90 days, checking the site every 5 minutes. Hover a day to see it.">
-				<UptimeStrip days={days} />
+			<Card title="Uptime" note="The last 30 days, checking the site every 5 minutes. Hover a day to see it.">
+				<UptimeStrip days={days.slice(-30)} />
 				<div className="mt-4">
 					{found.length === 0 ? (
 						<StatusBadge status="good" label="No outages in the last 30 days." />
@@ -383,13 +432,11 @@ async function MoreDetail({
 					)}
 				</div>
 			</Card>
-			<LinkBuilder project={project} query={query} hrefFor={hrefFor} />
-			<Events project={project} range={range} today={today} query={query} hrefFor={hrefFor} />
 		</>
 	);
 }
 
-/** A ref for a single post or place, or UTM values for a campaign. */
+/** "Make a link": a ref for a single post or place, or UTM values for a campaign. Saves nothing. */
 function LinkBuilder({ project, query, hrefFor }: { project: Project; query: Record<string, string>; hrefFor: OverviewProps["hrefFor"] }) {
 	const base = query.url || project.siteUrl || "";
 	let built: string | null = null;
@@ -414,7 +461,8 @@ function LinkBuilder({ project, query, hrefFor }: { project: Project; query: Rec
 	}
 	const input = "mt-1 w-full rounded-xl border border-line bg-card px-3 py-2";
 	return (
-		<Card title="Make a link you can track" note="Give it a name for one post, or say where it's shared (site, type, campaign).">
+		<div>
+			<p className="mb-3 text-sm text-muted">Give it a name for one post, or say where it&rsquo;s shared (site, type, campaign).</p>
 			<form method="get" className="grid gap-3 sm:grid-cols-2">
 				<input type="hidden" name="build" value="1" />
 				{query.range && <input type="hidden" name="range" value={query.range} />}
@@ -452,7 +500,7 @@ function LinkBuilder({ project, query, hrefFor }: { project: Project; query: Rec
 					<CopyButton text={built} />
 				</div>
 			)}
-		</Card>
+		</div>
 	);
 }
 

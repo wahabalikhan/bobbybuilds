@@ -63,6 +63,33 @@ describe("the public card", () => {
 	});
 });
 
+describe("on the public page", () => {
+	it("saves the tagline, extra lines and switches together, and nothing when the tagline has a problem", async () => {
+		const project = await newProject();
+		const base = { project_id: String(project.id), show_public: "on" };
+
+		// {visitors} in the tagline needs a fallback: refused, and the switch isn't saved either.
+		const refused = await core.publicPageCore(db, idle, { ...base, tagline: "{visitors} people a month" }, ctx);
+		expect(refused.state).toMatchObject({ status: "error", errors: { tagline: expect.any(String) } });
+		expect(await getProjectBySlug(db, project.slug)).toMatchObject({ showPublic: false, tagline: "" });
+
+		const saved = await core.publicPageCore(db, idle, { ...base, tagline: "Jobs for everyone", tagline_fallback: "", outcome_0: "{visitors} people visited" }, ctx);
+		expect(saved.state.status).toBe("ok");
+		expect(await getProjectBySlug(db, project.slug)).toMatchObject({ showPublic: true, showOnFirstVisit: false, tagline: "Jobs for everyone", outcomes: ["{visitors} people visited"] });
+		// Visitors weren't switched on, so the note says the extra line is left out.
+		expect(saved.state.notes?.join(" ")).toContain("{visitors} isn't public");
+	});
+
+	it("leaves the tagline alone when About is saved, and About's fields alone when the public page is saved", async () => {
+		const project = await newProject();
+		await core.publicPageCore(db, idle, { project_id: String(project.id), tagline: "Kept tagline" }, ctx);
+		await core.saveDetailsCore(db, idle, { project_id: String(project.id), name: "Renamed", status: "live", site_url: project.siteUrl ?? "", sort_order: "5", started_on: "2026-11-01" }, ctx);
+		expect(await getProjectBySlug(db, project.slug)).toMatchObject({ name: "Renamed", tagline: "Kept tagline", startedOn: "2026-11-01" });
+		await core.publicPageCore(db, idle, { project_id: String(project.id), tagline: "New tagline" }, ctx);
+		expect(await getProjectBySlug(db, project.slug)).toMatchObject({ name: "Renamed", status: "live", startedOn: "2026-11-01", tagline: "New tagline" });
+	});
+});
+
 describe("paused", () => {
 	it("is stored alongside the status and shown instead of it", async () => {
 		const project = await newProject();

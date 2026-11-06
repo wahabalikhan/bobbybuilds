@@ -48,6 +48,11 @@ export async function saveDetailsAction(prev: FormState, form: FormData) {
 	return run(prev, form, core.saveDetailsCore);
 }
 
+export async function publicPageAction(prev: FormState, form: FormData) {
+	await requireAdmin();
+	return run(prev, form, core.publicPageCore);
+}
+
 export async function deleteProjectAction(prev: FormState, form: FormData) {
 	await requireAdmin();
 	return run(prev, form, core.deleteProjectCore);

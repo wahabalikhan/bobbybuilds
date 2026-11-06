@@ -9,6 +9,9 @@ import { requestTime } from "@/lib/admin/clock";
 import { utcDay } from "@/lib/days";
 import { latestUptime, publicProductNumbers } from "@/lib/db/dashboard";
 import { adminIcons } from "@/lib/admin/icons";
+import { getIconMeta } from "@/lib/db/icons";
+import { StatusBadge } from "@/components/charts";
+import Link from "next/link";
 import { getProjectBySlug } from "@/lib/db/projects";
 import { productLine } from "@/lib/public/product-line";
 import { adminHref } from "@/lib/site";
@@ -60,12 +63,13 @@ export default async function ProjectPage({
 	};
 	const numbers = productLine(await publicProductNumbers(env.DB, project.id, today), today);
 	const up = (await latestUptime(env.DB, now)).get(project.id) ?? null;
-	const iconFor = await adminIcons(env.DB);
+	const [iconFor, iconMeta] = await Promise.all([adminIcons(env.DB), getIconMeta(env.DB, project.id)]);
+	const settingsHref = `${base}?tab=settings`;
 
 	return (
 		<div className="space-y-6">
 			<div className="space-y-3">
-				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: project.name }]} />
+				<Breadcrumb items={tab === "settings" ? [{ label: "Home", href: adminHref() }, { label: project.name, href: base }, { label: "Settings" }] : [{ label: "Home", href: adminHref() }, { label: project.name }]} />
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="flex flex-wrap items-center gap-3">
 						<ProjectLogo name={project.name} logoPath={iconFor(project)} size={36} />
@@ -79,6 +83,11 @@ export default async function ProjectPage({
 							</a>
 						)}
 					</div>
+					{iconMeta?.lastError && (
+						<Link href={`${settingsHref}#advanced`} className="text-sm" title={iconMeta.lastError}>
+							<StatusBadge status="warning" label="Its icon couldn't be checked" />
+						</Link>
+					)}
 					{numbers && (
 						<p className="text-sm font-semibold tabular text-ink" title="Numbers you've made public">
 							{numbers}
@@ -87,7 +96,7 @@ export default async function ProjectPage({
 				</div>
 			</div>
 			<div className="border-b border-line pb-4">
-				<Tabs tabs={[...PROJECT_TABS]} current={tab} hrefFor={(key) => (key === "settings" ? `${base}?tab=settings` : base)} />
+				<Tabs tabs={[...PROJECT_TABS]} current={tab} hrefFor={(key) => (key === "settings" ? settingsHref : base)} />
 			</div>
 			{tab === "settings" ? (
 				<ProjectSettingsTab project={project} />

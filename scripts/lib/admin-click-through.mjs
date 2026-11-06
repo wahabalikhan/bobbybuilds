@@ -1,7 +1,8 @@
 /**
  * Clicks through the admin in real Chrome (headless, via the DevTools protocol), the way a person
- * moves around: Home (and the status pill) → each project card → Overview and "More detail" →
- * the Settings tab and "Connection" → the breadcrumb back Home → the "+" New project page, and the
+ * moves around: Home (and the status pill) → each project card → Overview with every closed section
+ * open ("See all", "Make a link", "All the detail", "Advanced") → the Settings tab with "Advanced:
+ * connecting the site" open → the breadcrumb back Home → the "+ New project" page, and the
  * public home page (with its dropdown open) and 404, in a full desktop window (1440 × 900). Fails on
  * "Something went wrong", an uncaught page error, a wrong cursor (CURSOR_CHECK), or project cards
  * of different heights on the same page (CARD_CHECK). Client-side navigation is what plain fetches
@@ -107,6 +108,8 @@ export async function clickThrough(origin) {
 		const click = (selector, text) => evaluate(`(() => { const el = [...document.querySelectorAll(${JSON.stringify(selector)})].find((a) => ${text ? `a.textContent.trim() === ${JSON.stringify(text)}` : "true"}); if (!el) return false; el.click(); return true; })()`);
 
 		const open = (selector) => evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; el.open = true; return true; })()`);
+		/** Opens every <details> on the page; true if `name` (its summary's text) was among them. */
+		const openAll = (name) => evaluate(`(() => { const all = [...document.querySelectorAll("main details")]; all.forEach((d) => (d.open = true)); return all.some((d) => d.querySelector("summary")?.textContent.includes(${JSON.stringify(name)})); })()`);
 
 		await send("Runtime.enable");
 		await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
@@ -135,22 +138,22 @@ export async function clickThrough(origin) {
 			}
 			await settle();
 			await check(`${href} Overview`);
-			if (!(await open("main details"))) problems.push(`${href} Overview has no "More detail" section.`);
+			if (!(await openAll("All the detail"))) problems.push(`${href} Overview has no "All the detail" section.`);
 			await sleep(300);
-			await check(`${href} Overview, More detail open`);
+			await check(`${href} Overview, every section open`);
 			if (!(await click('nav[aria-label="Sections"] a', "Settings"))) problems.push(`${href} has no Settings tab.`);
 			await settle();
 			await check(`${href} Settings`);
-			if (!(await open("main details"))) problems.push(`${href} Settings has no "Connection" section.`);
+			if (!(await openAll("Advanced: connecting the site"))) problems.push(`${href} Settings has no "Advanced: connecting the site" section.`);
 			await sleep(300);
-			await check(`${href} Settings, Connection open`);
+			await check(`${href} Settings, every section open`);
 			if (!(await click('nav[aria-label="Breadcrumb"] a', "Home"))) problems.push(`${href} has no breadcrumb back to Home.`);
 			await settle();
 			await check(`${href} breadcrumb → Home`);
 		}
 		await send("Page.navigate", { url: `${origin}/admin` });
 		await settle();
-		if (!(await click('a[aria-label="New project"]'))) problems.push('Home has no "+" New project button.');
+		if (!(await click('a[aria-label="New project"]'))) problems.push('Home has no "+ New project" button.');
 		await settle();
 		await check("New project");
 		ws.close();
