@@ -152,7 +152,7 @@ body {
  * Cursors: the hand on everything clickable (Tailwind's base styles reset buttons to the arrow),
  * and not-allowed on disabled controls. In the base layer, so a cursor-* class still wins.
  * Nothing else gets the hand: plain text, and the footer's hidden five-tap © line, keep the normal
- * cursor. scripts/lib/admin-click-through.mjs checks this on every page (keep its list in sync).
+ * cursor. [aria-haspopup] covers custom dropdown triggers. scripts/lib/admin-click-through.mjs checks this on every page (keep its list in sync).
  */
 @layer base {
 	a[href],
@@ -166,6 +166,7 @@ body {
 	[role="menuitem"],
 	[role="checkbox"],
 	[role="radio"],
+	[aria-haspopup]:not([aria-haspopup="false"]),
 	input:is([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="reset"], [type="file"], [type="range"], [type="color"]),
 	label:has(input:is([type="checkbox"], [type="radio"])) {
 		cursor: pointer;

@@ -39,7 +39,7 @@ export function StatusMenu({ items }: { items: Attention[] }) {
 	}
 	return (
 		<details className="group relative">
-			<summary className={`${pill} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
+			<summary className={`${pill} list-none [&::-webkit-details-marker]:hidden`}>
 				<span aria-hidden>●</span> {statusText(items)}
 				<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden className="transition-transform group-open:rotate-180">
 					<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

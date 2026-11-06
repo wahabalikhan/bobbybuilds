@@ -22,6 +22,7 @@ const CLICKABLE = [
 	"summary",
 	"select",
 	...["button", "tab", "option", "switch", "menuitem", "checkbox", "radio"].map((role) => `[role="${role}"]`),
+	'[aria-haspopup]:not([aria-haspopup="false"])',
 	'input:is([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="reset"], [type="file"], [type="range"], [type="color"])',
 	'label:has(input:is([type="checkbox"], [type="radio"]))',
 ].join(", ");

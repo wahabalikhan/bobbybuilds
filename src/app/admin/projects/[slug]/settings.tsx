@@ -81,7 +81,7 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 			</Section>
 
 			<details className="group rounded-2xl border border-line bg-card">
-				<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
+				<summary className="flex list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
 					<span>
 						<span className="font-medium">Connection</span>
 						<span className="block text-sm text-muted">The snippet, allowed websites, events, funnel, secret key and product numbers.</span>
@@ -351,7 +351,7 @@ function Connection({ project, metrics }: { project: Project; metrics: Metric[] 
 				</SettingsForm>
 				{products.length > 0 && (
 					<details className="rounded-2xl border border-line p-4">
-						<summary className="cursor-pointer text-sm font-medium">Remove a product number</summary>
+						<summary className="text-sm font-medium">Remove a product number</summary>
 						<div className="mt-4">
 							<SettingsForm action={deleteMetricAction} submitLabel="Remove number" danger>
 								<Hidden name="project_id" value={project.id} />

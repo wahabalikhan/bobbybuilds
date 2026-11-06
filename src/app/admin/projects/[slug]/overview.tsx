@@ -118,7 +118,7 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 			<Health project={project} days={days} latestUp={checks.at(-1)?.up ?? null} broken={broken} />
 
 			<details open={detailOpen} className="group rounded-2xl border border-line bg-card">
-				<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 font-medium [&::-webkit-details-marker]:hidden">
+				<summary className="flex list-none items-center justify-between gap-3 px-5 py-4 font-medium [&::-webkit-details-marker]:hidden">
 					More detail
 					<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="text-muted transition-transform group-open:rotate-180">
 						<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

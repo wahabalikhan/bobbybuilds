@@ -159,7 +159,7 @@ export function ProjectSelect({
 							aria-selected={index === selected}
 							onPointerEnter={() => setActive(index)}
 							onClick={() => pick(index)}
-							className={`flex cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-2 text-[15px] text-ink ${index === active ? "bg-pill" : ""}`}
+							className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[15px] text-ink ${index === active ? "bg-pill" : ""}`}
 						>
 							{option.slug ? <ProjectLogo name={option.name} logoPath={option.logoPath} size={20} /> : null}
 							<span className="flex-1 truncate">{option.name}</span>

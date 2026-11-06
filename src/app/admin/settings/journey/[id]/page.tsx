@@ -30,7 +30,7 @@ export default async function EditJourneyEntry({ params, searchParams }: { param
 				<JourneyForm entry={entry} projects={projects} />
 			</section>
 			<details className="rounded-2xl border border-line bg-card p-5">
-				<summary className="cursor-pointer font-semibold">Delete this entry</summary>
+				<summary className="font-semibold">Delete this entry</summary>
 				<div className="mt-4">
 					<SettingsForm action={journeyAction} submitLabel="Delete entry for good" danger>
 						<Hidden name="entry_id" value={entry.id} />

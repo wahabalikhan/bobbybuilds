@@ -72,7 +72,7 @@ export { niceTicks };
 function TableView({ caption, head, rows }: { caption: string; head: string[]; rows: ReactNode[][] }) {
 	return (
 		<details className="mt-2 text-sm">
-			<summary className="cursor-pointer text-muted select-none">Show as a table</summary>
+			<summary className="text-muted select-none">Show as a table</summary>
 			<div className="mt-2 max-h-72 overflow-auto rounded-lg border border-line">
 				<table className="w-full text-left tabular">
 					<caption className="sr-only">{caption}</caption>

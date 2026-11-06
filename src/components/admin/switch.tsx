@@ -1,7 +1,7 @@
 /** A switch: a real checkbox (so the form posts it), drawn as a toggle. */
 export function Switch({ id, name, label, hint, checked }: { id: string; name: string; label: string; hint: string; checked: boolean }) {
 	return (
-		<label htmlFor={id} className="flex cursor-pointer items-start justify-between gap-4 px-4 py-3">
+		<label htmlFor={id} className="flex items-start justify-between gap-4 px-4 py-3">
 			<span className="text-sm">
 				<span className="font-medium">{label}</span>
 				<span className="block text-muted">{hint}</span>
