@@ -4,8 +4,12 @@ import { site } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-/** The home page is the only public page (the journey is a section of it). */
+/** The public pages: home and the full journey. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const snapshot = await getSnapshot();
-	return [{ url: `${site.url}/`, lastModified: new Date(snapshot.generatedAt), changeFrequency: "daily", priority: 1 }];
+	const lastModified = new Date(snapshot.generatedAt);
+	return [
+		{ url: `${site.url}/`, lastModified, changeFrequency: "daily", priority: 1 },
+		{ url: `${site.url}/journey`, lastModified, changeFrequency: "weekly", priority: 0.6 },
+	];
 }

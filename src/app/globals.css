@@ -204,6 +204,11 @@ body {
 .prose-bobby blockquote { border-left: 3px solid var(--line); padding-left: 1rem; color: var(--ink-2); }
 .prose-bobby img { border-radius: 12px; border: 1px solid var(--line); }
 
+/* Pages with the sticky header (/journey): anchors, and links focused from the keyboard, land below its 56px bar (80px, like the home page's scroll-mt-20). */
+:root:has([data-sticky-header]) {
+	scroll-padding-top: 80px;
+}
+
 /* The public page's jump links scroll smoothly, unless the visitor prefers reduced motion. */
 @media (prefers-reduced-motion: no-preference) {
 	:root:has(.public-theme) {
