@@ -42,7 +42,8 @@ export function Me() {
 				<p className="text-sm text-muted">by {owner.name}</p>
 			</div>
 			<p className="col-span-2 mt-2 max-w-[60ch] text-base leading-relaxed text-ink-2 sm:col-span-1 sm:col-start-2 sm:text-lg">{owner.bio}</p>
-			<ul className="col-span-2 -ml-1.5 mt-2 flex items-center gap-1 sm:col-span-1 sm:col-start-2" aria-label="Find me on">
+			{/* 44px tap areas on phones (36px from sm up), the same gap between each, and pulled left so the first icon lines up with the bio's text. */}
+			<ul className="col-span-2 -ml-[13px] mt-2 flex items-center gap-1 sm:col-span-1 sm:col-start-2 sm:-ml-[9px]" aria-label="Find me on">
 				{owner.links.map((link) => {
 					const icon = ICONS[link.label];
 					const external = link.url.startsWith("https://");
@@ -53,9 +54,10 @@ export function Me() {
 								href={link.url}
 								{...(external ? { target: "_blank", rel: "noopener noreferrer me" } : {})}
 								title={link.label}
-								className="inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-pill"
+								className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-pill sm:h-9 sm:w-9"
 							>
-								{icon ? <icon.Icon className={`h-5 w-5 ${icon.colour}`} /> : <span className="text-sm">{link.label}</span>}
+								{/* One 20px box for all three; each icon is sized inside it to look the same (see icons.tsx). */}
+								{icon ? <icon.Icon className={`block h-5 w-5 shrink-0 ${icon.colour}`} /> : <span className="text-sm">{link.label}</span>}
 								<span className="sr-only">
 									{name}
 									{external ? " (opens in a new tab)" : ""}

@@ -84,7 +84,7 @@ export function HonestNumbers({ snapshot }: { snapshot: PublicSnapshot }) {
 			{money && money.costs.length > 0 && (
 				<details className="group mt-8">
 					<summary className="inline-flex list-none items-center gap-2 rounded-sm text-sm font-medium text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
-						Where the money goes
+						Where the money goes (monthly)
 						<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="text-muted transition-transform group-open:rotate-180">
 							<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 						</svg>
