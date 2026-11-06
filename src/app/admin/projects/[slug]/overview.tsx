@@ -25,6 +25,7 @@ import {
 	uptimeDays,
 } from "@/lib/db/dashboard";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { ArrowIcon } from "@/components/public/icons";
 import { WeekChart } from "@/components/public/mono-charts";
 import { funnel, parseFunnel } from "@/lib/db/funnel";
 import type { Project } from "@/lib/db/projects";
@@ -112,6 +113,8 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 			)}
 
 			<SearchHealth numbers={numbers} today={today} />
+
+			<ReviewWaiting project={project} numbers={numbers} />
 
 			{funnelResult.length > 0 && (
 				<Section title="Funnel">
@@ -250,6 +253,32 @@ function SearchHealth({ numbers, today }: { numbers: Map<string, { value: number
 	return (
 		<Section title="Search health">
 			<p className={`text-sm ${failed && failed.value > 0 ? "" : "text-ink-2"}`}>{failed && failed.value > 0 ? <StatusBadge status="warning" label={text} /> : text}</p>
+		</Section>
+	);
+}
+
+/**
+ * Companies waiting for review, from the admin-only product number a project's server sends
+ * (Tech Jobs: review_waiting), linking to the project's own admin (its site address + /admin).
+ * Only when it has a value.
+ */
+function ReviewWaiting({ project, numbers }: { project: Project; numbers: Map<string, { value: number; day: string }> }) {
+	const waiting = numbers.get("review_waiting");
+	if (!waiting) return null;
+	const text = `Companies waiting for review: ${formatWhole(waiting.value)}`;
+	const admin = project.siteUrl ? `${new URL(project.siteUrl).origin}/admin` : null;
+	return (
+		<Section title="Review">
+			<p className="text-sm text-ink-2" title={`Sent ${formatDay(waiting.day, true)}`}>
+				{admin ? (
+					<a href={admin} target="_blank" rel="noopener noreferrer" className="link inline-flex items-center gap-1">
+						{text} <ArrowIcon />
+						<span className="sr-only">(opens {project.name}&rsquo;s admin in a new tab)</span>
+					</a>
+				) : (
+					text
+				)}
+			</p>
 		</Section>
 	);
 }
