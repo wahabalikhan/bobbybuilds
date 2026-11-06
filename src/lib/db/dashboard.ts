@@ -588,6 +588,19 @@ export async function publicProductNumbers(db: D1Database, projectId: number, to
 	return results.map((r) => ({ kind: "latest", label: r.label, figure: r.value, latestDay: r.day }));
 }
 
+/** Every product number's latest daily value (public and admin-only), keyed by its key. Numbers with no value yet are left out. */
+export async function latestProductNumbers(db: D1Database, projectId: number, today: string): Promise<Map<string, { value: number; day: string }>> {
+	const { results } = await db
+		.prepare(
+			`SELECT m.key, v.value, v.day FROM metrics m
+			 JOIN metric_values v ON v.metric_id = m.id AND v.day = (SELECT max(day) FROM metric_values WHERE metric_id = m.id AND day <= ?2)
+			 WHERE m.project_id = ?1 AND m.source = 'product'`,
+		)
+		.bind(projectId, today)
+		.all<{ key: string; value: number; day: string }>();
+	return new Map(results.map((r) => [r.key, { value: r.value, day: r.day }]));
+}
+
 export type TrackedLink = {
 	/** "linkedin-post-12" for a ?ref= link, or "LinkedIn · launch-post" for a UTM-tagged one. */
 	label: string;

@@ -13,6 +13,7 @@ import {
 	eventBreakdown,
 	eventNames,
 	hasEvent,
+	latestProductNumbers,
 	listEvents,
 	outages,
 	ranked,
@@ -27,7 +28,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { WeekChart } from "@/components/public/mono-charts";
 import { funnel, parseFunnel } from "@/lib/db/funnel";
 import type { Project } from "@/lib/db/projects";
-import { change, formatCount, formatDuration, formatPercent, formatTime, formatWhole } from "@/lib/format";
+import { change, formatCount, formatDay, formatDuration, formatPercent, formatTime, formatWhole } from "@/lib/format";
 import { adminHref } from "@/lib/site";
 
 export type OverviewProps = {
@@ -55,7 +56,7 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 	const raw = clampToRaw(range, today);
 	const steps = parseFunnel(project.funnel);
 	const ninetyDaysAgo = addDays(today, -89);
-	const [totals, previous, visitors, pages, sources, links, sendsSearches, funnelResult, days, checks, broken] = await Promise.all([
+	const [totals, previous, visitors, pages, sources, links, sendsSearches, funnelResult, days, checks, broken, numbers] = await Promise.all([
 		rangeTotals(db, project.id, range.from, range.to),
 		rangeTotals(db, project.id, range.previousFrom, range.previousTo),
 		dailySeries(db, project.id, "visitors", range.from, range.to),
@@ -67,6 +68,7 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 		uptimeDays(db, project.id, ninetyDaysAgo, today),
 		uptimeChecks(db, project.id, now - 30 * 86_400_000),
 		brokenLinks(db, project.id, ninetyDaysAgo, today),
+		latestProductNumbers(db, project.id, today),
 	]);
 	const [searches, topSearches, emptySearches] = sendsSearches
 		? await Promise.all([searchCounts(db, project.id, raw.from, raw.to), searchTerms(db, project.id, "search", raw.from, raw.to), searchTerms(db, project.id, "search_no_results", raw.from, raw.to)])
@@ -108,6 +110,8 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 					</div>
 				</Section>
 			)}
+
+			<SearchHealth numbers={numbers} today={today} />
 
 			{funnelResult.length > 0 && (
 				<Section title="Funnel">
@@ -223,6 +227,29 @@ function Health({ project, days, latestUp, broken }: { project: Project; days: {
 			<p className={`text-sm ${status === "good" || status === "none" ? "text-ink-2" : ""}`}>
 				{status === "good" || status === "none" ? parts.join(" · ") : <StatusBadge status={status} label={parts.join(" · ")} />}
 			</p>
+		</Section>
+	);
+}
+
+/**
+ * Search health as one line, from the product numbers a project's server sends each day
+ * (Tech Jobs: searches_failed, median_search_ms). Admin only. Only when either has a value; amber
+ * when any search failed.
+ */
+function SearchHealth({ numbers, today }: { numbers: Map<string, { value: number; day: string }>; today: string }) {
+	const failed = numbers.get("searches_failed");
+	const median = numbers.get("median_search_ms");
+	if (!failed && !median) return null;
+	const day = [failed?.day, median?.day].filter((d): d is string => !!d).sort().at(-1)!;
+	const when = day === today ? "today" : day === addDays(today, -1) ? "yesterday" : `on ${formatDay(day)}`;
+	const parts = [
+		failed && `${formatWhole(failed.value)} failed search${failed.value === 1 ? "" : "es"}`,
+		median && `median search time ${formatWhole(median.value)} ms`,
+	].filter((p): p is string => !!p);
+	const text = `${parts.join(" · ").replace(/^./, (c) => c.toUpperCase())} ${when}`;
+	return (
+		<Section title="Search health">
+			<p className={`text-sm ${failed && failed.value > 0 ? "" : "text-ink-2"}`}>{failed && failed.value > 0 ? <StatusBadge status="warning" label={text} /> : text}</p>
 		</Section>
 	);
 }
