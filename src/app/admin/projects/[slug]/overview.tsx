@@ -29,7 +29,7 @@ import { ArrowIcon } from "@/components/public/icons";
 import { WeekChart } from "@/components/public/mono-charts";
 import { funnel, parseFunnel } from "@/lib/db/funnel";
 import type { Project } from "@/lib/db/projects";
-import { change, formatCount, formatDay, formatDuration, formatPercent, formatTime, formatWhole } from "@/lib/format";
+import { change, formatCount, formatDay, formatDuration, formatPercent, formatSeconds, formatTime, formatUkTime, formatWhole } from "@/lib/format";
 import { adminHref } from "@/lib/site";
 
 export type OverviewProps = {
@@ -106,8 +106,8 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 			{searches && (
 				<Section title="Searches" note={`${formatWhole(searches.searches)} searches in ${range.label.toLowerCase()}${searches.noResults ? `, ${formatWhole(searches.noResults)} found nothing` : ""}.`}>
 					<div className="grid gap-6 md:grid-cols-2">
-						<Top title="Top searches" rows={topSearches.slice(0, 5).map((t) => ({ label: t.words || "(filters only)", value: t.count }))} empty="No searches in this range." />
-						<Top title="Found nothing" rows={emptySearches.slice(0, 5).map((t) => ({ label: t.words || "(filters only)", value: t.count }))} empty="Every search found something." />
+						<Top title="Top searches" rows={topSearches.slice(0, 5).map((t) => ({ label: t.words || "(no words, just filters)", value: t.count }))} empty="No searches in this range." />
+						<Top title="Found nothing" rows={emptySearches.slice(0, 5).map((t) => ({ label: t.words || "(no words, just filters)", value: t.count }))} empty="Every search found something." />
 					</div>
 				</Section>
 			)}
@@ -222,7 +222,7 @@ function Health({ project, days, latestUp, broken }: { project: Project; days: {
 	const status: Status = latestUp === false ? "critical" : (ratio !== null && ratio < 0.99) || broken > 0 ? "warning" : ratio === null ? "none" : "good";
 	const parts = [
 		!project.siteUrl ? "No site address, so uptime isn't checked" : ratio === null ? "Not checked yet" : `Up ${formatPercent(ratio, ratio >= 0.9995 ? 0 : 2)} in the last 90 days`,
-		`${formatWhole(broken)} broken link${broken === 1 ? "" : "s"}`,
+		`${formatWhole(broken)} page${broken === 1 ? "" : "s"} not found`,
 	];
 	if (latestUp === false) parts.unshift("Down right now");
 	return (
@@ -247,7 +247,7 @@ function SearchHealth({ numbers, today }: { numbers: Map<string, { value: number
 	const when = day === today ? "today" : day === addDays(today, -1) ? "yesterday" : `on ${formatDay(day)}`;
 	const parts = [
 		failed && `${formatWhole(failed.value)} failed search${failed.value === 1 ? "" : "es"}`,
-		median && `median search time ${formatWhole(median.value)} ms`,
+		median && `searches typically take ${formatSeconds(median.value)}`,
 	].filter((p): p is string => !!p);
 	const text = `${parts.join(" · ").replace(/^./, (c) => c.toUpperCase())} ${when}`;
 	return (
@@ -283,6 +283,16 @@ function ReviewWaiting({ project, numbers }: { project: Project; numbers: Map<st
 	);
 }
 
+/** An event's props as "domain: github.com · type: pdf", or "–" when it has none. */
+function extraInfo(props: string): string {
+	try {
+		const entries = Object.entries(JSON.parse(props) as Record<string, unknown>);
+		return entries.length ? entries.map(([key, value]) => `${key}: ${String(value)}`).join(" · ") : "–";
+	} catch {
+		return props || "–";
+	}
+}
+
 // --- More detail -------------------------------------------------------------------------
 
 async function MoreDetail({
@@ -316,20 +326,20 @@ async function MoreDetail({
 		rangeTotals(db, project.id, range.from, range.to),
 	]);
 	const found = outages(checks).slice(0, 10);
-	const words = (w: string) => w || "(filters only)";
+	const words = (w: string) => w || "(no words, just filters)";
 	const rawNote = raw.clipped ? "From the last 90 days (detail older than that is deleted)." : undefined;
 
 	return (
 		<>
 			<p className="text-sm text-ink-2">
-				{formatCount(totals.pageviews)} page views · average engaged time {formatDuration(totals.avgEngagedMs)} · average scroll depth{" "}
+				{formatCount(totals.pageviews)} page views · time on page {formatDuration(totals.avgEngagedMs)} · how far people scroll{" "}
 				{formatPercent(totals.avgScrollPct === null ? null : totals.avgScrollPct / 100)}
 			</p>
 			<div className="grid gap-6 lg:grid-cols-2">
 				<Card title="Pages">
 					<RankedList title="Pages" keyLabel="Page" rows={pages.map((r) => ({ key: r.key, value: r.visitors, secondary: r.pageviews }))} />
 				</Card>
-				<Card title="Sources" note="Where visitors came from. Direct means no referrer was sent.">
+				<Card title="Sources" note="Where visitors came from. Direct means we couldn't tell (typed in, bookmarked, or an app).">
 					<RankedList title="Sources" keyLabel="Source" rows={sources.map((r) => ({ key: r.key, value: r.visitors, secondary: r.pageviews }))} formatKey={sourceName} />
 				</Card>
 				<Card title="Outbound clicks" note={rawNote}>
@@ -349,15 +359,15 @@ async function MoreDetail({
 					</>
 				)}
 				<Card title="Pages not found" note={rawNote}>
-					<RankedList title="Pages not found" keyLabel="Path" valueLabel="Times" rows={notFound.map((r) => ({ key: r.key, value: r.count }))} emptyText="No 404s recorded." />
+					<RankedList title="Pages not found" keyLabel="Path" valueLabel="Times" rows={notFound.map((r) => ({ key: r.key, value: r.count }))} emptyText="No missing pages visited." />
 				</Card>
 			</div>
 			{funnelResult.length > 0 && (
-				<Card title="Funnel" note="Each step counts visitors who did it after the step before, on the same day.">
+				<Card title="Funnel" note="Each step counts people who did it after the step before, on the same day.">
 					<FunnelChart steps={funnelResult} />
 				</Card>
 			)}
-			<Card title="Uptime" note="The last 90 days, checking the site address every 5 minutes. Hover a day for the detail.">
+			<Card title="Uptime" note="The last 90 days, checking the site every 5 minutes. Hover a day to see it.">
 				<UptimeStrip days={days} />
 				<div className="mt-4">
 					{found.length === 0 ? (
@@ -390,7 +400,7 @@ function LinkBuilder({ project, query, hrefFor }: { project: Project; query: Rec
 			if (!/^https?:$/.test(url.protocol)) throw new Error();
 			const clean = (v: string | undefined) => (v ?? "").trim();
 			if (clean(query.ref)) {
-				if (!/^[A-Za-z0-9-]{1,40}$/.test(clean(query.ref))) problem = "A ref can only use letters, numbers and hyphens, up to 40.";
+				if (!/^[A-Za-z0-9-]{1,40}$/.test(clean(query.ref))) problem = "A name can only use letters, numbers and hyphens, up to 40.";
 				else url.searchParams.set("ref", clean(query.ref));
 			}
 			for (const key of ["utm_source", "utm_medium", "utm_campaign"]) {
@@ -404,7 +414,7 @@ function LinkBuilder({ project, query, hrefFor }: { project: Project; query: Rec
 	}
 	const input = "mt-1 w-full rounded-xl border border-line bg-card px-3 py-2";
 	return (
-		<Card title="Make a tracked link" note="Add a ref for a single post or place, or UTM values (source, medium, name).">
+		<Card title="Make a link you can track" note="Give it a name for one post, or say where it's shared (site, type, campaign).">
 			<form method="get" className="grid gap-3 sm:grid-cols-2">
 				<input type="hidden" name="build" value="1" />
 				{query.range && <input type="hidden" name="range" value={query.range} />}
@@ -413,19 +423,19 @@ function LinkBuilder({ project, query, hrefFor }: { project: Project; query: Rec
 					<input name="url" type="url" required defaultValue={base} className={input} />
 				</label>
 				<label className="text-sm">
-					<span className="text-ink-2">Ref (e.g. linkedin-post-12)</span>
+					<span className="text-ink-2">Name (like linkedin-post-12)</span>
 					<input name="ref" defaultValue={query.ref ?? ""} maxLength={40} pattern="[A-Za-z0-9\-]*" className={input} />
 				</label>
 				<label className="text-sm">
-					<span className="text-ink-2">utm_source (e.g. linkedin)</span>
+					<span className="text-ink-2">Site (like linkedin)</span>
 					<input name="utm_source" defaultValue={query.utm_source ?? ""} maxLength={50} className={input} />
 				</label>
 				<label className="text-sm">
-					<span className="text-ink-2">utm_medium (e.g. social)</span>
+					<span className="text-ink-2">Type (like social)</span>
 					<input name="utm_medium" defaultValue={query.utm_medium ?? ""} maxLength={50} className={input} />
 				</label>
 				<label className="text-sm">
-					<span className="text-ink-2">utm_campaign (e.g. launch-post)</span>
+					<span className="text-ink-2">Campaign (like launch)</span>
 					<input name="utm_campaign" defaultValue={query.utm_campaign ?? ""} maxLength={50} className={input} />
 				</label>
 				<div className="flex items-center gap-3 sm:col-span-2">
@@ -485,11 +495,11 @@ async function Events({ project, range, today, query, hrefFor }: Pick<OverviewPr
 					</select>
 				</label>
 				<label>
-					<span className="block text-ink-2">From</span>
+					<span className="block text-ink-2">Sent by</span>
 					<select name="source" defaultValue={source ?? ""} className="mt-1 rounded-full border border-line bg-card px-3 py-1.5">
-						<option value="">Browser and server</option>
-						<option value="browser">Browser</option>
-						<option value="server">Server</option>
+						<option value="">The site and its server</option>
+						<option value="browser">The site</option>
+						<option value="server">Its server</option>
 					</select>
 				</label>
 				<button className={quietButtonClass}>Filter</button>
@@ -501,23 +511,23 @@ async function Events({ project, range, today, query, hrefFor }: Pick<OverviewPr
 					<table className="w-full text-sm">
 						<thead className="text-left text-muted">
 							<tr>
-								<th className="pb-1 pr-3 font-medium">Time (UTC)</th>
+								<th className="pb-1 pr-3 font-medium">Time</th>
 								<th className="pb-1 pr-3 font-medium">Event</th>
-								<th className="pb-1 pr-3 font-medium">Path</th>
-								<th className="pb-1 pr-3 font-medium">From</th>
-								<th className="pb-1 font-medium">Details</th>
+								<th className="pb-1 pr-3 font-medium">Page</th>
+								<th className="pb-1 pr-3 font-medium">Sent by</th>
+								<th className="pb-1 font-medium">Extra info</th>
 							</tr>
 						</thead>
 						<tbody>
 							{rows.map((e) => (
 								<tr key={e.id} className="border-t border-line align-top">
-									<td className="whitespace-nowrap py-1.5 pr-3 tabular text-ink-2">{formatTime(e.ts)}</td>
+									<td className="whitespace-nowrap py-1.5 pr-3 tabular text-ink-2">{formatUkTime(e.ts)}</td>
 									<td className="py-1.5 pr-3 font-medium">{e.name}</td>
 									<td className="max-w-48 truncate py-1.5 pr-3" title={e.path ?? ""}>
 										{e.path ?? "–"}
 									</td>
-									<td className="py-1.5 pr-3 text-ink-2">{e.source === "browser" ? "Browser" : "Server"}</td>
-									<td className="py-1.5 font-mono text-xs text-ink-2">{e.props === "{}" ? "–" : e.props}</td>
+									<td className="py-1.5 pr-3 text-ink-2">{e.source === "browser" ? "The site" : "Its server"}</td>
+									<td className="py-1.5 text-xs text-ink-2">{extraInfo(e.props)}</td>
 								</tr>
 							))}
 						</tbody>

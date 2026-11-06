@@ -254,7 +254,12 @@ describe("journey", () => {
 		const again = await core.journeyCore(db, idle, { title: "Week one", type: "post" }, ctx);
 		expect(await getJourney(db, Number(again.redirectTo!.match(/journey\/(\d+)/)![1]))).toMatchObject({ slug: "week-one-2" });
 
-		const deleted = await core.journeyCore(db, idle, { entry_id: String(id), intent: "delete" }, ctx);
+		// Deleting needs the box ticked, like every other delete.
+		const unconfirmed = await core.journeyCore(db, idle, { entry_id: String(id), intent: "delete" }, ctx);
+		expect(unconfirmed.state).toMatchObject({ status: "error", message: "Tick the box to confirm. Nothing was deleted." });
+		expect(await getJourney(db, id)).not.toBeNull();
+
+		const deleted = await core.journeyCore(db, idle, { entry_id: String(id), intent: "delete", confirm: "on" }, ctx);
 		expect(deleted.redirectTo).toBe("/admin/settings/journey?deleted=1");
 		expect(await getJourney(db, id)).toBeNull();
 	});

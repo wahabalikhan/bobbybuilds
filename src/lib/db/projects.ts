@@ -33,6 +33,8 @@ export type Project = {
 	sortOrder: number;
 	/** Whether it appears on the public page at all (card, chart, totals, share images). */
 	showPublic: boolean;
+	/** New projects: hidden until their first visit, then shown by the 5-minute job (migration 0020). */
+	showOnFirstVisit: boolean;
 	/** Shown before the name on the public page, e.g. "💼". "" = none. */
 	emoji: string;
 	/** The hero screenshot: a file in public/screenshots/ (always with alt text). */
@@ -68,6 +70,7 @@ type ProjectRow = {
 	secret_key_hint: string | null;
 	sort_order: number;
 	show_public: number;
+	show_on_first_visit: number;
 	is_paused: number;
 	emoji: string;
 	screenshot_path: string | null;
@@ -80,7 +83,7 @@ type ProjectRow = {
 
 // secret_key_hash is deliberately never selected into a Project.
 const PROJECT_COLUMNS = `id, slug, name, tagline, tagline_fallback, description_md, status, lesson, logo_path, site_url, health_url,
-	github_repo, links, allowed_origins, browser_events, funnel, public_key, secret_key_hint, sort_order, show_public,
+	github_repo, links, allowed_origins, browser_events, funnel, public_key, secret_key_hint, sort_order, show_public, show_on_first_visit,
 	is_paused, emoji, screenshot_path, screenshot_alt, case_study_url, outcomes, now_text, started_on`;
 
 function parseJsonArray<T>(value: string): T[] {
@@ -114,6 +117,7 @@ function toProject(row: ProjectRow): Project {
 		secretKeyHint: row.secret_key_hint,
 		sortOrder: row.sort_order,
 		showPublic: row.show_public === 1,
+		showOnFirstVisit: row.show_on_first_visit === 1,
 		emoji: row.emoji,
 		screenshotPath: row.screenshot_path,
 		screenshotAlt: row.screenshot_alt,

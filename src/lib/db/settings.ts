@@ -101,8 +101,26 @@ export async function setFunnel(db: D1Database, id: number, steps: FunnelStep[])
 }
 
 /** "Show on my public page": whether the project appears on the public page at all. */
+/** "Show on my public page", saved by hand: it also ends "hidden until its first visit", so your choice wins. */
 export async function setShowPublic(db: D1Database, id: number, show: boolean): Promise<void> {
-	await db.prepare("UPDATE projects SET show_public = ?2, updated_at = ?3 WHERE id = ?1").bind(id, show ? 1 : 0, now()).run();
+	await db.prepare("UPDATE projects SET show_public = ?2, show_on_first_visit = 0, updated_at = ?3 WHERE id = ?1").bind(id, show ? 1 : 0, now()).run();
+}
+
+/** A new project: off the public page until its first visit arrives (showProjectsWithFirstVisit). */
+export async function hideUntilFirstVisit(db: D1Database, id: number): Promise<void> {
+	await db.prepare("UPDATE projects SET show_public = 0, show_on_first_visit = 1, updated_at = ?2 WHERE id = ?1").bind(id, now()).run();
+}
+
+/** Shows every project that was waiting for its first visit and now has one. Returns how many. Run by the 5-minute job. */
+export async function showProjectsWithFirstVisit(db: D1Database, at: number): Promise<number> {
+	const result = await db
+		.prepare(
+			`UPDATE projects SET show_public = 1, show_on_first_visit = 0, updated_at = ?1
+			 WHERE show_on_first_visit = 1 AND EXISTS (SELECT 1 FROM page_views WHERE page_views.project_id = projects.id)`,
+		)
+		.bind(at)
+		.run();
+	return result.meta.changes ?? 0;
 }
 
 /** The project's public card: emoji, hero screenshot and its alt text, case study link, outcomes and its Now line. */

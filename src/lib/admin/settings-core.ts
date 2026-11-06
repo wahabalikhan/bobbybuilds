@@ -12,6 +12,7 @@ import {
 	deleteJourney,
 	deleteMetric,
 	deleteProject,
+	hideUntilFirstVisit,
 	saveJourney,
 	setBrowserEvents,
 	setFunnel,
@@ -80,7 +81,8 @@ export async function saveDetailsCore(db: D1Database, prev: FormState, values: F
 	const result = validateProjectDetails({ ...kept, ...values }, project.logoPath ? [...ctx.logos, project.logoPath] : ctx.logos);
 	if (!result.ok) return { state: failed(prev, values, result.errors) };
 	// Tagline placeholders must be this project's product numbers; private ones never fill in public.
-	const products = (await listMetrics(db, project.id)).filter((m) => m.source === "product");
+	const metrics = await listMetrics(db, project.id);
+	const products = metrics.filter((m) => m.source === "product");
 	const keys = taglineKeys(result.value.tagline);
 	const unknown = keys.filter((key) => !products.some((m) => m.key === key));
 	if (unknown.length) {
@@ -91,13 +93,26 @@ export async function saveDetailsCore(db: D1Database, prev: FormState, values: F
 		return { state: failed(prev, values, { tagline_fallback: "Add a fallback tagline, shown when the numbers can't be filled in." }) };
 	}
 	const privateKeys = keys.filter((key) => !products.find((m) => m.key === key)!.isPublic);
+	// The extra lines for the chart's hover card (outcomes) are saved here too, under the tagline.
+	// The card fields the public page no longer shows (emoji, screenshot, case study, Now) keep
+	// their saved values: they're not in the form any more, so they're passed through unchanged.
+	let card: Awaited<ReturnType<typeof validatePublicCard>> | null = null;
+	if (Object.keys(values).some((key) => /^outcome_\d+$/.test(key))) {
+		const outcomeValues = Object.fromEntries(Object.entries(values).filter(([key]) => /^outcome_\d+$/.test(key)));
+		const kept = { emoji: project.emoji, case_study_url: project.caseStudyUrl ?? "", screenshot_path: project.screenshotPath ?? "", screenshot_alt: project.screenshotAlt, now_text: project.nowText };
+		card = validatePublicCard({ ...kept, ...outcomeValues }, project.screenshotPath ? [project.screenshotPath] : [], await outcomeKeys(db, project.id));
+		if (!card.ok) return { state: failed(prev, values, card.errors) };
+	}
 	try {
 		await updateProjectDetails(db, project.id, result.value);
 	} catch (error) {
 		if (error instanceof SlugTakenError) return { state: failed(prev, values, { slug: "Another project already uses this slug." }) };
 		throw error;
 	}
-	const notes = result.value.slug !== project.slug ? ["The slug changed, so this page's address changed too."] : [];
+	if (card?.ok) await setPublicCard(db, project.id, card.value);
+	const notes = result.value.slug !== project.slug ? ["Its name changed, so this page's address changed too."] : [];
+	const privateOutcome = card?.ok ? card.value.outcomes.flatMap(taglineKeys).find((key) => !metrics.find((m) => m.key === key)?.isPublic) : undefined;
+	if (privateOutcome) notes.push(`{${privateOutcome}} isn't public, so lines using it are left out until it is (under On your public page).`);
 	if (privateKeys.length) notes.push(`{${privateKeys[0]}} isn't public, so your public page shows the fallback tagline until it is (under On your public page).`);
 	return {
 		state: ok(prev, "Saved.", notes),
@@ -139,6 +154,8 @@ export async function startProjectCore(db: D1Database, prev: FormState, values: 
 		sortOrder: Math.min(1000, Math.max(0, ...projects.map((p) => p.sortOrder)) + 1),
 	});
 	await setOrigins(db, id, [origin]);
+	// Off the public page until its first visit arrives (the 5-minute job then shows it).
+	await hideUntilFirstVisit(db, id);
 	const publicKey = createPublicKey();
 	const secretKey = createSecretKey();
 	await setProjectKeys(db, slug, { publicKey, secretKeyHash: await hashSecretKey(secretKey), secretKeyHint: secretKeyHint(secretKey) });
@@ -244,6 +261,7 @@ export async function deleteMetricCore(db: D1Database, prev: FormState, values: 
 export async function journeyCore(db: D1Database, prev: FormState, values: FormValues, ctx: Context): Promise<ActionResult> {
 	const id = values.entry_id ? Number(values.entry_id) : null;
 	if (values.intent === "delete" && id) {
+		if (values.confirm !== "on") return { state: failed(prev, values, {}, "Tick the box to confirm. Nothing was deleted.") };
 		await deleteJourney(db, id);
 		return { state: ok(prev, "Entry deleted."), redirectTo: adminHref("/settings/journey?deleted=1") };
 	}
@@ -258,9 +276,10 @@ export async function journeyCore(db: D1Database, prev: FormState, values: FormV
 		slug = base;
 		for (let n = 2; taken.has(slug); n += 1) slug = `${base}-${n}`;
 	}
+	const before = id === null ? null : (await listJourney(db)).find((e) => e.id === id);
 	try {
 		const saved = await saveJourney(db, id, result.value, slug);
-		const message = result.value.publish ? "Saved and published." : "Saved as a draft.";
+		const message = result.value.publish ? (before?.isPublished ? "Saved." : "Published.") : before?.isPublished ? "Unpublished. It's a draft now." : "Saved as a draft.";
 		return { state: ok(prev, message), redirectTo: id === null ? adminHref(`/settings/journey/${saved}?created=1`) : undefined };
 	} catch (error) {
 		if (error instanceof SlugTakenError) return { state: failed(prev, values, {}, "Another entry was saved at the same moment. Please try again.") };

@@ -424,11 +424,11 @@ export function RankedList({
 export type Status = "good" | "warning" | "serious" | "critical" | "none";
 
 export const STATUS_LABEL: Record<Status, string> = {
-	good: "Good",
-	warning: "Needs improvement",
-	serious: "Poor",
+	good: "Up",
+	warning: "Some downtime",
+	serious: "Lots of downtime",
 	critical: "Down",
-	none: "No data",
+	none: "Not checked",
 };
 
 const STATUS_ICON: Record<Status, string> = { good: "✓", warning: "!", serious: "!", critical: "✕", none: "–" };
@@ -465,7 +465,7 @@ const UPTIME_LEGEND: { status: Status; label: string }[] = [
 	{ status: "warning", label: "99–99.9%" },
 	{ status: "serious", label: "95–99%" },
 	{ status: "critical", label: "Under 95%" },
-	{ status: "none", label: "No checks" },
+	{ status: "none", label: "Not checked" },
 ];
 
 /** One small bar per day, coloured by uptime, with an icon-and-label legend. */

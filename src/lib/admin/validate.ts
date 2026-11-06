@@ -187,9 +187,9 @@ export function validateOrigins(value: string, siteUrl: string | null): Result<s
 	const notes: string[] = [];
 	if (siteUrl) {
 		const siteOrigin = new URL(siteUrl).origin;
-		if (!origins.includes(siteOrigin)) notes.push(`The site address's origin (${siteOrigin}) isn't in the list, so page views from it will be refused.`);
+		if (!origins.includes(siteOrigin)) notes.push(`The site's own address (${siteOrigin}) isn't in the list, so its visits won't be counted.`);
 	}
-	if (origins.length === 0) notes.push("With no origins, every browser request for this project is refused.");
+	if (origins.length === 0) notes.push("With no sites listed, no visits will be counted.");
 	return { ok: true, value: origins, notes };
 }
 
@@ -225,7 +225,7 @@ export function validateFunnel(values: FormValues): Result<FunnelStep[]> {
 			if (!isEventName(value)) errors[`step_${i}`] = `Step ${steps.length + 1}: "${String(value).slice(0, 40)}" isn't an event name.`;
 			else steps.push({ label, event: value });
 		} else {
-			if (!/^\/[^\s?#]{0,199}$/.test(value)) errors[`step_${i}`] = `Step ${steps.length + 1}: a page is a path starting with /, with no query string.`;
+			if (!/^\/[^\s?#]{0,199}$/.test(value)) errors[`step_${i}`] = `Step ${steps.length + 1}: enter a page like /pricing (starting with /, nothing after a ?).`;
 			else steps.push({ label, path: value });
 		}
 	}
@@ -242,7 +242,7 @@ export function validateNewMetric(values: FormValues): Result<NewMetric> {
 	const label = text(values.label);
 	if (!label || label.length > 60) errors.label = "Add a label of up to 60 characters.";
 	const key = text(values.key) || slugify(label).replace(/-/g, "_");
-	if (!/^[a-z][a-z0-9_]{0,39}$/.test(key)) errors.key = "The key must start with a letter and use lower-case letters, numbers and _ only (up to 40).";
+	if (!/^[a-z][a-z0-9_]{0,39}$/.test(key)) errors.key = "Use lower-case letters, numbers and _ only, starting with a letter (up to 40).";
 	if (["visitors", "pageviews", "repeat_visitors"].includes(key)) errors.key = "That key is built in. Choose another.";
 	const unit = text(values.unit);
 	if (unit.length > 20) errors.unit = "Keep the unit to 20 characters or fewer.";

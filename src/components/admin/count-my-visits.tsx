@@ -52,7 +52,7 @@ export function CountMyVisits({ sites }: { sites: { name: string; origin: string
 						<span className="font-medium">Ignore this browser on {host || "this site"}</span>
 						<span className="block text-muted">
 							{ignored === null
-								? "This browser doesn't allow it (its storage is blocked)."
+								? "This browser won't let us remember this setting."
 								: ignored
 									? "On: your visits to BobbyBuilds from this browser aren't counted."
 									: "Off: your visits to BobbyBuilds from this browser are counted."}

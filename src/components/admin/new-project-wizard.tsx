@@ -23,13 +23,16 @@ export function NewProjectWizard({ action }: { action: Action }) {
 		<ol className="space-y-6">
 			<Step number={1} title="Name and site address" done={Boolean(setup)}>
 				{setup ? (
-					<p className="text-sm text-ink-2">
-						<span className="font-medium text-ink">{setup.name}</span> is set up. Its slug is <code>{setup.slug}</code>, and only its site&rsquo;s address can send visits.
-					</p>
+					<div>
+						<p className="text-sm text-ink-2">
+							<span className="font-medium text-ink">{setup.name}</span> is set up. Its address in HQ ends in <code>{setup.slug}</code>, and only its site can send visits.
+						</p>
+						<p className="mt-1 text-sm text-muted">Hidden from your public page until its first visit. You can show it any time.</p>
+					</div>
 				) : (
 					<form action={formAction} className="space-y-4" noValidate>
-						<Field name="name" label="Name" placeholder="Tech Jobs" state={state} hint="The slug is made from it, e.g. tech-jobs." />
-						<Field name="site_url" label="Site address" placeholder="https://" type="url" state={state} hint="The site's own address. It becomes the allowed website and the uptime check." />
+						<Field name="name" label="Name" placeholder="Tech Jobs" state={state} hint="Its address in HQ is made from this, like tech-jobs." />
+						<Field name="site_url" label="Site address" placeholder="https://" type="url" state={state} hint="Visits are only accepted from this site, and it's checked every 5 minutes." />
 						<div className="flex items-center gap-3">
 							<button className={buttonClass} disabled={pending}>
 								{pending ? "Setting up…" : "Continue"}
@@ -44,22 +47,22 @@ export function NewProjectWizard({ action }: { action: Action }) {
 				)}
 			</Step>
 
-			<Step number={2} title="Add the snippet to the site" done={false} muted={!setup}>
+			<Step number={2} title="Add the tracking code" done={false} muted={!setup}>
 				{setup ? (
 					<div className="space-y-3">
 						<p className="text-sm text-ink-2">
-							Paste this before <code>&lt;/head&gt;</code> on every page.
+							Paste this into the <code>&lt;head&gt;</code> of every page.
 						</p>
 						<pre className="overflow-x-auto rounded-xl bg-surface p-3 text-xs">{setup.snippet}</pre>
-						<CopyButton text={setup.snippet} label="Copy snippet" />
+						<CopyButton text={setup.snippet} label="Copy code" />
 					</div>
 				) : (
-					<p className="text-sm text-muted">The keys are made automatically after step 1.</p>
+					<p className="text-sm text-muted">The code is made for you after step 1.</p>
 				)}
 			</Step>
 
 			<Step number={3} title="First visit" done={false} muted={!setup}>
-				{setup ? <WaitForFirstVisit slug={setup.slug} /> : <p className="text-sm text-muted">Once the snippet is on the site, open any page of it.</p>}
+				{setup ? <WaitForFirstVisit slug={setup.slug} /> : <p className="text-sm text-muted">Once the code is on the site, open any page of it.</p>}
 			</Step>
 		</ol>
 	);
@@ -129,7 +132,7 @@ function WaitForFirstVisit({ slug }: { slug: string }) {
 	return arrived ? (
 		<div role="status" className="space-y-3">
 			<p className="flex items-center gap-2 text-sm font-medium text-good-ink">
-				<span aria-hidden>✓</span> The first visit has arrived. It&rsquo;s connected.
+				<span aria-hidden>✓</span> The first visit has arrived. It&rsquo;s connected, and it&rsquo;ll be on your public page within a few minutes.
 			</p>
 			<div className="flex flex-wrap gap-3 text-sm">
 				<Link href={adminHref(`/projects/${slug}`)} className={buttonClass}>
@@ -143,7 +146,7 @@ function WaitForFirstVisit({ slug }: { slug: string }) {
 	) : (
 		<p role="status" className="flex items-center gap-2 text-sm text-ink-2">
 			<span aria-hidden className="h-2 w-2 animate-pulse rounded-full bg-[var(--warning)]" />
-			Waiting for your first visit… Open any page of the site with the snippet on it.
+			Waiting for your first visit… Open any page of the site with the code on it.
 		</p>
 	);
 }

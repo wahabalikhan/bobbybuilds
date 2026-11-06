@@ -3,7 +3,7 @@ import { StatusBadge, type Status } from "@/components/charts";
 import type { Attention } from "@/lib/db/dashboard";
 import { adminHref } from "@/lib/site";
 
-const LABEL: Record<Attention["level"], string> = { critical: "Down", serious: "Problem", warning: "Check" };
+const LABEL: Record<Attention["level"], string> = { critical: "Down", serious: "Failed", warning: "Worth a look" };
 
 /** The pill's text: "Everything's running normally", or "<n> thing(s) need(s) attention". */
 export function statusText(items: Attention[]): string {

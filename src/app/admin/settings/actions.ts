@@ -93,11 +93,6 @@ export async function journeyAction(prev: FormState, form: FormData) {
 	return run(prev, form, core.journeyCore);
 }
 
-export async function publicCardAction(prev: FormState, form: FormData) {
-	await requireAdmin();
-	return run(prev, form, core.publicCardCore);
-}
-
 export async function profileAction(prev: FormState, form: FormData) {
 	await requireAdmin();
 	return run(prev, form, core.profileCore);

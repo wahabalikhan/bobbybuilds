@@ -71,7 +71,7 @@ export default async function ProjectPage({
 						<ProjectLogo name={project.name} logoPath={iconFor(project)} size={36} />
 						<h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
 						<StatusDot status={project.status} up={up} />
-						{!project.showPublic && <span className="text-sm text-muted">Not on your public page</span>}
+						{!project.showPublic && <span className="text-sm text-muted">{project.showOnFirstVisit ? "Hidden until its first visit" : "Hidden from public page"}</span>}
 						{project.siteUrl && (
 							<a href={project.siteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
 								Visit site <ArrowIcon />
@@ -80,7 +80,7 @@ export default async function ProjectPage({
 						)}
 					</div>
 					{numbers && (
-						<p className="text-sm font-semibold tabular text-ink" title="Its public numbers, as the public card shows them">
+						<p className="text-sm font-semibold tabular text-ink" title="Numbers you've made public">
 							{numbers}
 						</p>
 					)}

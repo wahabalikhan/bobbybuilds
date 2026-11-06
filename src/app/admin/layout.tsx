@@ -6,6 +6,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { LiveDataBanner } from "@/components/admin/live-banner";
 import { StatusMenu } from "@/components/admin/status-menu";
 import { Wordmark } from "@/components/wordmark";
+import { ArrowIcon } from "@/components/public/icons";
 import { requestTime } from "@/lib/admin/clock";
 import { attentionItems } from "@/lib/db/dashboard";
 import { isLiveData } from "@/lib/admin/access";
@@ -37,7 +38,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 			) : (
 				localAdmin && (
 					<p className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
-						Local preview: Cloudflare Access is skipped on this machine only. This is your local database.
+						Local preview: this is your test database, and the login is skipped on this computer only.
 					</p>
 				)
 			)}
@@ -49,6 +50,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 						<Wordmark suffix="HQ" icon />
 					</Link>
 					<StatusMenu items={attention} />
+					{/* The visible way back to the public site; Option + A (Alt + A) does the same. */}
+					<a href={site.url} target="_blank" rel="noopener noreferrer" aria-keyshortcuts="Alt+A" title="Or press Option + A (Alt + A on Windows)" className="link ml-auto inline-flex items-center gap-1 text-sm">
+						View site <ArrowIcon />
+						<span className="sr-only">(opens in a new tab)</span>
+					</a>
 				</div>
 			</header>
 			<main className={`${PAGE} min-w-0 pb-12 pt-6`}>{children}</main>

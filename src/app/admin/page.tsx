@@ -93,7 +93,7 @@ export default async function AdminHome() {
 			<CountMyVisits sites={otherSites} />
 
 			<p className="text-xs text-muted">
-				Raw page views, events, uptime checks and job runs are deleted after 90 days. Daily totals are kept. No cookies, and no IP addresses, names or emails are stored.
+				Detailed records are deleted after 90 days. Daily totals are kept. No cookies, and no IP addresses, names or emails are stored.
 			</p>
 		</div>
 	);
@@ -128,7 +128,7 @@ function ProjectCard({ summary: s, numbers, logoPath }: { summary: ProjectSummar
 					</h3>
 				</div>
 				<span className="flex shrink-0 items-center gap-3">
-					{!s.project.showPublic && <span className="text-xs text-muted">Not on public page</span>}
+					{!s.project.showPublic && <span className="text-xs text-muted">{s.project.showOnFirstVisit ? "Hidden until its first visit" : "Hidden from public page"}</span>}
 					<StatusDot status={s.project.status} up={s.uptime.lastUp} />
 				</span>
 			</div>
@@ -159,7 +159,7 @@ function ProjectCard({ summary: s, numbers, logoPath }: { summary: ProjectSummar
 				/>
 			</div>
 			<div className="mt-4 text-xs text-muted [&_span]:text-xs" title={s.uptime.uptime7 === null ? undefined : `${formatPercent(s.uptime.uptime7, 2)} up over 7 days`}>
-				<StatusBadge status={uptime} label={s.uptime.lastUp === null ? "Not checked yet" : s.uptime.lastUp ? "Up" : "Down"} />
+				<StatusBadge status={uptime} label={s.uptime.lastUp === null ? "Uptime not checked yet" : s.uptime.lastUp ? "Up" : "Down"} />
 			</div>
 		</article>
 	);

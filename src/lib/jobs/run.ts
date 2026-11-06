@@ -6,6 +6,7 @@ import { rollupDay } from "./rollup";
 import { pingAll } from "./uptime";
 import { refreshAllIcons } from "@/lib/icons/refresh";
 import { publishSnapshot } from "@/lib/public/snapshot";
+import { showProjectsWithFirstVisit } from "@/lib/db/settings";
 import { owner } from "@/lib/site";
 
 /**
@@ -28,6 +29,9 @@ async function frequent(deps: JobDeps, at: number) {
 	const summary: Record<string, unknown> = {
 		uptime: uptime.map((check) => ({ project: check.projectId, up: check.up, ms: check.responseMs, status: check.statusCode })),
 	};
+	// New projects waiting for their first visit go on the public page once it arrives (before the snapshot).
+	const shown = await showProjectsWithFirstVisit(deps.db, at);
+	if (shown) summary.shownAfterFirstVisit = shown;
 	// Hourly: one request to GitHub an hour (its API allows 5,000).
 	if (new Date(at).getUTCMinutes() === 0) {
 		summary.contributions = await syncGithubContributions(deps.db, deps.fetch, owner.githubLogin, deps.githubToken, at);

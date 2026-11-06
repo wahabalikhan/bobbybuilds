@@ -49,6 +49,18 @@ describe("the public card", () => {
 		expect(result.state.status).toBe("ok");
 		expect(await getProjectBySlug(db, project.slug)).toMatchObject({ emoji: "🎨", outcomes: ["{visitors} people visited"], screenshotPath: null });
 	});
+
+	it("saves the extra lines with About this project, keeping the card fields that aren't in the form any more", async () => {
+		const project = await newProject();
+		await core.publicCardCore(db, idle, { project_id: String(project.id), emoji: "🎨", case_study_url: "https://wahabalikhan.com/x", now_text: "building" }, ctx);
+		const values = { project_id: String(project.id), name: project.name, status: "building", site_url: project.siteUrl ?? "", outcome_0: "{visitors} people visited", outcome_1: "" };
+		expect((await core.saveDetailsCore(db, idle, values, ctx)).state.status).toBe("ok");
+		expect(await getProjectBySlug(db, project.slug)).toMatchObject({ emoji: "🎨", caseStudyUrl: "https://wahabalikhan.com/x", nowText: "building", outcomes: ["{visitors} people visited"] });
+
+		const bad = await core.saveDetailsCore(db, idle, { ...values, outcome_0: "No number here" }, ctx);
+		expect(bad.state).toMatchObject({ status: "error", errors: { outcome_0: expect.any(String) } });
+		expect((await getProjectBySlug(db, project.slug))!.outcomes).toEqual(["{visitors} people visited"]);
+	});
 });
 
 describe("paused", () => {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { Hidden, SettingsForm } from "@/components/admin/form";
+import { CheckboxField, Hidden, SettingsForm } from "@/components/admin/form";
 import { JourneyForm } from "@/components/admin/journey-form";
 import { Breadcrumb } from "@/components/admin/ui";
 import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
@@ -35,6 +35,7 @@ export default async function EditJourneyEntry({ params, searchParams }: { param
 					<SettingsForm action={journeyAction} submitLabel="Delete entry for good" danger>
 						<Hidden name="entry_id" value={entry.id} />
 						<Hidden name="intent" value="delete" />
+						<CheckboxField name="confirm" label="Delete it, and take it off your public page. This can't be undone." />
 					</SettingsForm>
 				</div>
 			</details>

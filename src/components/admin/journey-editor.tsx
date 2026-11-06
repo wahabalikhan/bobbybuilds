@@ -17,7 +17,7 @@ export function JourneyBody({ defaultValue }: { defaultValue: string }) {
 				rows={4}
 				maxLength={JOURNEY_BODY_MAX}
 				defaultValue={defaultValue}
-				hint={`Up to ${JOURNEY_BODY_MAX} characters. Markdown: **bold**, _italic_, [links](https://…), \`code\`. Raw HTML is shown as text.`}
+				hint={`Up to ${JOURNEY_BODY_MAX} characters. You can use **bold**, _italic_ and [links](https://…).`}
 			/>
 			<button
 				type="button"

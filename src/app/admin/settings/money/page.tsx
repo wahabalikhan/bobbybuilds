@@ -42,7 +42,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Costs and revenue" }]} />
 				<h1 className="text-2xl font-bold tracking-tight">Costs and revenue</h1>
-				<p className="text-sm text-ink-2">What it costs to run everything each month, and what it earns (even £0). This month&rsquo;s totals and the costs by service go on your public page.</p>
+				<p className="text-sm text-ink-2">What it costs to run everything each month, and what it earns (even £0). The latest month with anything in it is shown on your public page, with its costs by service.</p>
 			</div>
 
 			<nav aria-label="Month" className="flex items-center justify-between gap-3">
@@ -118,7 +118,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 							);
 						})}
 					</div>
-					<p className="text-xs text-muted">Clear a row to remove it. Save to get more empty rows. Amounts are in pounds, like 12.40.</p>
+					<p className="text-xs text-muted">Clear a row to remove it. Need more rows? Save, and more appear. Amounts are in pounds, like 12.40.</p>
 				</SettingsForm>
 			</section>
 

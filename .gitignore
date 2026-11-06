@@ -37,3 +37,6 @@ next-env.d.ts
 # Built from src/tracker by `npm run build:tracker` (runs before dev and build)
 /public/t.js
 /public/t-vitals.js
+
+# Local notes and reports, never committed (the repo is public)
+.tmp/

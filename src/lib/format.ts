@@ -70,6 +70,19 @@ export function formatTime(timestampMs: number): string {
 	return `${formatDay(iso.slice(0, 10))}, ${iso.slice(11, 16)} UTC`;
 }
 
+const UK_TIME = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+
+/** "6 Nov, 14:05" in UK time (GMT or BST), for lists you read rather than compare across days. */
+export function formatUkTime(timestampMs: number): string {
+	const parts = Object.fromEntries(UK_TIME.formatToParts(new Date(timestampMs)).map((p) => [p.type, p.value]));
+	return `${parts.day} ${parts.month}, ${parts.hour}:${parts.minute}`;
+}
+
+/** "0.2 s" from milliseconds ("under 0.1 s" below 50 ms). */
+export function formatSeconds(ms: number): string {
+	return ms < 50 ? "under 0.1 s" : `${(ms / 1000).toFixed(1)} s`;
+}
+
 /** "4 minutes ago" / "3 hours ago" / "2 days ago" */
 export function timeAgo(timestampMs: number, now: number = Date.now()): string {
 	const minutes = Math.round((now - timestampMs) / 60_000);

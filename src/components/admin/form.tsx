@@ -17,14 +17,17 @@ const StateContext = createContext<FormState>({ status: "idle", version: 0 });
 export const inputClass =
 	"mt-1.5 w-full rounded-xl border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-muted aria-[invalid=true]:border-critical";
 
-function SubmitButton({ label, danger }: { label: string; danger?: boolean }) {
-	const { pending } = useFormStatus();
+/** A second way to submit the same form, sending `name=value` with it (e.g. "Save draft" next to "Publish"). */
+export type FormButton = { label: string; name: string; value: string; quiet?: boolean };
+
+function SubmitButton({ label, danger, name, value, quiet }: { label: string; danger?: boolean; name?: string; value?: string; quiet?: boolean }) {
+	const { pending, data } = useFormStatus();
+	// With several buttons, only the one that was pressed says "Saving…".
+	const pressed = pending && (!name || data?.get(name) === value);
+	const look = danger ? "bg-critical text-white" : quiet ? "border border-line bg-card text-ink hover:bg-pill" : "bg-ink text-page hover:opacity-85";
 	return (
-		<button
-			disabled={pending}
-			className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-medium disabled:opacity-60 ${danger ? "bg-critical text-white" : "bg-ink text-page hover:opacity-85"}`}
-		>
-			{pending ? "Saving…" : label}
+		<button name={name} value={value} disabled={pending} className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-medium disabled:opacity-60 ${look}`}>
+			{pressed ? "Saving…" : label}
 		</button>
 	);
 }
@@ -35,12 +38,15 @@ export function SettingsForm({
 	submitLabel = "Save",
 	danger = false,
 	className = "",
+	buttons,
 }: {
 	action: (state: FormState, form: FormData) => Promise<FormState>;
 	children: ReactNode;
 	submitLabel?: string;
 	danger?: boolean;
 	className?: string;
+	/** Instead of the one submit button: several, each sending its own name=value. */
+	buttons?: FormButton[];
 }) {
 	const [state, formAction] = useActionState(action, { status: "idle", version: 0 } satisfies FormState);
 	return (
@@ -48,7 +54,7 @@ export function SettingsForm({
 			<form key={state.version} action={formAction} className={`space-y-4 ${className}`} noValidate>
 				{children}
 				<div className="flex flex-wrap items-center gap-3 pt-1">
-					<SubmitButton label={submitLabel} danger={danger} />
+					{buttons ? buttons.map((b) => <SubmitButton key={b.label} label={b.label} name={b.name} value={b.value} quiet={b.quiet} />) : <SubmitButton label={submitLabel} danger={danger} />}
 					<StatusMessage state={state} />
 				</div>
 				{state.secret && <SecretOnce secret={state.secret} />}
@@ -80,7 +86,7 @@ function SecretOnce({ secret }: { secret: string }) {
 		<div role="alert" className="rounded-2xl border border-line bg-surface p-4">
 			<p className="font-medium">Copy your secret key now. It won&rsquo;t be shown again.</p>
 			<p className="mt-1 text-sm text-ink-2">
-				Only its hash is stored. Put it in the product&rsquo;s own secrets (for example <code>npx wrangler secret put BOBBY_SECRET_KEY</code>), never in browser code or Git.
+				Save it in the product&rsquo;s secrets, never in its code.
 			</p>
 			<div className="mt-3 flex flex-wrap items-center gap-2">
 				<input readOnly value={secret} aria-label="Secret key" className={`${inputClass} mt-0 min-w-0 flex-1 font-mono`} />

@@ -76,6 +76,7 @@ describe("projects", () => {
 		["a secret key hash in upper case", { secret_key_hash: "A".repeat(64), secret_key_hint: "abcd" }],
 		["a hash with no hint", { secret_key_hash: "a".repeat(64) }],
 		["show_public other than 0 or 1", { show_public: 2 }],
+		["show_on_first_visit other than 0 or 1", { show_on_first_visit: 2 }],
 	])("rejects %s", async (_label, overrides) => {
 		await expectRejected(createProject(overrides));
 	});

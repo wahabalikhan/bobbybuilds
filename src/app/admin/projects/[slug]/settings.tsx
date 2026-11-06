@@ -6,17 +6,15 @@ import { Switch } from "@/components/admin/switch";
 import { Pill, ProjectLogo } from "@/components/admin/ui";
 import { adminIcons } from "@/lib/admin/icons";
 import { getIconMeta } from "@/lib/db/icons";
-import { BUILT_IN_EVENTS } from "@/lib/collector/validate";
 import { requestTime } from "@/lib/admin/clock";
 import { FUNNEL_ROWS, OUTCOME_ROWS } from "@/lib/admin/validate";
 import { listMetrics, outcomeNumbers, type Metric } from "@/lib/db/dashboard";
 import { utcDay } from "@/lib/days";
 import { formatTime, formatWhole, timeAgo } from "@/lib/format";
-import { SCREENSHOTS } from "@/lib/logos.generated";
 import { parseFunnel } from "@/lib/db/funnel";
 import type { Project } from "@/lib/db/projects";
 import { site } from "@/lib/site";
-import { addMetricAction, deleteMetricAction, deleteProjectAction, eventsAction, funnelAction, keysAction, originsAction, publicCardAction, refreshIconAction, saveDetailsAction, visibilityAction } from "../../settings/actions";
+import { addMetricAction, deleteMetricAction, deleteProjectAction, eventsAction, funnelAction, keysAction, originsAction, refreshIconAction, saveDetailsAction, visibilityAction } from "../../settings/actions";
 
 /**
  * A project's settings, one scrolling page: About this project, On your public page, Connection
@@ -59,12 +57,13 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 						label="Fallback tagline"
 						defaultValue={project.taglineFallback}
 						maxLength={120}
-						hint="Shown instead when a number in the tagline is over a week old or isn't public. Only needed with numbers in the tagline."
+						hint="Used when a number in the tagline can't be shown (it's private or over a week old)."
 					/>
-					<TextField type="url" name="site_url" label="Site address" defaultValue={project.siteUrl ?? ""} placeholder="https://" hint="Where the public card links to. It's also checked every 5 minutes for uptime." />
+					<Outcomes project={project} numbers={numbers} />
+					<TextField type="url" name="site_url" label="Site address" defaultValue={project.siteUrl ?? ""} placeholder="https://" hint="Where the public card links to. It's checked every 5 minutes to see if it's up." />
 					<div className="grid gap-4 sm:grid-cols-[10rem_14rem]">
-						<TextField type="number" name="sort_order" label="Order" defaultValue={String(project.sortOrder)} hint="1 comes first, here and on your public page." />
-						<TextField type="date" name="started_on" label="Live since" defaultValue={project.startedOn ?? ""} hint={'When it first went live. Shown as "live since" under its charts, which start here or when tracking began, if later.'} />
+						<TextField type="number" name="sort_order" label="Order" defaultValue={String(project.sortOrder)} hint="Position in lists. 1 is first." />
+						<TextField type="date" name="started_on" label="Live since" defaultValue={project.startedOn ?? ""} hint="The day it went live. Its charts start here (or when tracking started, if that's later)." />
 					</div>
 				</SettingsForm>
 			</Section>
@@ -74,17 +73,14 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 			</Section>
 
 			<Section title="On your public page">
-				<div className="space-y-8">
-					<PublicCard project={project} numbers={numbers} />
-					<PublicSwitches project={project} metrics={metrics} />
-				</div>
+				<PublicSwitches project={project} metrics={metrics} />
 			</Section>
 
 			<details className="group rounded-2xl border border-line bg-card">
 				<summary className="flex list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
 					<span>
 						<span className="font-medium">Connection</span>
-						<span className="block text-sm text-muted">The snippet, allowed websites, events, funnel, secret key and product numbers.</span>
+						<span className="block text-sm text-muted">Tracking code and the technical setup. You&rsquo;ll rarely need this.</span>
 					</span>
 					<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="shrink-0 text-muted transition-transform group-open:rotate-180">
 						<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -100,7 +96,7 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 					Delete this project
 				</h2>
 				<p className="mb-4 mt-1 text-sm text-ink-2">
-					Removes the project, its keys, settings, page views, events, roll-ups, numbers and uptime. Journey entries are kept. It can&rsquo;t be undone.
+					Deletes the project and everything recorded for it. Journey entries stay. This can&rsquo;t be undone.
 				</p>
 				<SettingsForm action={deleteProjectAction} submitLabel="Delete project for good" danger>
 					<Hidden name="project_id" value={project.id} />
@@ -111,7 +107,7 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 	);
 }
 
-const KIND = { svg: "its SVG icon", "apple-touch-icon": "its apple-touch-icon", manifest: "its web manifest", favicon: "its favicon" } as const;
+const KIND = { svg: "its site (its main icon)", "apple-touch-icon": "its site (its app icon)", manifest: "its site (its app icon)", favicon: "its site (its tab icon)" } as const;
 
 /** The project's current icon, where it came from and when it was last checked, with "Refresh icon now". */
 async function IconBlock({ project, db }: { project: Project; db: D1Database }) {
@@ -125,10 +121,10 @@ async function IconBlock({ project, db }: { project: Project; db: D1Database }) 
 				<div className="min-w-0 text-sm">
 					<p className="text-ink">
 						{meta?.hash && meta.kind
-							? <>From {KIND[meta.kind]}{meta.sourceUrl && <span className="block truncate text-muted" title={meta.sourceUrl}>{meta.sourceUrl}</span>}</>
+							? <>Taken from {KIND[meta.kind]}{meta.sourceUrl && <span className="block truncate text-muted" title={meta.sourceUrl}>{meta.sourceUrl}</span>}</>
 							: src
-								? "None found on its site yet, so its file in public/logos is used."
-								: "None found on its site yet, so its first letter is shown."}
+								? "Not found on its site yet, so the saved logo is used."
+								: "Not found on its site yet, so its first letter is shown."}
 					</p>
 					<p className="mt-1 text-muted">
 						{meta ? <span title={formatTime(meta.checkedAt)}>Last checked {timeAgo(meta.checkedAt, now)}</span> : "Not checked yet"}
@@ -138,7 +134,7 @@ async function IconBlock({ project, db }: { project: Project; db: D1Database }) 
 			</div>
 			<SettingsForm action={refreshIconAction} submitLabel="Refresh icon now">
 				<Hidden name="project_id" value={project.id} />
-				<p className="text-xs text-muted">Checked every day from {project.siteUrl ?? "its site address"}: its SVG icon, then its apple-touch-icon, then the largest icon in its web manifest, then its favicon. A copy is kept here, so the cards never depend on its site being up.</p>
+				<p className="text-xs text-muted">Checked daily from its site. A copy is kept here, so the card still shows it if the site is down.</p>
 			</SettingsForm>
 		</div>
 	);
@@ -154,61 +150,43 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /**
- * The project's card on the public page: emoji, hero screenshot (from public/screenshots/, with
- * alt text), case study link, and up to 3 outcomes with live numbers.
+ * Up to 3 extra lines for the card chart's hover card, each with a live number in {braces}, under
+ * the tagline (saved with About this project). Closed while there are none.
  */
-function PublicCard({ project, numbers }: { project: Project; numbers: Awaited<ReturnType<typeof outcomeNumbers>> }) {
-	// A saved screenshot whose file has gone stays in the list, so saving doesn't drop it.
-	const files = project.screenshotPath && !SCREENSHOTS.includes(project.screenshotPath) ? [project.screenshotPath, ...SCREENSHOTS] : SCREENSHOTS;
+function Outcomes({ project, numbers }: { project: Project; numbers: Awaited<ReturnType<typeof outcomeNumbers>> }) {
 	return (
-		<SettingsForm action={publicCardAction} submitLabel="Save card">
-			<Hidden name="project_id" value={project.id} />
-			<div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
-				<TextField name="emoji" label="Emoji" defaultValue={project.emoji} maxLength={16} placeholder="💼" hint="Before the name." />
-				<TextField type="url" name="case_study_url" label="Case study link" defaultValue={project.caseStudyUrl ?? ""} placeholder="https://wahabalikhan.com/…" hint={'Shows "Read the case study". Leave blank if there isn\u2019t one.'} />
-			</div>
-			<SelectField
-				name="screenshot_path"
-				label="Screenshot"
-				defaultValue={project.screenshotPath ?? ""}
-				hint={files.length ? "The big image on the card. Add files to public/screenshots/ (about 2,000px wide, 16:10)." : "No files yet. Add one to public/screenshots/ (about 2,000px wide, 16:10, WebP is smallest), then restart the dev server."}
-				options={[{ value: "", label: "No screenshot" }, ...files.map((f) => ({ value: f, label: f.replace("/screenshots/", "") }))]}
-			/>
-			<TextArea name="screenshot_alt" label="What the screenshot shows" rows={2} maxLength={300} defaultValue={project.screenshotAlt} hint="Alt text for people who can't see it. Needed with a screenshot." />
-			<div className="space-y-3">
-				<div>
-					<p className="text-sm font-medium">Outcomes</p>
-					<p className="mt-0.5 text-xs text-muted">
-						Up to 3, each with a live number in &#123;braces&#125;. One whose number is private or over a week old is left out.
-						{numbers.length > 0 ? (
-							<>
-								{" "}You can use:{" "}
-								{numbers.map((n, i) => (
-									<span key={n.key}>
-										{i > 0 && " · "}
-										<code>&#123;{n.key}&#125;</code> ({n.value === null ? "no value yet" : `${formatWhole(n.value)} ${n.period}`}
-										{!n.isPublic && ", private"})
-									</span>
-								))}
-							</>
-						) : (
-							" This project has no numbers yet."
-						)}
-					</p>
-				</div>
+		<details open={project.outcomes.length > 0} className="group rounded-2xl border border-line">
+			<summary className="flex list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
+				<span>
+					Extra lines in the chart&rsquo;s hover card <span className="font-normal text-muted">(optional)</span>
+				</span>
+				<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="shrink-0 text-muted transition-transform group-open:rotate-180">
+					<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+				</svg>
+			</summary>
+			<div className="space-y-3 border-t border-line p-4">
+				<p className="text-xs text-muted">
+					Up to 3, each with a number in &#123;braces&#125;. A line whose number is private or over a week old is left out.
+					{numbers.length > 0 ? (
+						<>
+							{" "}You can use:{" "}
+							{numbers.map((n, i) => (
+								<span key={n.key}>
+									{i > 0 && " · "}
+									<code>&#123;{n.key}&#125;</code> ({n.value === null ? "no value yet" : `${formatWhole(n.value)} ${n.period}`}
+									{!n.isPublic && ", private"})
+								</span>
+							))}
+						</>
+					) : (
+						" This project has no numbers yet."
+					)}
+				</p>
 				{Array.from({ length: OUTCOME_ROWS }, (_, i) => (
-					<TextField key={i} name={`outcome_${i}`} label={`Outcome ${i + 1}`} defaultValue={project.outcomes[i] ?? ""} maxLength={80} placeholder={i === 0 && numbers[0] ? `{${numbers[0].key}} …` : ""} />
+					<TextField key={i} name={`outcome_${i}`} label={`Line ${i + 1}`} defaultValue={project.outcomes[i] ?? ""} maxLength={80} placeholder={i === 0 && numbers[0] ? `{${numbers[0].key}} …` : ""} />
 				))}
 			</div>
-			<TextField
-				name="now_text"
-				label="Now (optional)"
-				defaultValue={project.nowText}
-				maxLength={140}
-				placeholder="building the CV fit"
-				hint={'Shown small and grey in the card, after "Now:". Leave blank to hide it.'}
-			/>
-		</SettingsForm>
+		</details>
 	);
 }
 
@@ -227,12 +205,12 @@ function PublicSwitches({ project, metrics }: { project: Project; metrics: Metri
 					id="show_public"
 					name="show_public"
 					label="Show on my public page"
-					hint="Its card, and its visitors in the public chart and totals. When it's off, it's still everywhere here in the admin."
+					hint={project.showOnFirstVisit ? "Hidden from your public page until its first visit. You can show it any time." : "Its card and its visitors. Turning it off only hides it from the public."}
 					checked={project.showPublic}
 				/>
-				{visitors && <Switch id={`public_${visitors.id}`} name={`public_${visitors.id}`} label="Show visitors" hint="In the public visitors chart and on the card's sparkline." checked={visitors.isPublic} />}
+				{visitors && <Switch id={`public_${visitors.id}`} name={`public_${visitors.id}`} label="Show visitors" hint="Its chart on the card, and in the public visitor totals." checked={visitors.isPublic} />}
 				{products.map((m) => (
-					<Switch key={m.id} id={`public_${m.id}`} name={`public_${m.id}`} label={m.label} hint={`On the card as "1,240 ${m.label.toLowerCase()}", from the latest daily value. Hidden if it's over a week old.`} checked={m.isPublic} />
+					<Switch key={m.id} id={`public_${m.id}`} name={`public_${m.id}`} label={m.label} hint={`Lets the tagline and extra lines use {${m.key}}. Hidden if it's over a week old.`} checked={m.isPublic} />
 				))}
 			</div>
 		</SettingsForm>
@@ -254,42 +232,37 @@ function Connection({ project, metrics }: { project: Project; metrics: Metric[] 
 	const products = metrics.filter((m) => m.source === "product");
 	return (
 		<>
-			<Sub title="Snippet">
+			<Sub title="Tracking code">
 				{snippet ? (
 					<>
 						<pre className="overflow-x-auto rounded-xl bg-surface p-3 text-xs">{snippet}</pre>
-						<CopyButton text={snippet} label="Copy snippet" />
+						<CopyButton text={snippet} label="Copy code" />
 						<p className="text-sm text-ink-2">
-							Paste it before <code>&lt;/head&gt;</code> on every page. Send custom events with <code>bobby.track(&quot;event_name&quot;, &#123; … &#125;)</code>.
+							Paste it into the <code>&lt;head&gt;</code> of every page. To count an action, call <code>bobby.track(&quot;name&quot;)</code>.
 						</p>
 					</>
 				) : (
-					<p className="text-sm text-muted">No keys yet. Create them under Secret key below.</p>
+					<p className="text-sm text-muted">No tracking code yet. Make one under Secret key below.</p>
 				)}
 			</Sub>
 
-			<Sub title="Allowed websites">
+			<Sub title="Sites allowed to send visits">
 				<SettingsForm action={originsAction}>
 					<Hidden name="project_id" value={project.id} />
-					<TextArea name="origins" label="Only pages on these addresses can send visits" rows={3} mono defaultValue={project.allowedOrigins.join("\n")} hint="One per line, like https://example.com and https://www.example.com." />
+					<TextArea name="origins" label="Addresses" rows={3} mono defaultValue={project.allowedOrigins.join("\n")} hint="One address per line, with and without www if both are used." />
 				</SettingsForm>
 			</Sub>
 
-			<Sub title="Custom events">
-				<div className="flex flex-wrap items-center gap-1.5 text-sm text-ink-2">
-					<span className="mr-1">Always allowed:</span>
-					{Object.keys(BUILT_IN_EVENTS).map((name) => (
-						<Pill key={name}>{name}</Pill>
-					))}
-				</div>
+			<Sub title="Actions the site sends">
+				<p className="text-sm text-ink-2">Counted automatically: links out, downloads, missing pages, forms started and forms sent.</p>
 				<SettingsForm action={eventsAction}>
 					<Hidden name="project_id" value={project.id} />
-					<TextArea name="browser_events" label="Your events" rows={3} mono defaultValue={project.browserEvents.join("\n")} hint="Names the site can send with bobby.track(). One per line." />
+					<TextArea name="browser_events" label="Other actions" rows={3} mono defaultValue={project.browserEvents.join("\n")} hint="Other actions the site sends. One name per line." />
 				</SettingsForm>
 			</Sub>
 
 			<Sub title="Funnel steps">
-				<p className="text-sm text-ink-2">Up to 8 steps, in order: a page (a path) or an event. Leave rows blank to remove them. The funnel shows on the Overview once there&rsquo;s a step.</p>
+				<p className="text-sm text-ink-2">Up to 8 steps: a page (like /pricing) or an action. Clear a row to remove it. The funnel shows on the Overview once there&rsquo;s a step.</p>
 				<SettingsForm action={funnelAction} submitLabel="Save funnel">
 					<Hidden name="project_id" value={project.id} />
 					<div className="space-y-3">
@@ -304,10 +277,10 @@ function Connection({ project, metrics }: { project: Project; metrics: Metric[] 
 										defaultValue={step?.event ? "event" : "page"}
 										options={[
 											{ value: "page", label: "Page" },
-											{ value: "event", label: "Event" },
+											{ value: "event", label: "Action" },
 										]}
 									/>
-									<TextField name={`step_value_${i}`} label="Path or event name" defaultValue={step?.path ?? step?.event ?? ""} placeholder={i === 0 ? "/" : ""} />
+									<TextField name={`step_value_${i}`} label="Page or action name" defaultValue={step?.path ?? step?.event ?? ""} placeholder={i === 0 ? "/" : ""} />
 									<div className="sm:col-span-3">
 										<FieldError name={`step_${i}`} />
 									</div>
@@ -322,10 +295,10 @@ function Connection({ project, metrics }: { project: Project; metrics: Metric[] 
 				<p className="text-sm text-ink-2">
 					{project.secretKeyHint ? (
 						<>
-							For the product&rsquo;s server (events and product numbers). The current one ends in <Pill>…{project.secretKeyHint}</Pill>. Only its hash is stored, so a new one is shown once.
+							Lets the product&rsquo;s server send numbers. The current one ends in <Pill>…{project.secretKeyHint}</Pill>. A new one is shown once only.
 						</>
 					) : (
-						"Makes the keys: the public one for the snippet, and a secret one for your server, shown once."
+						"Makes the tracking code, and a secret key for the product's server (shown once only)."
 					)}
 				</p>
 				<SettingsForm action={keysAction} submitLabel={project.secretKeyHint ? "Replace secret key" : "Create keys"} danger={Boolean(project.secretKeyHint)}>
@@ -340,13 +313,13 @@ function Connection({ project, metrics }: { project: Project; metrics: Metric[] 
 			</Sub>
 
 			<Sub title="Add a product number">
-				<p className="text-sm text-ink-2">{project.name}&rsquo;s server sends it daily to /v1/metrics with the secret key, using this key. It then gets a switch under On your public page.</p>
+				<p className="text-sm text-ink-2">{project.name}&rsquo;s server sends this number each day. It&rsquo;s private until you switch it on.</p>
 				<SettingsForm action={addMetricAction} submitLabel="Add number">
 					<Hidden name="project_id" value={project.id} />
 					<Hidden name="source" value="product" />
 					<div className="grid gap-4 sm:grid-cols-2">
 						<TextField name="label" label="Label" maxLength={60} placeholder="Open jobs" />
-						<TextField name="key" label="Key" maxLength={40} hint="Leave blank to make one from the label." />
+						<TextField name="key" label="Code name" maxLength={40} hint="Made from the label if left blank." />
 					</div>
 				</SettingsForm>
 				{products.length > 0 && (
@@ -356,7 +329,8 @@ function Connection({ project, metrics }: { project: Project; metrics: Metric[] 
 							<SettingsForm action={deleteMetricAction} submitLabel="Remove number" danger>
 								<Hidden name="project_id" value={project.id} />
 								<SelectField name="metric_id" label="Number" options={products.map((m) => ({ value: String(m.id), label: `${m.label} (${m.key})` }))} />
-								<CheckboxField name="confirm" label="Remove it and all of its history." />
+								<p className="text-sm text-critical-ink">If the product still sends this number, its other numbers will stop updating too.</p>
+								<CheckboxField name="confirm" label="Remove it and its history." />
 							</SettingsForm>
 						</div>
 					</details>

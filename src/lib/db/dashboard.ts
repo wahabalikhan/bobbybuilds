@@ -245,18 +245,18 @@ export async function attentionItems(db: D1Database, now: number): Promise<Atten
 		if (project.status === "live" && !views.results.some((r) => r.project_id === project.id)) {
 			items.push({
 				level: "warning",
-				message: `${project.name} has had no page views in 24 hours. Check the t.js snippet is still on the site.`,
+				message: `${project.name} has had no visits for a day. Check the tracking code is still on the site.`,
 				projectSlug: project.slug,
 			});
 		}
 		if (!project.publicKey && project.status !== "idea" && project.status !== "retired") {
-			items.push({ level: "warning", message: `${project.name} has no keys yet.`, projectSlug: project.slug });
+			items.push({ level: "warning", message: `${project.name} isn't connected yet (no tracking code).`, projectSlug: project.slug });
 		}
 	}
 
 	const jobs = await jobHealth(db);
 	if (!jobs.lastFrequent || now - jobs.lastFrequent.startedAt > 15 * 60_000) {
-		items.push({ level: "serious", message: "The 5-minute job hasn't run for over 15 minutes. Check bobbybuilds-cron." });
+		items.push({ level: "serious", message: "The regular checks haven't run for 15 minutes. Check the cron worker." });
 	}
 	if (!jobs.lastDaily || now - jobs.lastDaily.startedAt > 26 * 3_600_000) {
 		items.push({ level: "serious", message: "The daily job hasn't run in the last 26 hours." });

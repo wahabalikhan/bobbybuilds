@@ -6,6 +6,7 @@ import { getProjectBySlug, listPublicProjects, listRealProjects } from "@/lib/db
 import { rollupDay } from "@/lib/jobs/rollup";
 import { buildSnapshot } from "@/lib/public/snapshot";
 import { site } from "@/lib/site";
+import { showProjectsWithFirstVisit } from "@/lib/db/settings";
 import { PUBLIC_KEY_PATTERN } from "@/lib/keys";
 import { createProject, db, insert, validPageView } from "../helpers";
 
@@ -108,9 +109,27 @@ describe("Show on my public page", () => {
 		expect(await shown()).toBe(true);
 	});
 
-	it("is on for new projects", async () => {
+	it("is off for new projects until their first visit, then the 5-minute job turns it on", async () => {
 		const result = await core.startProjectCore(db, idle, { name: "Fresh one", site_url: "https://fresh.example" });
-		expect((await getProjectBySlug(db, result.state.setup!.slug))!.showPublic).toBe(true);
+		const fresh = async () => (await getProjectBySlug(db, result.state.setup!.slug))!;
+		expect(await fresh()).toMatchObject({ showPublic: false, showOnFirstVisit: true });
+
+		// No visit yet: still hidden.
+		await showProjectsWithFirstVisit(db, Date.now());
+		expect((await fresh()).showPublic).toBe(false);
+
+		await insert("page_views", validPageView((await fresh()).id));
+		expect(await showProjectsWithFirstVisit(db, Date.now())).toBeGreaterThanOrEqual(1);
+		expect(await fresh()).toMatchObject({ showPublic: true, showOnFirstVisit: false });
+	});
+
+	it("keeps your own choice: saving the switch ends the wait for the first visit", async () => {
+		const result = await core.startProjectCore(db, idle, { name: "Kept hidden", site_url: "https://kept.example" });
+		const project = (await getProjectBySlug(db, result.state.setup!.slug))!;
+		await core.visibilityCore(db, idle, { project_id: String(project.id) });
+		await insert("page_views", validPageView(project.id));
+		await showProjectsWithFirstVisit(db, Date.now());
+		expect(await getProjectBySlug(db, project.slug)).toMatchObject({ showPublic: false, showOnFirstVisit: false });
 	});
 });
 

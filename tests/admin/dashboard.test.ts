@@ -171,9 +171,9 @@ describe("overview", () => {
 		const items = await attentionItems(db, now);
 		const messages = items.map((i) => i.message);
 		expect(items[0]).toMatchObject({ level: "critical", projectSlug: "down-site" });
-		expect(messages).toContain("Quiet site has had no page views in 24 hours. Check the t.js snippet is still on the site.");
-		expect(messages).toContain("Down site has no keys yet.");
-		expect(messages.some((m) => m.includes("5-minute job"))).toBe(true);
+		expect(messages).toContain("Quiet site has had no visits for a day. Check the tracking code is still on the site.");
+		expect(messages).toContain("Down site isn't connected yet (no tracking code).");
+		expect(messages.some((m) => m.includes("regular checks haven't run"))).toBe(true);
 		expect(messages.some((m) => m.includes("daily job"))).toBe(true);
 	});
 });
