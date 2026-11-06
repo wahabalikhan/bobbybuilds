@@ -12,6 +12,12 @@ export const PAGE = "mx-auto w-full max-w-[900px] px-5 sm:px-6";
 export const CARD_HEIGHT = "md:h-[216px]";
 
 /**
+ * Project cards (public and admin Home) are this height at every screen size, phones included, so
+ * the chart that fills their lower part always gets the same room.
+ */
+export const PROJECT_CARD_HEIGHT = "h-[216px]";
+
+/**
  * The hairline under the public page's section headings (Projects, Honest numbers, Activity,
  * Journey). Off for now; set to true to bring the lines back. The admin's headings keep theirs.
  */

@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ColumnChart, niceTicks, RankedList, Sparkline, StatusBadge, TimeSeriesChart, UptimeStrip, uptimeStatus } from "@/components/charts";
+import { chartCeiling, tidyCeiling } from "@/lib/scale";
+import { COLLECTING, WeekChart } from "@/components/public/mono-charts";
 import { change, formatChange, formatCount, formatDay, formatDuration, formatMs, msAxis, timeAgo } from "@/lib/format";
 
 const days = (values: (number | null)[]) => values.map((value, i) => ({ day: `2026-10-${String(i + 1).padStart(2, "0")}`, value }));
@@ -11,6 +13,34 @@ describe("niceTicks", () => {
 		expect(niceTicks(4000)).toEqual([0, 1000, 2000, 3000, 4000]);
 		expect(niceTicks(0)).toEqual([0, 1]);
 		expect(niceTicks(Number.NaN)).toEqual([0, 1]);
+	});
+
+	it("uses whole numbers only, never repeats a label, and shows just 0 and the top for small numbers", () => {
+		expect(niceTicks(1)).toEqual([0, 1]);
+		expect(niceTicks(1, { min: 3 })).toEqual([0, 3]);
+		expect(niceTicks(4, { min: 3 })).toEqual([0, 4]);
+		expect(niceTicks(5)).toEqual([0, 5]);
+		expect(niceTicks(7)).toEqual([0, 2, 4, 6, 8]);
+		expect(niceTicks(0.4)).toEqual([0, 1]);
+		for (let max = 0; max <= 2000; max += 1) {
+			const ticks = niceTicks(max, { min: 3 });
+			expect(ticks.every(Number.isInteger)).toBe(true);
+			expect(new Set(ticks).size).toBe(ticks.length);
+			expect(ticks[ticks.length - 1]).toBeGreaterThanOrEqual(Math.max(3, max));
+		}
+	});
+});
+
+describe("chartCeiling", () => {
+	it("tops each chart at its own highest value plus about 15%, rounded up to a tidy number, at least 5", () => {
+		expect(chartCeiling(0)).toBe(5);
+		expect(chartCeiling(2)).toBe(5);
+		expect(chartCeiling(7)).toBe(9);
+		expect(chartCeiling(20)).toBe(25);
+		expect(chartCeiling(80)).toBe(100);
+		expect(chartCeiling(1000)).toBe(1200);
+		expect(chartCeiling(Number.NaN)).toBe(5);
+		expect([1, 2.3, 12, 87, 103].map(tidyCeiling)).toEqual([1, 3, 12, 90, 120]);
 	});
 });
 
@@ -92,5 +122,24 @@ describe("formatting", () => {
 		expect(formatMs(2460)).toBe("2.46 s");
 		expect(formatMs(202)).toBe("202 ms");
 		expect(timeAgo(0, 4 * 60_000)).toBe("4 minutes ago");
+	});
+});
+
+describe("WeekChart", () => {
+	const series = (n: number) => Array.from({ length: n }, (_, i) => ({ day: `2026-11-0${i + 1}`, value: i + 1 }));
+	it("shows a note instead of a line with under 3 days of data", () => {
+		const html = renderToStaticMarkup(<WeekChart weeks={series(2)} label="New project." period="day" />);
+		expect(html).toContain(COLLECTING);
+		expect(html).not.toContain('stroke="var(--accent)"');
+		expect(html).not.toContain('tabindex="0"');
+	});
+	it("draws the line from 3 days, edge to edge, ending at today", () => {
+		const html = renderToStaticMarkup(<WeekChart weeks={series(3)} label="New project." period="day" />);
+		expect(html).not.toContain(COLLECTING);
+		expect(html).toContain('stroke="var(--accent)"');
+		// First point on the left end, last on the right end (300px wide before it's measured).
+		expect(html).toMatch(/d="M0\.0,[\d.]+L150\.0,[\d.]+"/);
+		expect(html).toMatch(/d="M150\.0,[\d.]+L300\.0,[\d.]+"/);
+		expect(html).toContain(">Today</text>");
 	});
 });

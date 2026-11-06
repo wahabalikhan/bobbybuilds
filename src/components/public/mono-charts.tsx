@@ -8,7 +8,7 @@
  * charts (src/components/public/charts.tsx and src/components/charts.tsx).
  */
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
-import { niceTicks } from "@/components/charts";
+import { chartCeiling, niceTicks } from "@/lib/scale";
 import { HOVER_CARD, HOVER_LABEL, HOVER_VALUE } from "@/lib/chart-style";
 import { formatDay, formatMonth, formatWhole } from "@/lib/format";
 
@@ -24,6 +24,20 @@ function useWidth<T extends HTMLElement>(initial: number) {
 		return () => observer.disconnect();
 	}, []);
 	return [ref, width] as const;
+}
+
+/** Height of an element, following resizes (for a chart that fills the rest of its card). */
+function useHeight<T extends HTMLElement>(initial: number, enabled: boolean) {
+	const ref = useRef<T>(null);
+	const [height, setHeight] = useState(initial);
+	useEffect(() => {
+		const el = ref.current;
+		if (!el || !enabled) return;
+		const observer = new ResizeObserver(([entry]) => setHeight(Math.max(16, Math.round(entry.contentRect.height))));
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [enabled]);
+	return [ref, height] as const;
 }
 
 /**
@@ -58,54 +72,105 @@ function HoverList({ items }: { items: string[] }) {
 	);
 }
 
+/** What a chart shows instead of a line while a project has under 3 days of data. */
+export const COLLECTING = "Collecting data, check back in a few days";
+
 /**
- * A project card's 12-week visitors: a light grey area under an ink line, a grey baseline with the
- * first and last weeks labelled, and this week (not over yet) dashed. Hovering, or the arrow keys
- * when it's focused, shows that week in the hover card.
+ * A project's visitors: a light grey area under a blue line, a grey baseline, and this week (not
+ * over yet) dashed. Hovering, or the arrow keys when it's focused, shows that point (with its date)
+ * in the hover card. The line runs from the axis's left end to its right end.
+ *
+ * With a `note` (the public cards), the row under the chart has the note on the left and the end
+ * label ("Today") on the right; when the note doesn't fit beside it, `noteShort` ("Since 2 Nov
+ * 2026") is shown instead, and that's cut with "…" if even it doesn't fit.
+ * `compact` (admin Home's cards) has no row under the chart, so all of its height is the plot: the
+ * dates are in the hover card, and the note is folded into a top label ("Since 2 Nov",
+ * the full note on hovering the label or focusing the chart).
+ * `height="fill"` takes all the height its parent gives it (the rest of the card).
  */
 export function WeekChart({
 	weeks,
 	label,
-	height = 64,
+	height: heightProp = 64,
 	period = "week",
 	unit = ["visitor", "visitors"],
 	unfinishedLast = true,
-	minPoints = 0,
 	note = null,
+	since = null,
+	compact = false,
+	details = [],
+	noteShort = null,
+	endLabel,
 }: {
 	weeks: { day: string; value: number }[];
 	label: string;
-	height?: number;
+	/** In px, or "fill": all the height of its parent. */
+	height?: number | "fill";
 	period?: "week" | "day";
 	unit?: [string, string];
 	/** The last point is a period still in progress: its segment is dashed and it says "so far". */
 	unfinishedLast?: boolean;
-	/** Space for at least this many points, so a short series (a new project) isn't stretched across the chart: it starts at the left and stops where its data does. */
-	minPoints?: number;
-	/** A note in place of the first date under the chart ("Tracking since … · live since …"), cut with "…" if there's no room. */
+	/** The full tracking note ("Tracking since … · live since …"): under the chart, or with `compact` in the top label on hover and focus. */
 	note?: string | null;
+	/** With `compact`: the day in the top label's short "since …". */
+	since?: string | null;
+	/** No row under the chart (dates in the hover card, the note in the top label). */
+	compact?: boolean;
+	/** Extra lines in the hover card, under the point's value (the project's outcomes). */
+	details?: string[];
+	/** The note's shorter form, for when the full one doesn't fit beside the end label. */
+	noteShort?: string | null;
+	/** The label at the right of the row under the chart; by default "This week" / "Today" (or the last day). */
+	endLabel?: string;
 }) {
 	const pointName = (day: string, long = false) => (period === "week" ? `Week of ${formatDay(day, long)}` : formatDay(day, long));
 	const lastName = period === "week" ? "This week" : "Today";
 	const [box, width] = useWidth<HTMLDivElement>(300);
+	const fill = heightProp === "fill";
+	const [frame, filled] = useHeight<HTMLDivElement>(96, fill);
+	const height = fill ? filled : heightProp;
 	const [hover, setHover] = useState<number | null>(null);
+	// The top label shows the full note while it's hovered or the chart is focused.
+	const [labelHover, setLabelHover] = useState(false);
+	const [focused, setFocused] = useState(false);
+	// The row under the chart: whether the full note fits beside the end label (measured from an invisible copy of it).
+	const noteSlot = useRef<HTMLSpanElement>(null);
+	const noteMeasure = useRef<HTMLSpanElement>(null);
+	const [noteTooLong, setNoteTooLong] = useState(false);
+	useEffect(() => {
+		const slot = noteSlot.current;
+		const measure = noteMeasure.current;
+		if (!slot || !measure) return;
+		const observer = new ResizeObserver(() => setNoteTooLong(measure.offsetWidth > slot.clientWidth + 0.5));
+		observer.observe(slot);
+		return () => observer.disconnect();
+	}, [note, noteShort]);
 	const values = weeks.map((w) => w.value);
 	const n = values.length;
-	const max = Math.max(1, ...values);
-	// 24.5px under the plot: the 18px label row (dates, or the tracking note), so the text sits 10px below the chart's baseline.
-	const plotH = height - 24.5;
-	const slots = Math.max(n, minPoints);
-	const x = (i: number) => (slots <= 1 ? width / 2 : 4 + (i / (slots - 1)) * (width - 8));
-	const y = (v: number) => plotH - (v / max) * (plotH - 8);
+	// Scaled from this chart's own numbers: 0 to its highest value plus ~15% headroom, rounded up to a tidy number, at least 5.
+	const top = chartCeiling(Math.max(0, ...values));
+	// Compact: the whole height is the plot (less the 1px baseline). Otherwise 28.5px under the plot: the 18px row of dates (or the note), so the text sits 14px below the baseline.
+	const plotH = compact ? height - 1 : height - 28.5;
+	// Only compact charts have a top label: their short tracking note (no "max": the scale is in the screen reader label).
+	const shortNote = compact && since ? `Since ${formatDay(since)}` : "";
+	const fullNote = compact && note && (labelHover || focused) ? note : null;
+	// The x-axis always runs from the first point to the last (today), edge to edge. With under 3 days of data there's no line yet, just a note.
+	const slots = n;
+	const collecting = period === "day" && n < 3;
+	// Edge to edge: the first point sits on the axis's left end, and the last slot on its right end.
+	const x = (i: number) => (slots <= 1 ? width / 2 : (i / (slots - 1)) * width);
+	const y = (v: number) => plotH - (v / top) * plotH;
 	const line = (from: number, to: number) => values.slice(from, to).map((v, i) => `${i ? "L" : "M"}${x(from + i).toFixed(1)},${y(v).toFixed(1)}`).join("");
 	const solidEnd = unfinishedLast && n >= 2 ? n - 1 : n;
 	const area = n > 1 ? `${line(0, n)}L${x(n - 1)},${plotH}L${x(0)},${plotH}Z` : "";
 
 	const onMove = (event: React.PointerEvent) => {
+		if (collecting) return;
 		const rect = event.currentTarget.getBoundingClientRect();
 		setHover(Math.min(n - 1, Math.max(0, Math.round(((event.clientX - rect.left) / Math.max(1, rect.width)) * (slots - 1)))));
 	};
 	const onKey = (event: KeyboardEvent) => {
+		if (collecting) return;
 		if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
 			event.preventDefault();
 			const step = event.key === "ArrowRight" ? 1 : -1;
@@ -114,30 +179,37 @@ export function WeekChart({
 	};
 
 	return (
-		<div ref={box} className="relative" onPointerMove={onMove} onPointerLeave={() => setHover(null)}>
+		<div ref={box} className={`relative ${fill ? "h-full" : ""}`} onPointerMove={onMove} onPointerLeave={() => setHover(null)}>
+			{/* With "fill", this box takes the parent's height and the chart is drawn at exactly that size. */}
+			<div ref={frame} className={fill ? "absolute inset-0" : "contents"} />
 			<svg
 				viewBox={`0 0 ${width} ${height}`}
 				width={width}
 				height={height}
-				className="block h-auto w-full rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+				className="relative block h-auto w-full overflow-visible rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
 				role="img"
-				tabIndex={0}
-				aria-label={`${label} Use the left and right arrow keys to read each ${period}.`}
+				tabIndex={collecting ? undefined : 0}
+				aria-label={collecting ? `${label}${note ? ` ${note}.` : ""} ${COLLECTING}` : `${label}${note ? ` ${note}.` : ""} The scale goes from 0 to ${formatWhole(top)}. Use the left and right arrow keys to read each ${period}.`}
 				onKeyDown={onKey}
-				onBlur={() => setHover(null)}
+				onFocus={() => setFocused(true)}
+				onBlur={() => {
+					setHover(null);
+					setFocused(false);
+				}}
 			>
-				<path d={area} fill="var(--chart-fill)" />
+				<line x1={0} x2={width} y1={0.5} y2={0.5} stroke="var(--grid)" strokeDasharray="3 3" />
+				{!collecting && <path d={area} fill="var(--chart-fill)" />}
 				<line x1={0} x2={width} y1={plotH + 0.5} y2={plotH + 0.5} stroke="var(--axis)" />
-				<path d={line(0, solidEnd)} fill="none" stroke="var(--accent)" strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" />
-				{solidEnd < n && <path d={line(n - 2, n)} fill="none" stroke="var(--accent)" strokeWidth={1.5} strokeDasharray="3 3" strokeLinecap="round" />}
-				{!note && (
+				{!collecting && <path d={line(0, solidEnd)} fill="none" stroke="var(--accent)" strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" />}
+				{!collecting && solidEnd < n && <path d={line(n - 2, n)} fill="none" stroke="var(--accent)" strokeWidth={1.5} strokeDasharray="3 3" strokeLinecap="round" />}
+				{!note && !compact && (
 					<>
 				<text x={0} y={height - 3} fontSize={11} fill="var(--muted)">
 					{n ? formatDay(weeks[0].day) : ""}
 				</text>
-				{/* The last label sits under the last point (the chart's right edge unless it's a short series). */}
-				<text x={n > 0 && x(n - 1) > width * 0.6 ? width : n > 0 ? x(n - 1) : width} y={height - 3} fontSize={11} fill="var(--muted)" textAnchor={n > 0 && x(n - 1) > width * 0.6 ? "end" : "start"}>
-					{n > 1 || slots === n ? (unfinishedLast ? lastName : n ? formatDay(weeks[n - 1].day) : "") : ""}
+				{/* The last label sits under the last point: the chart's right edge. */}
+				<text x={width} y={height - 3} fontSize={11} fill="var(--muted)" textAnchor="end">
+					{unfinishedLast ? lastName : n ? formatDay(weeks[n - 1].day) : ""}
 				</text>
 					</>
 				)}
@@ -148,17 +220,43 @@ export function WeekChart({
 					</>
 				)}
 			</svg>
-			{note && (
+			{collecting && (
+				// In the plot area, in place of the line.
+				<p aria-hidden className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center px-2 text-center text-xs text-muted" style={{ height: plotH }}>
+					{COLLECTING}
+				</p>
+			)}
+			{/* Compact only: the short tracking note above the chart on the right; hovering it (or focusing the chart) shows the full one. */}
+			{compact && (fullNote ?? shortNote) && (
+				<span
+					aria-hidden
+					className={`absolute right-0 bottom-full mb-0.5 max-w-full truncate text-[10px] leading-none whitespace-nowrap text-muted tabular ${compact && note ? "" : "pointer-events-none"}`}
+					onPointerEnter={() => {
+						setLabelHover(true);
+						setHover(null);
+					}}
+					onPointerLeave={() => setLabelHover(false)}
+					onPointerMove={(event) => event.stopPropagation()}
+				>
+					{fullNote ?? shortNote}
+				</span>
+			)}
+			{note && !compact && (
 				// The same 18px row the date labels use, so the chart keeps its height.
 				<div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[18px] items-end justify-between gap-3 text-[11px] leading-none text-muted">
-					<span className="min-w-0 truncate pb-[3px]" title={note}>
-						{note}
+					<span ref={noteSlot} className="relative min-w-0 flex-1 truncate pb-[3px]">
+						{noteTooLong && noteShort ? noteShort : note}
+						<span ref={noteMeasure} aria-hidden className="invisible absolute top-0 left-0 whitespace-nowrap">
+							{note}
+						</span>
 					</span>
-					<span className="shrink-0 pb-[3px]">{unfinishedLast ? lastName : n ? formatDay(weeks[n - 1].day) : ""}</span>
+					<span className="shrink-0 pb-[3px]">{endLabel ?? (unfinishedLast ? lastName : n ? formatDay(weeks[n - 1].day) : "")}</span>
 				</div>
 			)}
 			{hover !== null && (
-				<HoverCard x={x(hover) / width} top={-8} label={`${pointName(weeks[hover].day)}${unfinishedLast && hover === n - 1 ? ", so far" : ""}`} value={`${formatWhole(values[hover])} ${values[hover] === 1 ? unit[0] : unit[1]}`} />
+				<HoverCard x={x(hover) / width} top={-8} label={`${pointName(weeks[hover].day)}${unfinishedLast && hover === n - 1 ? ", so far" : ""}`} value={`${formatWhole(values[hover])} ${values[hover] === 1 ? unit[0] : unit[1]}`}>
+					{details.length > 0 && <HoverList items={details} />}
+				</HoverCard>
 			)}
 			<p className="sr-only" aria-live="polite">
 				{hover !== null ? `${pointName(weeks[hover].day, true)}: ${formatWhole(values[hover])} ${unit[1]}` : ""}
@@ -167,22 +265,27 @@ export function WeekChart({
 	);
 }
 
-const PAD = { top: 12, right: 4, bottom: 24, left: 28 };
+// No side padding: the gridlines run edge to edge, the first bar starts at the left edge and the last ends at the right.
+const PAD = { top: 12, bottom: 24 };
 
 /**
- * Monthly counts as ink columns (this month, not over yet, is lighter), with grey gridlines and
- * labels, in the style of the old 12-month visitors chart. Hovering, or the arrow keys, shows the
+ * Monthly counts as blue columns (this month, not over yet, is lighter) over a solid baseline and
+ * unlabelled dotted guides, spread edge to edge: the first bar starts at the left edge of the card's
+ * content and the last ends at its right edge. Hovering, or the arrow keys, shows the
  * month in the hover card with its list (e.g. what shipped).
  */
 export function MonthBars({ months, title, unit, height = 200 }: { months: { month: string; value: number; items: string[] }[]; title: string; unit: [string, string]; height?: number }) {
 	const [box, width] = useWidth<HTMLDivElement>(420);
 	const [hover, setHover] = useState<number | null>(null);
-	const ticks = niceTicks(Math.max(0, ...months.map((m) => m.value)));
+	// Whole numbers only, and at least 3, so a single thing shipped doesn't reach the top.
+	const ticks = niceTicks(Math.max(0, ...months.map((m) => m.value)), { min: 3 });
 	const yMax = ticks[ticks.length - 1] || 1;
-	const plotW = width - PAD.left - PAD.right;
 	const plotH = height - PAD.top - PAD.bottom;
-	const band = plotW / Math.max(1, months.length);
-	const barW = Math.min(22, band * 0.58);
+	const barW = Math.min(22, (width / Math.max(1, months.length)) * 0.58);
+	// Bar centres: the first half a bar in from the left edge, the last half a bar in from the right.
+	const step = months.length > 1 ? (width - barW) / (months.length - 1) : 0;
+	const centre = (i: number) => (months.length > 1 ? barW / 2 + i * step : width / 2);
+	const band = months.length > 1 ? step : width;
 	const y = (v: number) => PAD.top + plotH - (v / yMax) * plotH;
 	const every = Math.ceil(months.length / (width < 380 ? 4 : 6));
 	const last = months.length - 1;
@@ -211,14 +314,11 @@ export function MonthBars({ months, title, unit, height = 200 }: { months: { mon
 			>
 				{ticks.map((t) => (
 					<g key={t}>
-						<line x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--axis)" : "var(--grid)"} strokeDasharray={t === 0 ? undefined : "3 3"} />
-						<text x={PAD.left - 8} y={y(t) + 4} textAnchor="end" fontSize={11} fill="var(--muted)" className="tabular">
-							{formatWhole(t)}
-						</text>
+						<line x1={0} x2={width} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--axis)" : "var(--grid)"} strokeDasharray={t === 0 ? undefined : "3 3"} />
 					</g>
 				))}
 				{months.map((m, i) => {
-					const cx = PAD.left + band * i + band / 2;
+					const cx = centre(i);
 					const h = Math.max(0, y(0) - y(m.value));
 					const r = Math.min(4, h, barW / 2);
 					const top = y(m.value);
@@ -226,10 +326,11 @@ export function MonthBars({ months, title, unit, height = 200 }: { months: { mon
 					const d = h <= 0 ? "" : `M${left},${y(0)}V${top + r}Q${left},${top} ${left + r},${top}H${left + barW - r}Q${left + barW},${top} ${left + barW},${top + r}V${y(0)}Z`;
 					return (
 						<g key={m.month}>
-							{hover === i && <rect x={cx - band / 2 + 1} y={PAD.top} width={band - 2} height={plotH} rx={8} fill="var(--pill)" />}
+							{hover === i && <rect x={Math.max(0, cx - band / 2 + 1)} y={PAD.top} width={Math.min(width, cx + band / 2 - 1) - Math.max(0, cx - band / 2 + 1)} height={plotH} rx={8} fill="var(--pill)" />}
 							<path d={d} fill={i === last ? "color-mix(in srgb, var(--accent) 40%, var(--card))" : "var(--accent)"} />
 							{i % every === 0 && (
-								<text x={cx} y={height - 6} fontSize={11} fill="var(--muted)" textAnchor="middle">
+								// The first and last month labels line up with the chart's edges.
+								<text x={i === 0 ? 0 : i === last ? width : cx} y={height - 6} fontSize={11} fill="var(--muted)" textAnchor={i === 0 ? "start" : i === last ? "end" : "middle"}>
 									{formatMonth(m.month).slice(0, 3)}
 								</text>
 							)}
@@ -239,7 +340,7 @@ export function MonthBars({ months, title, unit, height = 200 }: { months: { mon
 				})}
 			</svg>
 			{hover !== null && (
-				<HoverCard x={(PAD.left + band * hover + band / 2) / width} top={PAD.top} label={`${formatMonth(months[hover].month)}${hover === last ? ", so far" : ""}`} value={count(months[hover].value)}>
+				<HoverCard x={centre(hover) / width} top={PAD.top} label={`${formatMonth(months[hover].month)}${hover === last ? ", so far" : ""}`} value={count(months[hover].value)}>
 					{months[hover].items.length > 0 && <HoverList items={months[hover].items} />}
 				</HoverCard>
 			)}

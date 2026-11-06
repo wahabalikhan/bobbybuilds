@@ -8,7 +8,7 @@
  */
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { ProjectLogo } from "@/components/admin/ui";
-import { niceTicks } from "@/components/charts";
+import { niceTicks } from "@/lib/scale";
 import { HOVER_CARD, HOVER_LABEL } from "@/lib/chart-style";
 import { formatDay, formatWhole } from "@/lib/format";
 

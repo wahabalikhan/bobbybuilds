@@ -9,6 +9,7 @@
 import type { ReactNode } from "react";
 import { HOVER_CARD, HOVER_LABEL, HOVER_VALUE } from "@/lib/chart-style";
 import { formatCount, formatDay } from "@/lib/format";
+import { niceTicks } from "@/lib/scale";
 
 export type Point = { day: string; value: number | null };
 export type Series = { label: string; points: Point[]; tone?: "accent" | "previous" };
@@ -66,17 +67,7 @@ function HoverArea({
 	);
 }
 
-/** A clean axis maximum and ticks (steps of 1, 2 or 5 × 10ⁿ). */
-export function niceTicks(max: number, count = 4): number[] {
-	if (!Number.isFinite(max) || max <= 0) return [0, 1];
-	const raw = max / count;
-	const magnitude = 10 ** Math.floor(Math.log10(raw));
-	const step = [1, 2, 5, 10].map((m) => m * magnitude).find((s) => s >= raw) ?? 10 * magnitude;
-	const ticks: number[] = [];
-	for (let t = 0; t <= max + step * 0.0001; t += step) ticks.push(Math.round(t * 1e6) / 1e6);
-	if (ticks[ticks.length - 1] < max) ticks.push(ticks[ticks.length - 1] + step);
-	return ticks;
-}
+export { niceTicks };
 
 function TableView({ caption, head, rows }: { caption: string; head: string[]; rows: ReactNode[][] }) {
 	return (

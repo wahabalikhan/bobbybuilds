@@ -146,13 +146,14 @@ function ProjectCard({ summary: s, numbers, logoPath }: { summary: ProjectSummar
 					</span>
 				)}
 			</p>
-			{/* Above the card's link overlay, so its hover card works. */}
-			<div className="relative z-10 mt-auto pt-5">
+			{/* Above the card's link overlay, so its hover card works; raised while it's hovered or focused, so the hover card stays on top of the next row's cards. */}
+			<div className="relative z-10 mt-auto pt-5 focus-within:z-20 hover:z-20">
 				<WeekChart
 					height={40}
 					period={s.trend.period}
-					minPoints={s.trend.period === "day" ? 7 : 4}
+					compact
 					note={trackingNote(s.trackingSince, s.project.startedOn, formatDay)}
+					since={s.trackingSince ?? s.project.startedOn}
 					weeks={s.trend.points}
 					label={`${project.name}: visitors per ${s.trend.period} since ${formatDay(s.trend.points[0]?.day ?? "", true)}, ${formatCount(s.trend.points.reduce((t, w) => t + w.value, 0))} in total. ${s.trend.period === "day" ? "Today" : "This week"} so far is dashed.`}
 				/>
