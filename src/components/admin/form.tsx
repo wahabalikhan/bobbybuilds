@@ -20,11 +20,14 @@ export const inputClass =
 /** A second way to submit the same form, sending `name=value` with it (e.g. "Save draft" next to "Publish"). */
 export type FormButton = { label: string; name: string; value: string; quiet?: boolean };
 
+/** The one dropdown style: a rounded, outlined pill with a chevron (.select-pill in globals.css). */
+export const selectClass = "select-pill mt-1.5 w-full border border-line bg-card py-2 pl-3.5 text-sm text-ink aria-[invalid=true]:border-critical";
+
 function SubmitButton({ label, danger, name, value, quiet }: { label: string; danger?: boolean; name?: string; value?: string; quiet?: boolean }) {
 	const { pending, data } = useFormStatus();
 	// With several buttons, only the one that was pressed says "Saving…".
 	const pressed = pending && (!name || data?.get(name) === value);
-	const look = danger ? "bg-critical text-white" : quiet ? "border border-line bg-card text-ink hover:bg-pill" : "bg-ink text-page hover:opacity-85";
+	const look = danger ? "border border-critical text-critical-ink hover:bg-[color-mix(in_srgb,var(--critical)_8%,transparent)]" : quiet ? "border border-line bg-card text-ink hover:bg-pill" : "bg-ink text-page hover:opacity-85";
 	return (
 		<button name={name} value={value} disabled={pending} className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-medium disabled:opacity-60 ${look}`}>
 			{pressed ? "Saving…" : label}
@@ -188,7 +191,7 @@ export function SelectField({ options, ...props }: FieldProps & { options: { val
 	return (
 		<div>
 			<Label id={id} label={props.label} hint={props.hint} error={error} srOnly={props.srLabel} />
-			<select id={id} name={props.name} defaultValue={value} aria-invalid={error ? true : undefined} className={inputClass}>
+			<select id={id} name={props.name} defaultValue={value} aria-invalid={error ? true : undefined} className={selectClass}>
 				{options.map((o) => (
 					<option key={o.value} value={o.value}>
 						{o.label}

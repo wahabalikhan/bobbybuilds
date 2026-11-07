@@ -197,10 +197,13 @@ export function ScreenReaderTable({ caption, head, rows }: { caption: string; he
 	);
 }
 
-const PAD = { top: 14, right: 8, bottom: 26, left: 44 };
+/** Edge to edge, like the public Shipping rhythm: no y-axis labels, so no room is kept for them. */
+const PAD = { top: 14, bottom: 26 };
 
 /**
- * Visitors per month as dark columns (this month so far is lighter). Hovering or moving
+ * Visitors per month as accent columns (this month so far is lighter), drawn like the public
+ * Shipping rhythm: no y-axis labels, a solid baseline and dotted guides running edge to edge, the
+ * first bar at the left edge and the last at the right. Hovering or moving
  * through the months with the arrow keys opens a popover with each project's visitors and the
  * total; with one project chosen, just that project.
  */
@@ -222,10 +225,12 @@ export function MonthBars({
 	const totals = months.map((_, i) => projects.reduce((t, p) => t + (p.values[i] ?? 0), 0));
 	const ticks = niceTicks(Math.max(0, ...totals));
 	const yMax = ticks[ticks.length - 1] || 1;
-	const plotW = width - PAD.left - PAD.right;
 	const plotH = height - PAD.top - PAD.bottom;
-	const band = plotW / Math.max(1, months.length);
-	const barW = Math.min(28, band * 0.62);
+	const band = width / Math.max(1, months.length);
+	const barW = Math.min(22, band * 0.58);
+	// Bar centres: the first half a bar in from the left edge, the last half a bar in from the right.
+	const step = months.length > 1 ? (width - barW) / (months.length - 1) : 0;
+	const centre = (i: number) => (months.length > 1 ? barW / 2 + i * step : width / 2);
 	const y = (v: number) => PAD.top + plotH - (v / yMax) * plotH;
 	const every = Math.ceil(months.length / (width < 480 ? 6 : 12));
 	const last = months.length - 1;
@@ -253,26 +258,22 @@ export function MonthBars({
 				onBlur={() => setHover(null)}
 			>
 				{ticks.map((t) => (
-					<g key={t}>
-						<line x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--axis)" : "var(--grid)"} strokeDasharray={t === 0 ? undefined : "3 3"} />
-						<text x={PAD.left - 8} y={y(t) + 4} textAnchor="end" fontSize={11} fill="var(--muted)" className="tabular">
-							{formatWhole(t)}
-						</text>
-					</g>
+					<line key={t} x1={0} x2={width} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--axis)" : "var(--grid)"} strokeDasharray={t === 0 ? undefined : "3 3"} />
 				))}
 				{months.map((month, i) => {
-					const cx = PAD.left + band * i + band / 2;
+					const cx = centre(i);
 					const h = Math.max(0, y(0) - y(totals[i]));
-					const r = Math.min(5, h, barW / 2);
+					const r = Math.min(4, h, barW / 2);
 					const top = y(totals[i]);
 					const left = cx - barW / 2;
 					const d = h <= 0 ? "" : `M${left},${y(0)}V${top + r}Q${left},${top} ${left + r},${top}H${left + barW - r}Q${left + barW},${top} ${left + barW},${top + r}V${y(0)}Z`;
 					return (
 						<g key={month}>
-							{hover === i && <rect x={cx - band / 2 + 2} y={PAD.top} width={band - 4} height={plotH} rx={10} fill="var(--pill)" />}
+							{hover === i && <rect x={Math.max(0, cx - band / 2 + 1)} y={PAD.top} width={Math.min(width, cx + band / 2 - 1) - Math.max(0, cx - band / 2 + 1)} height={plotH} rx={8} fill="var(--pill)" />}
 							<path d={d} fill={i === last ? "var(--chart-soft)" : "var(--chart-bar)"} />
 							{i % every === 0 && (
-								<text x={cx} y={height - 6} fontSize={11} fill="var(--muted)" textAnchor="middle">
+								// The first and last month labels line up with the chart's edges.
+								<text x={i === 0 ? 0 : i === last ? width : cx} y={height - 6} fontSize={11} fill="var(--muted)" textAnchor={i === 0 ? "start" : i === last ? "end" : "middle"}>
 									{month.slice(0, 3)}
 								</text>
 							)}
@@ -282,7 +283,7 @@ export function MonthBars({
 				})}
 			</svg>
 			{hover !== null && (
-				<Popover x={(PAD.left + band * hover + band / 2) / width} top={PAD.top}>
+				<Popover x={centre(hover) / width} top={PAD.top}>
 					<div className={HOVER_LABEL}>
 						{months[hover]}
 						{hover === last && ", so far"}

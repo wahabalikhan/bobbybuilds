@@ -27,7 +27,7 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 	const db = env.DB;
 	const [metrics, numbers, iconMeta] = await Promise.all([listMetrics(db, project.id), outcomeNumbers(db, project.id, utcDay(requestTime())), getIconMeta(db, project.id)]);
 	return (
-		<div className="max-w-3xl space-y-10">
+		<div className="max-w-3xl space-y-12">
 			<Section title="About">
 				<SettingsForm action={saveDetailsAction}>
 					<Hidden name="project_id" value={project.id} />
@@ -59,16 +59,16 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 			</Section>
 
 			<details id="advanced" open={Boolean(iconMeta?.lastError)} className="group rounded-2xl border border-line bg-card">
-				<summary className="flex list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
+				<summary className="flex list-none items-center justify-between gap-3 px-4 py-4 [&::-webkit-details-marker]:hidden">
 					<span>
-						<span className="font-medium">Advanced: connecting the site</span>
+						<span className="text-[15px] font-medium tracking-tight">Advanced: connecting the site</span>
 						<span className="block text-sm text-muted">Tracking code and the technical setup. You&rsquo;ll rarely need this.</span>
 					</span>
 					<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="shrink-0 text-muted transition-transform group-open:rotate-180">
 						<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 					</svg>
 				</summary>
-				<div className="space-y-8 border-t border-line p-5">
+				<div className="space-y-8 border-t border-line p-4">
 					<Advanced project={project} />
 					<Sub title="Icon">
 						<IconBlock project={project} db={db} />
@@ -117,7 +117,7 @@ async function IconBlock({ project, db }: { project: Project; db: D1Database }) 
 function Section({ title, children }: { title: string; children: ReactNode }) {
 	return (
 		<section>
-			<h2 className="mb-4 border-b border-line pb-2 text-[15px] font-medium tracking-tight">{title}</h2>
+			<h2 className="mb-4 text-[15px] font-medium tracking-tight">{title}</h2>
 			{children}
 		</section>
 	);
@@ -310,10 +310,11 @@ function Advanced({ project }: { project: Project }) {
 function DangerZone({ project, metrics }: { project: Project; metrics: Metric[] }) {
 	const products = metrics.filter((m) => m.source === "product");
 	return (
-		<section aria-labelledby="danger-heading" className="mt-16 space-y-8 border-t-2 border-[color-mix(in_srgb,var(--critical)_35%,transparent)] pt-8">
-			<h2 id="danger-heading" className="text-[15px] font-medium tracking-tight text-critical-ink">
+		<section aria-labelledby="danger-heading" className="mt-16 border-t-2 border-[color-mix(in_srgb,var(--critical)_35%,transparent)] pt-8">
+			<h2 id="danger-heading" className="mb-4 text-[15px] font-medium tracking-tight text-critical-ink">
 				Danger zone
 			</h2>
+			<div className="space-y-8">
 
 			{project.secretKeyHint && (
 				<Sub title="Replace the secret key">
@@ -346,6 +347,7 @@ function DangerZone({ project, metrics }: { project: Project; metrics: Metric[] 
 					<TextField name="confirm_slug" label={`Type ${project.slug} to confirm`} />
 				</SettingsForm>
 			</Sub>
+			</div>
 		</section>
 	);
 }

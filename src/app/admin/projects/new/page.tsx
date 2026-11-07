@@ -11,7 +11,7 @@ export default function NewProject() {
 		<div className="max-w-2xl space-y-6">
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "New project" }]} />
-				<h1 className="text-2xl font-bold tracking-tight">New project</h1>
+				<h1 className="text-3xl font-bold tracking-tight">New project</h1>
 			</div>
 			<NewProjectWizard action={startProjectAction} />
 		</div>

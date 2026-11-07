@@ -9,16 +9,24 @@ import { formatChange } from "@/lib/format";
 import { logoScale } from "@/lib/project-logo";
 
 export const buttonClass = "inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-sm font-medium text-page hover:opacity-85";
+/**
+ * The public journey chip: an outlined pill, ink when selected. Used for the project tabs and the
+ * range picker (never black filled pills at rest).
+ */
+export function chipClass(selected: boolean): string {
+	return `inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm ${selected ? "border-ink bg-ink font-medium text-page" : "border-line text-ink-2 hover:bg-pill hover:text-ink"}`;
+}
+
 export const quietButtonClass = "inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3.5 py-1.5 text-sm text-ink hover:bg-pill";
 
 export function Card({ title, note, children, className = "", action }: { title?: string; note?: ReactNode; children: ReactNode; className?: string; action?: ReactNode }) {
 	return (
 		// min-w-0: in a grid, wide content (a table, a long URL) scrolls or truncates inside the card instead of widening the page.
-		<section className={`min-w-0 rounded-2xl border border-line bg-card p-5 ${className}`}>
+		<section className={`min-w-0 rounded-2xl border border-line bg-card p-4 ${className}`}>
 			{(title || action) && (
 				<header className="mb-4 flex items-start justify-between gap-3">
 					<div>
-						{title && <h2 className="font-semibold tracking-tight">{title}</h2>}
+						{title && <h2 className="text-[15px] font-medium tracking-tight">{title}</h2>}
 						{note && <p className="mt-0.5 text-sm text-muted">{note}</p>}
 					</div>
 					{action}
@@ -51,7 +59,7 @@ export function Breadcrumb({ items }: { items: { label: string; href?: string }[
 					<li key={i} className="flex items-center gap-1.5">
 						{i > 0 && <span aria-hidden>/</span>}
 						{item.href ? (
-							<Link href={item.href} className="hover:text-ink">
+							<Link href={item.href} className="link">
 								{item.label}
 							</Link>
 						) : (
@@ -101,7 +109,7 @@ export function StatTile({ label, value, delta, hint }: { label: string; value: 
 
 export function Tabs({ tabs, current, hrefFor }: { tabs: { key: string; label: string }[]; current: string; hrefFor: (key: string) => string }) {
 	return (
-		<nav aria-label="Sections" className="-mx-1 flex gap-1 overflow-x-auto pb-1">
+		<nav aria-label="Sections" className="flex gap-2 overflow-x-auto pb-1">
 			{tabs.map((tab) => {
 				const active = tab.key === current;
 				return (
@@ -109,7 +117,7 @@ export function Tabs({ tabs, current, hrefFor }: { tabs: { key: string; label: s
 						key={tab.key}
 						href={hrefFor(tab.key)}
 						aria-current={active ? "page" : undefined}
-						className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm ${active ? "bg-ink font-medium text-page" : "text-ink-2 hover:bg-pill hover:text-ink"}`}
+						className={chipClass(active)}
 					>
 						{tab.label}
 					</Link>
@@ -123,13 +131,13 @@ export function Tabs({ tabs, current, hrefFor }: { tabs: { key: string; label: s
 export function RangePicker({ range, hrefFor, hidden = {} }: { range: DateRange; hrefFor: (params: Record<string, string>) => string; hidden?: Record<string, string> }) {
 	return (
 		<div className="flex flex-wrap items-center gap-2">
-			<div className="flex rounded-full border border-line bg-card p-0.5">
+			<div className="flex flex-wrap gap-1.5">
 				{Object.entries(RANGE_PRESETS).map(([key, preset]) => (
 					<Link
 						key={key}
 						href={hrefFor({ range: key })}
 						aria-current={range.key === key ? "true" : undefined}
-						className={`rounded-full px-3 py-1 text-sm ${range.key === key ? "bg-ink font-medium text-page" : "text-ink-2 hover:text-ink"}`}
+						className={chipClass(range.key === key)}
 					>
 						{preset.label.replace("Last ", "")}
 					</Link>
@@ -138,7 +146,7 @@ export function RangePicker({ range, hrefFor, hidden = {} }: { range: DateRange;
 			<details open={range.key === "custom"}>
 				<summary
 					aria-current={range.key === "custom" ? "true" : undefined}
-					className={`list-none rounded-full px-3 py-1 text-sm [&::-webkit-details-marker]:hidden ${range.key === "custom" ? "bg-ink font-medium text-page" : "text-ink-2 hover:text-ink"}`}
+					className={`list-none [&::-webkit-details-marker]:hidden ${chipClass(range.key === "custom")}`}
 				>
 					Custom…
 				</summary>
@@ -160,7 +168,8 @@ export function RangePicker({ range, hrefFor, hidden = {} }: { range: DateRange;
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-	return <p className="rounded-2xl border border-dashed border-line p-4 text-sm text-muted">{children}</p>;
+	// A plain grey sentence, like the public page's empty states (no dashed box).
+	return <p className="text-sm text-muted">{children}</p>;
 }
 
 export function RawNote({ clipped }: { clipped: boolean }) {

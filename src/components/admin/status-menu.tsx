@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { StatusBadge, type Status } from "@/components/charts";
+import { StatusIcon, type Status } from "@/components/charts";
 import type { Attention } from "@/lib/db/dashboard";
 import { adminHref } from "@/lib/site";
-
-const LABEL: Record<Attention["level"], string> = { critical: "Down", serious: "Failed", warning: "Worth a look" };
 
 /** The pill's text: "Everything's running normally", or "<n> thing(s) need(s) attention". */
 export function statusText(items: Attention[]): string {
@@ -48,11 +46,11 @@ export function StatusMenu({ items }: { items: Attention[] }) {
 			<ul className="absolute left-0 z-30 mt-2 w-[min(28rem,calc(100vw-3rem))] space-y-2 rounded-2xl border border-line bg-card p-4 shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
 				{items.map((item, i) => (
 					<li key={i} className="flex items-start gap-2 text-sm">
-						<span className="shrink-0">
-							<StatusBadge status={item.level as Status} label={LABEL[item.level]} />
+						<span className="mt-0.5">
+							<StatusIcon status={item.level as Status} />
 						</span>
 						{item.projectSlug ? (
-							<Link className="underline decoration-line underline-offset-4 hover:decoration-ink" href={adminHref(`/projects/${item.projectSlug}`)}>
+							<Link className="link" href={adminHref(`/projects/${item.projectSlug}`)}>
 								{item.message}
 							</Link>
 						) : (
@@ -86,11 +84,11 @@ export function StatusStrip({ items }: { items: Attention[] }) {
 			<ul className="mt-2 space-y-2">
 				{items.map((item, i) => (
 					<li key={i} className="flex items-start gap-2 text-sm text-ink">
-						<span className="shrink-0">
-							<StatusBadge status={item.level as Status} label={LABEL[item.level]} />
+						<span className="mt-0.5">
+							<StatusIcon status={item.level as Status} />
 						</span>
 						{item.projectSlug ? (
-							<Link className="underline decoration-line underline-offset-4 hover:decoration-ink" href={adminHref(`/projects/${item.projectSlug}`)}>
+							<Link className="link" href={adminHref(`/projects/${item.projectSlug}`)}>
 								{item.message}
 							</Link>
 						) : (

@@ -79,7 +79,7 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 	const rawNote = raw.clipped ? "From the last 90 days (detail older than that is deleted)." : undefined;
 
 	return (
-		<div className="space-y-8">
+		<div className="space-y-12">
 			<Headline project={project} range={range} today={today} visitors={totals.visitors} previous={previous.visitors} series={visitors} hrefFor={hrefFor} />
 
 			<div className="grid gap-6 md:grid-cols-2">
@@ -131,13 +131,13 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 function Disclosure({ title, open = false, children }: { title: string; open?: boolean; children: ReactNode }) {
 	return (
 		<details open={open} className="group rounded-2xl border border-line bg-card">
-			<summary className="flex list-none items-center justify-between gap-3 px-5 py-4 font-medium [&::-webkit-details-marker]:hidden">
+			<summary className="flex list-none items-center justify-between gap-3 px-4 py-4 text-[15px] font-medium tracking-tight [&::-webkit-details-marker]:hidden">
 				{title}
 				<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="text-muted transition-transform group-open:rotate-180">
 					<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 				</svg>
 			</summary>
-			<div className="space-y-6 border-t border-line p-5">{children}</div>
+			<div className="space-y-6 border-t border-line p-4">{children}</div>
 		</details>
 	);
 }
@@ -147,7 +147,7 @@ function Section({ title, note, children }: { title: string; note?: string; chil
 		<section>
 			<h2 className="text-[15px] font-medium tracking-tight">{title}</h2>
 			{note && <p className="mt-0.5 text-sm text-muted">{note}</p>}
-			<div className="mt-3">{children}</div>
+			<div className="mt-4">{children}</div>
 		</section>
 	);
 }
@@ -161,9 +161,9 @@ function Top({ title, rows, empty, all }: { title: string; rows: { label: string
 		<section className="[&:has(>details[open])>ol]:hidden">
 			<h2 className="text-[15px] font-medium tracking-tight">{title}</h2>
 			{rows.length === 0 ? (
-				<p className="mt-2 text-sm text-muted">{empty}</p>
+				<p className="mt-4 text-sm text-muted">{empty}</p>
 			) : (
-				<ol className="mt-2 divide-y divide-line text-sm">
+				<ol className="mt-4 divide-y divide-line text-sm">
 					{rows.map((r, i) => (
 						<li key={`${r.label}-${i}`} className="flex items-baseline justify-between gap-4 py-1.5">
 							<span className="min-w-0 truncate" title={r.label}>
@@ -205,7 +205,7 @@ function Headline({
 	hrefFor: (changes: Record<string, string>) => string;
 }) {
 	return (
-		<section aria-label="Visitors" className="rounded-2xl border border-line bg-card p-5">
+		<section aria-label="Visitors" className="rounded-2xl border border-line bg-card p-4">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<p className="flex flex-wrap items-baseline gap-x-2 text-ink-2">
 					<span className="text-3xl font-semibold tracking-tight tabular text-ink">{formatWhole(visitors)}</span>
@@ -488,7 +488,7 @@ function LinkBuilder({ project, query, hrefFor }: { project: Project; query: Rec
 				</label>
 				<div className="flex items-center gap-3 sm:col-span-2">
 					<button className={buttonClass}>Make link</button>
-					<Link href={hrefFor({ build: "", url: "", ref: "", utm_source: "", utm_medium: "", utm_campaign: "" })} className="text-sm text-muted underline underline-offset-2">
+					<Link href={hrefFor({ build: "", url: "", ref: "", utm_source: "", utm_medium: "", utm_campaign: "" })} className="link text-sm">
 						Clear
 					</Link>
 				</div>
@@ -533,7 +533,7 @@ async function Events({ project, range, today, query, hrefFor }: Pick<OverviewPr
 				{query.to && <input type="hidden" name="to" value={query.to} />}
 				<label>
 					<span className="block text-ink-2">Event</span>
-					<select name="name" defaultValue={name ?? ""} className="mt-1 rounded-full border border-line bg-card px-3 py-1.5">
+					<select name="name" defaultValue={name ?? ""} className="select-pill mt-1 border border-line bg-card py-1.5 pl-3.5">
 						<option value="">All events</option>
 						{names.map((n) => (
 							<option key={n} value={n}>
@@ -544,7 +544,7 @@ async function Events({ project, range, today, query, hrefFor }: Pick<OverviewPr
 				</label>
 				<label>
 					<span className="block text-ink-2">Sent by</span>
-					<select name="source" defaultValue={source ?? ""} className="mt-1 rounded-full border border-line bg-card px-3 py-1.5">
+					<select name="source" defaultValue={source ?? ""} className="select-pill mt-1 border border-line bg-card py-1.5 pl-3.5">
 						<option value="">The site and its server</option>
 						<option value="browser">The site</option>
 						<option value="server">Its server</option>
@@ -585,7 +585,7 @@ async function Events({ project, range, today, query, hrefFor }: Pick<OverviewPr
 			{pages > 1 && (
 				<nav aria-label="Event pages" className="mt-4 flex items-center justify-between text-sm">
 					{page > 1 ? (
-						<Link className="underline underline-offset-2" href={hrefFor({ page: String(page - 1) })}>
+						<Link className="link" href={hrefFor({ page: String(page - 1) })}>
 							Newer
 						</Link>
 					) : (
@@ -595,7 +595,7 @@ async function Events({ project, range, today, query, hrefFor }: Pick<OverviewPr
 						Page {page} of {pages}
 					</span>
 					{page < pages ? (
-						<Link className="underline underline-offset-2" href={hrefFor({ page: String(page + 1) })}>
+						<Link className="link" href={hrefFor({ page: String(page + 1) })}>
 							Older
 						</Link>
 					) : (

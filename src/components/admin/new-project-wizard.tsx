@@ -70,8 +70,8 @@ export function NewProjectWizard({ action }: { action: Action }) {
 
 function Step({ number, title, done, muted = false, children }: { number: number; title: string; done: boolean; muted?: boolean; children: React.ReactNode }) {
 	return (
-		<li className={`rounded-2xl border border-line bg-card p-5 ${muted ? "opacity-60" : ""}`}>
-			<h2 className="mb-3 flex items-center gap-2 font-medium">
+		<li className={`rounded-2xl border border-line bg-card p-4 ${muted ? "opacity-60" : ""}`}>
+			<h2 className="mb-4 flex items-center gap-2 text-[15px] font-medium tracking-tight">
 				<span aria-hidden className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs ${done ? "bg-ink text-page" : "bg-pill text-ink"}`}>
 					{done ? "✓" : number}
 				</span>
@@ -138,7 +138,7 @@ function WaitForFirstVisit({ slug }: { slug: string }) {
 				<Link href={adminHref(`/projects/${slug}`)} className={buttonClass}>
 					Open its dashboard
 				</Link>
-				<Link href={adminHref(`/projects/${slug}?tab=settings`)} className="self-center text-muted underline underline-offset-4 hover:text-ink">
+				<Link href={adminHref(`/projects/${slug}?tab=settings`)} className="link self-center">
 					Its settings
 				</Link>
 			</div>

@@ -18,7 +18,7 @@ export function HeadlineCard({ projects }: { projects: (ChartProject & { monthly
 	const title = `Visitors per month${chosen ? ` for ${chosen.name}` : " across all projects"}`;
 
 	return (
-		<section aria-label="Visitors in the last 12 months" className="rounded-2xl border border-line bg-card p-5">
+		<section aria-label="Visitors in the last 12 months" className="rounded-2xl border border-line bg-card p-4">
 			<div className="mb-4 flex flex-wrap items-start justify-between gap-3">
 				<p className="flex items-baseline gap-2 text-ink-2" aria-live="polite">
 					<span className="text-3xl font-semibold tracking-tight tabular text-ink">{formatWhole(total)}</span>

@@ -57,7 +57,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 					</a>
 				</div>
 			</header>
-			<main className={`${PAGE} min-w-0 pb-12 pt-6`}>{children}</main>
+			<main className={`${PAGE} min-w-0 pb-12 pt-12`}>{children}</main>
 		</div>
 	);
 }

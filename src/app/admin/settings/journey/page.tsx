@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { Breadcrumb, buttonClass, Empty, Pill } from "@/components/admin/ui";
+import { Breadcrumb, Empty, Pill, quietButtonClass } from "@/components/admin/ui";
 import { listProjects } from "@/lib/db/projects";
 import { listJourney } from "@/lib/db/settings";
 import { formatDay } from "@/lib/format";
@@ -21,9 +21,9 @@ export default async function JourneyList({ searchParams }: { searchParams: Prom
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Journey" }]} />
 				<div className="flex flex-wrap items-center justify-between gap-3">
-					<h1 className="text-2xl font-bold tracking-tight">Journey</h1>
-					<Link href={adminHref("/settings/journey/new")} className={buttonClass}>
-						New entry
+					<h1 className="text-3xl font-bold tracking-tight">Journey</h1>
+					<Link href={adminHref("/settings/journey/new")} aria-label="New entry" className={quietButtonClass}>
+						<span aria-hidden>+</span> New entry
 					</Link>
 				</div>
 			</div>
@@ -34,7 +34,7 @@ export default async function JourneyList({ searchParams }: { searchParams: Prom
 				<ul className="divide-y divide-line rounded-2xl border border-line bg-card">
 					{entries.map((e) => (
 						<li key={e.id}>
-							<Link href={adminHref(`/settings/journey/${e.id}`)} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 hover:bg-surface">
+							<Link href={adminHref(`/settings/journey/${e.id}`)} className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 hover:bg-surface">
 								<span className="flex min-w-0 items-start gap-3">
 									<span aria-hidden className="text-lg leading-6">
 										{journeyType(e.type).emoji}

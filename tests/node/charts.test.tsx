@@ -91,9 +91,10 @@ describe("charts render without broken numbers", () => {
 	});
 
 	it("never shows status by colour alone", () => {
-		const html = renderToStaticMarkup(<StatusBadge status="critical" />);
+		// The icon plus a plain sentence (batch 3: no badge words, so the sentence is always given).
+		const html = renderToStaticMarkup(<StatusBadge status="critical" label="Tech Jobs is down." />);
 		expect(html).toContain("✕");
-		expect(html).toContain("Down");
+		expect(html).toContain("Tech Jobs is down.");
 		const strip = renderToStaticMarkup(<UptimeStrip days={[{ day: "2026-11-01", checks: 288, up: 288 }, { day: "2026-11-02", checks: 0, up: 0 }]} />);
 		expect(strip).toContain("99.9% or more");
 		expect(strip).toContain(">1 Nov 2026</div>");

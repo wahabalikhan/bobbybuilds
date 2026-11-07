@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { COUNT_HASH, IGNORE_HASH, IGNORE_KEY } from "@/tracker/ignore";
+import { ArrowIcon } from "@/components/public/icons";
 
 const listeners = new Set<() => void>();
 
@@ -43,11 +44,11 @@ export function CountMyVisits({ sites }: { sites: { name: string; origin: string
 	const host = useSyncExternalStore(subscribe, () => window.location.host, () => "");
 	return (
 		<section aria-labelledby="count-heading" className="space-y-4">
-			<h2 id="count-heading" className="border-b border-line pb-3.5 text-[15px] font-medium tracking-tight">
+			<h2 id="count-heading" className="text-[15px] font-medium tracking-tight">
 				This browser
 			</h2>
 			<div className="divide-y divide-line rounded-2xl border border-line bg-card">
-				<div className="flex items-start justify-between gap-4 px-5 py-4">
+				<div className="flex items-start justify-between gap-4 px-4 py-4">
 					<span className="text-sm" id="count-label">
 						<span className="font-medium">Don&rsquo;t count my visits on {host || "this site"}</span>
 						<span className="block text-muted">
@@ -72,14 +73,15 @@ export function CountMyVisits({ sites }: { sites: { name: string; origin: string
 					</button>
 				</div>
 				{sites.length > 0 && (
-					<div className="space-y-2 px-5 py-4 text-sm">
+					<div className="space-y-2 px-4 py-4 text-sm">
 						<p className="text-ink-2">On your other sites, open each link once, in every browser you use (on each device). The site shows a message to say it&rsquo;s done.</p>
 						<ul className="space-y-1">
 							{sites.map((s) => (
 								<li key={s.origin} className="flex flex-wrap items-baseline gap-x-2">
 									<span className="font-medium">{s.name}</span>
-									<a href={`${s.origin}/${IGNORE_HASH}`} target="_blank" rel="noopener noreferrer" className="break-all text-muted underline underline-offset-4 hover:text-ink">
-										{s.origin.replace(/^https:\/\//, "")}/{IGNORE_HASH}
+									<a href={`${s.origin}/${IGNORE_HASH}`} target="_blank" rel="noopener noreferrer" className="link inline-flex items-center gap-1 break-all">
+										{s.origin.replace(/^https:\/\//, "")}/{IGNORE_HASH} <ArrowIcon />
+										<span className="sr-only">(opens in a new tab)</span>
 									</a>
 								</li>
 							))}

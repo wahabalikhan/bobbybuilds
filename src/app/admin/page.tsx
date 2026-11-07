@@ -53,11 +53,11 @@ export default async function AdminHome() {
 	const lines = new Map(await Promise.all(main.map(async (s) => [s.project.id, productLine(await publicProductNumbers(env.DB, s.project.id, today), today)] as const)));
 
 	return (
-		<div className="space-y-10">
+		<div className="space-y-12">
 			<StatusStrip items={attention} />
 
 			<section aria-labelledby="projects-heading">
-				<div className="mb-6 flex items-center justify-between gap-3 border-b border-line pb-3.5">
+				<div className="mb-4 flex items-center justify-between gap-3">
 					<h2 id="projects-heading" className="text-[15px] font-medium tracking-tight">
 						My projects <span className="font-normal text-muted">({main.length})</span>
 					</h2>
@@ -80,13 +80,13 @@ export default async function AdminHome() {
 			)}
 
 			<section aria-labelledby="public-page-heading">
-				<h2 id="public-page-heading" className="mb-4 border-b border-line pb-3.5 text-[15px] font-medium tracking-tight">
+				<h2 id="public-page-heading" className="mb-4 text-[15px] font-medium tracking-tight">
 					My public page
 				</h2>
 				<ul className="divide-y divide-line rounded-2xl border border-line bg-card">
 					{publicPage.map((item) => (
 						<li key={item.href}>
-							<Link href={item.href} className="group flex items-center justify-between gap-4 px-5 py-3.5 hover:bg-surface">
+							<Link href={item.href} className="group flex items-center justify-between gap-4 px-4 py-3.5 hover:bg-surface">
 								<span className="min-w-0">
 									<span className="font-medium group-hover:underline">{item.label}</span>
 									<span className="block truncate text-sm text-muted">{item.detail}</span>
@@ -122,7 +122,7 @@ function ProjectCard({ summary: s, numbers, logoPath }: { summary: ProjectSummar
 		<article
 			data-project-card
 			aria-labelledby={`admin-project-${project.slug}`}
-			className={`group relative flex h-full min-w-0 flex-col rounded-2xl border border-line bg-card p-5 transition-colors hover:border-[var(--axis)] has-[a[data-card-link]:focus-visible]:border-[var(--axis)] has-[a[data-card-link]:focus-visible]:outline-2 has-[a[data-card-link]:focus-visible]:outline-offset-2 has-[a[data-card-link]:focus-visible]:outline-solid has-[a[data-card-link]:focus-visible]:outline-[var(--accent)] ${CARD_HEIGHT}`}
+			className={`group relative flex h-full min-w-0 flex-col rounded-2xl border border-line bg-card p-4 transition-colors hover:border-[var(--axis)] has-[a[data-card-link]:focus-visible]:border-[var(--axis)] has-[a[data-card-link]:focus-visible]:outline-2 has-[a[data-card-link]:focus-visible]:outline-offset-2 has-[a[data-card-link]:focus-visible]:outline-solid has-[a[data-card-link]:focus-visible]:outline-[var(--accent)] ${CARD_HEIGHT}`}
 		>
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex min-w-0 items-center gap-2.5">

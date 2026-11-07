@@ -10,7 +10,7 @@ export function AdminNotFoundMessage({ what = "There’s nothing at this address
 	return (
 		<div className="space-y-3">
 			<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Not found" }]} />
-			<h1 className="text-2xl font-bold tracking-tight">Not found</h1>
+			<h1 className="text-3xl font-bold tracking-tight">Not found</h1>
 			<p className="text-ink-2">{what}</p>
 		</div>
 	);

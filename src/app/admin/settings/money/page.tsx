@@ -41,7 +41,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 		<div className="max-w-3xl space-y-6">
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Costs and revenue" }]} />
-				<h1 className="text-2xl font-bold tracking-tight">Costs and revenue</h1>
+				<h1 className="text-3xl font-bold tracking-tight">Costs and revenue</h1>
 				<p className="text-sm text-ink-2">What it costs to run everything each month, and what it earns (even £0). The latest month with anything in it is shown on your public page, with its costs by service.</p>
 			</div>
 
@@ -49,7 +49,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 				<Link href={adminHref(`/settings/money?month=${previousMonth(month)}`)} className={quietButtonClass}>
 					← {formatMonth(previousMonth(month))}
 				</Link>
-				<h2 className="text-lg font-semibold tracking-tight" aria-live="polite">
+				<h2 className="text-[15px] font-medium tracking-tight" aria-live="polite">
 					{formatMonth(month)}
 					{month === thisMonth && <span className="ml-2 text-sm font-normal text-muted">this month</span>}
 				</h2>
@@ -79,7 +79,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 				</SettingsForm>
 			)}
 
-			<section className="rounded-2xl border border-line bg-card p-5">
+			<section className="rounded-2xl border border-line bg-card p-4">
 				<SettingsForm action={moneyAction} submitLabel="Save month">
 					<Hidden name="month" value={month} />
 					<datalist id="money-services">
@@ -124,13 +124,13 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 
 			{months.length > 0 && (
 				<section aria-labelledby="months-heading">
-					<h2 id="months-heading" className="mb-3 text-[15px] font-medium tracking-tight">
+					<h2 id="months-heading" className="mb-4 text-[15px] font-medium tracking-tight">
 						Every month
 					</h2>
 					<ul className="divide-y divide-line rounded-2xl border border-line bg-card text-sm">
 						{months.map((m) => (
 							<li key={m.month}>
-								<Link href={adminHref(`/settings/money?month=${m.month}`)} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-surface">
+								<Link href={adminHref(`/settings/money?month=${m.month}`)} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface">
 									<span className="font-medium">{formatMonth(m.month)}</span>
 									<span className="tabular text-ink-2">
 										Costs {formatPence(m.costPence)} · Revenue {formatPence(m.revenuePence)}

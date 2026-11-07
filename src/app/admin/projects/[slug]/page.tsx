@@ -73,11 +73,11 @@ export default async function ProjectPage({
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="flex flex-wrap items-center gap-3">
 						<ProjectLogo name={project.name} logoPath={iconFor(project)} size={36} />
-						<h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
+						<h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
 						<StatusDot status={project.status} up={up} />
 						{!project.showPublic && <span className="text-sm text-muted">{project.showOnFirstVisit ? "Hidden until its first visit" : "Hidden from public page"}</span>}
 						{project.siteUrl && (
-							<a href={project.siteUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
+							<a href={project.siteUrl} target="_blank" rel="noopener noreferrer" className="link inline-flex items-center gap-1 text-sm">
 								Visit site <ArrowIcon />
 								<span className="sr-only">(opens in a new tab)</span>
 							</a>
@@ -95,7 +95,7 @@ export default async function ProjectPage({
 					)}
 				</div>
 			</div>
-			<div className="border-b border-line pb-4">
+			<div>
 				<Tabs tabs={[...PROJECT_TABS]} current={tab} hrefFor={(key) => (key === "settings" ? settingsHref : base)} />
 			</div>
 			{tab === "settings" ? (

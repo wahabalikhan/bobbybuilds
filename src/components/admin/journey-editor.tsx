@@ -30,7 +30,7 @@ export function JourneyBody({ defaultValue }: { defaultValue: string }) {
 				{pending ? "Rendering…" : "Preview"}
 			</button>
 			{html !== null && (
-				<div className="rounded-2xl border border-line bg-surface p-5">
+				<div className="rounded-2xl border border-line bg-surface p-4">
 					<p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted">Preview</p>
 					{/* Safe: renderMarkdown never passes raw HTML through (src/lib/markdown.ts). */}
 					<div className="prose-bobby" dangerouslySetInnerHTML={{ __html: html || "<p><em>Nothing to preview yet.</em></p>" }} />

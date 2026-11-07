@@ -23,14 +23,14 @@ export default async function EditJourneyEntry({ params, searchParams }: { param
 		<div className="max-w-3xl space-y-6">
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Journey", href: adminHref("/settings/journey") }, { label: entry.title }]} />
-				<h1 className="text-2xl font-bold tracking-tight">{entry.title}</h1>
+				<h1 className="text-3xl font-bold tracking-tight">{entry.title}</h1>
 				{query.created && <p role="status" className="mt-1 text-sm text-good-ink">✓ Entry created.</p>}
 			</div>
-			<section className="rounded-2xl border border-line bg-card p-5">
+			<section className="rounded-2xl border border-line bg-card p-4">
 				<JourneyForm entry={entry} projects={projects} />
 			</section>
-			<details className="rounded-2xl border border-line bg-card p-5">
-				<summary className="font-semibold">Delete this entry</summary>
+			<details className="rounded-2xl border border-line bg-card p-4">
+				<summary className="text-[15px] font-medium tracking-tight">Delete this entry</summary>
 				<div className="mt-4">
 					<SettingsForm action={journeyAction} submitLabel="Delete entry for good" danger>
 						<Hidden name="entry_id" value={entry.id} />

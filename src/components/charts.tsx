@@ -407,7 +407,7 @@ export function RankedList({
 				{rows.map((row) => (
 					<tr key={row.key} className="group">
 						<td className="relative py-1 pr-3">
-							<span aria-hidden className="absolute inset-y-0.5 left-0 rounded" style={{ width: `${(row.value / max) * 100}%`, background: "var(--pill)" }} />
+							<span aria-hidden className="absolute inset-y-0.5 left-0 rounded" style={{ width: `${(row.value / max) * 100}%`, background: "var(--accent-wash)" }} />
 							<span className="relative block truncate pl-2" title={row.key}>
 								{formatKey(row.key)}
 							</span>
@@ -423,30 +423,32 @@ export function RankedList({
 
 export type Status = "good" | "warning" | "serious" | "critical" | "none";
 
-export const STATUS_LABEL: Record<Status, string> = {
-	good: "Up",
-	warning: "Some downtime",
-	serious: "Lots of downtime",
-	critical: "Down",
-	none: "Not checked",
-};
-
 const STATUS_ICON: Record<Status, string> = { good: "✓", warning: "!", serious: "!", critical: "✕", none: "–" };
 
-/** A status always carries an icon and a label, never colour alone. */
-export function StatusBadge({ status, label }: { status: Status; label?: string }) {
+/** The small round status icon (✓ ! ✕ –) on its colour. Decorative: the sentence next to it says it. */
+export function StatusIcon({ status }: { status: Status }) {
 	const colour = status === "none" ? "var(--muted)" : `var(--${status})`;
 	return (
+		<span
+			aria-hidden
+			className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+			// Glyphs at 3:1 or more: dark on amber and orange, white on green and red, the page colour on grey.
+			style={{ background: colour, color: status === "warning" || status === "serious" ? "#0b0b0b" : status === "none" ? "var(--on-muted)" : "#ffffff" }}
+		>
+			{STATUS_ICON[status]}
+		</span>
+	);
+}
+
+/**
+ * The one style for problems (and their all-clear): the small icon, then a plain sentence. Never
+ * colour alone, and no badge words like "Good" or "Poor": the sentence says what's happening.
+ */
+export function StatusBadge({ status, label }: { status: Status; label: string }) {
+	return (
 		<span className="inline-flex items-center gap-1.5 text-sm text-ink-2">
-			<span
-				aria-hidden
-				className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold"
-				// Glyphs at 3:1 or more: dark on amber and orange, white on green and red, the page colour on grey.
-				style={{ background: colour, color: status === "warning" || status === "serious" ? "#0b0b0b" : status === "none" ? "var(--on-muted)" : "#ffffff" }}
-			>
-				{STATUS_ICON[status]}
-			</span>
-			{label ?? STATUS_LABEL[status]}
+			<StatusIcon status={status} />
+			{label}
 		</span>
 	);
 }
