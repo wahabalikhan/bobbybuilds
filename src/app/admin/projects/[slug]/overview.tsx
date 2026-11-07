@@ -114,6 +114,8 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 
 			<Searches project={project} range={range} today={today} searches={searches} topSearches={topSearches} emptySearches={emptySearches} numbers={numbers} rawNote={rawNote} />
 
+			<CommentsWaiting project={project} numbers={numbers} />
+
 			<TrackedLinks links={links} project={project} />
 
 			{funnelResult.length > 0 && (
@@ -356,6 +358,29 @@ function Searches({
 				</p>
 			)}
 		</Section>
+	);
+}
+
+/**
+ * Comments waiting for approval, from the admin-only product number the portfolio sends
+ * (comments_waiting), the same way as Tech Jobs' review line: one line, no heading, linking to the
+ * site, where comments are approved (signed in there). Only when it has a value.
+ */
+function CommentsWaiting({ project, numbers }: { project: Project; numbers: Map<string, { value: number; day: string }> }) {
+	const waiting = numbers.get("comments_waiting");
+	if (!waiting) return null;
+	const text = `Comments waiting for approval: ${formatWhole(waiting.value)}`;
+	return (
+		<p className="text-sm text-ink-2" title={`Sent ${formatLongDay(waiting.day)}`}>
+			{project.siteUrl ? (
+				<a href={project.siteUrl} target="_blank" rel="noopener noreferrer" className="link inline-flex items-center gap-1">
+					{text} <ArrowIcon />
+					<span className="sr-only">(opens {project.name} in a new tab, where you approve them)</span>
+				</a>
+			) : (
+				text
+			)}
+		</p>
 	);
 }
 
