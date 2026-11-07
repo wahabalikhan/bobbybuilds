@@ -58,6 +58,26 @@ export function formatDay(day: string, withYear = false): string {
 	return `${date} ${MONTHS[month - 1]}${withYear ? ` ${year}` : ""}`;
 }
 
+const LONG_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/** "1 November 2026" from 'YYYY-MM-DD': dates in words, for the admin (never 2026-11-01). */
+export function formatLongDay(day: string): string {
+	const [year, month, date] = day.split("-").map(Number);
+	return `${date} ${LONG_MONTHS[month - 1]} ${year}`;
+}
+
+/** "November 2026" from 'YYYY-MM' (or "November" with `withYear` false). */
+export function formatLongMonth(month: string, withYear = true): string {
+	const [year, m] = month.split("-").map(Number);
+	return withYear ? `${LONG_MONTHS[m - 1]} ${year}` : LONG_MONTHS[m - 1];
+}
+
+/** "6 November 2026, 14:05" in UK time. */
+export function formatLongUkTime(timestampMs: number): string {
+	const parts = Object.fromEntries(UK_TIME_LONG.formatToParts(new Date(timestampMs)).map((p) => [p.type, p.value]));
+	return `${parts.day} ${parts.month} ${parts.year}, ${parts.hour}:${parts.minute}`;
+}
+
 /** "Nov 2026" from 'YYYY-MM'. */
 export function formatMonth(month: string): string {
 	const [year, m] = month.split("-").map(Number);
@@ -70,6 +90,7 @@ export function formatTime(timestampMs: number): string {
 	return `${formatDay(iso.slice(0, 10))}, ${iso.slice(11, 16)} UTC`;
 }
 
+const UK_TIME_LONG = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
 const UK_TIME = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 
 /** "6 Nov, 14:05" in UK time (GMT or BST), for lists you read rather than compare across days. */

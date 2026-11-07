@@ -6,6 +6,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { LiveDataBanner } from "@/components/admin/live-banner";
 import { StatusMenu } from "@/components/admin/status-menu";
 import { Toaster } from "@/components/admin/toast";
+import { OwnVisitsNotCounted } from "@/components/admin/own-visits";
 import { Wordmark } from "@/components/wordmark";
 import { ArrowIcon } from "@/components/public/icons";
 import { requestTime } from "@/lib/admin/clock";
@@ -61,6 +62,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 			<main className={`${PAGE} min-w-0 pb-12 pt-8 sm:pt-12`}>{children}</main>
 			{/* Every toast (showToast), at the bottom centre. */}
 			<Toaster />
+			{/* Signed in here means it's you: this browser's visits to BobbyBuilds aren't counted. */}
+			<OwnVisitsNotCounted />
 		</div>
 	);
 }

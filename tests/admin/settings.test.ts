@@ -65,15 +65,17 @@ describe("validation", () => {
 	});
 
 	it("publishes journey entries now unless a date is given", () => {
-		expect(validateJourney({ title: "Week one", type: "shipped", publish: "on" }, [], ctx.now)).toMatchObject({ ok: true, value: { type: "shipped", publish: true, publishedAt: ctx.now } });
-		expect(validateJourney({ title: "Week one", type: "post", published_on: "2026-10-01" }, [], ctx.now)).toMatchObject({ ok: true, value: { publish: false, publishedAt: Date.parse("2026-10-01T09:00:00Z") } });
+		expect(validateJourney({ title: "Week one", type: "shipped", body_md: "Shipped it.", publish: "on" }, [], ctx.now)).toMatchObject({ ok: true, value: { type: "shipped", publish: true, publishedAt: ctx.now } });
+		expect(validateJourney({ title: "Week one", type: "post", body_md: "A post.", published_on: "2026-10-01" }, [], ctx.now)).toMatchObject({ ok: true, value: { publish: false, publishedAt: Date.parse("2026-10-01T09:00:00Z") } });
 	});
 
 	it("checks a journey entry's type, length and link", () => {
 		expect(validateJourney({ title: "Week one", type: "rant" }, [], ctx.now)).toMatchObject({ ok: false, errors: { type: expect.any(String) } });
+		// Text is required now.
+		expect(validateJourney({ title: "Week one", type: "post" }, [], ctx.now)).toMatchObject({ ok: false, errors: { body_md: "Add a few sentences." } });
 		expect(validateJourney({ title: "Week one", type: "post", body_md: "x".repeat(601) }, [], ctx.now)).toMatchObject({ ok: false, errors: { body_md: expect.any(String) } });
 		expect(validateJourney({ title: "Week one", type: "post", link_url: "http://example.com" }, [], ctx.now)).toMatchObject({ ok: false, errors: { link_url: expect.any(String) } });
-		expect(validateJourney({ title: "Week one", type: "post", publish: "on", published_on: "2026-10-01" }, [], ctx.now)).toMatchObject({ ok: true, value: { publishedAt: Date.parse("2026-10-01T09:00:00Z") } });
+		expect(validateJourney({ title: "Week one", type: "post", body_md: "A post.", publish: "on", published_on: "2026-10-01" }, [], ctx.now)).toMatchObject({ ok: true, value: { publishedAt: Date.parse("2026-10-01T09:00:00Z") } });
 		expect(validateJourney({ title: "Week one", type: "post", project_id: "999" }, [1], ctx.now).ok).toBe(false);
 	});
 });
@@ -251,7 +253,7 @@ describe("journey", () => {
 		await core.journeyCore(db, idle, { entry_id: String(id), title: "Week one", type: "lesson", body_md: "Unpublished" }, ctx);
 		expect(await getJourney(db, id)).toMatchObject({ isPublished: false, publishedAt: ctx.now });
 
-		const again = await core.journeyCore(db, idle, { title: "Week one", type: "post" }, ctx);
+		const again = await core.journeyCore(db, idle, { title: "Week one", type: "post", body_md: "Again." }, ctx);
 		expect(await getJourney(db, Number(again.redirectTo!.match(/journey\/(\d+)/)![1]))).toMatchObject({ slug: "week-one-2" });
 
 		// Deleting needs the box ticked, like every other delete.
@@ -264,9 +266,23 @@ describe("journey", () => {
 		expect(await getJourney(db, id)).toBeNull();
 	});
 
+	it("publishes and unpublishes an entry straight from its view, changing nothing else", async () => {
+		const created = await core.journeyCore(db, idle, { title: uniqueSlug("status"), type: "lesson", body_md: "Text stays." }, ctx);
+		const id = Number(created.redirectTo!.match(/journey\/(\d+)/)![1]);
+		expect(await getJourney(db, id)).toMatchObject({ isPublished: false, publishedAt: null });
+		const published = await core.journeyStatusCore(db, idle, { entry_id: String(id), publish: "on" }, ctx);
+		expect(published.state).toMatchObject({ status: "ok", message: "Published." });
+		// No date yet: publishing gives it today's.
+		expect(await getJourney(db, id)).toMatchObject({ isPublished: true, publishedAt: ctx.now, bodyMd: "Text stays." });
+		const unpublished = await core.journeyStatusCore(db, idle, { entry_id: String(id), publish: "off" }, ctx);
+		expect(unpublished.state.message).toBe("Unpublished. It's a draft now.");
+		expect(await getJourney(db, id)).toMatchObject({ isPublished: false, publishedAt: ctx.now });
+		expect((await core.journeyStatusCore(db, idle, { entry_id: "999999", publish: "on" }, ctx)).state.status).toBe("error");
+	});
+
 	it("keeps journey entries when their project is deleted", async () => {
 		const project = await newProject();
-		const created = await core.journeyCore(db, idle, { title: uniqueSlug("kept"), type: "post", project_id: String(project.id) }, ctx);
+		const created = await core.journeyCore(db, idle, { title: uniqueSlug("kept"), type: "post", body_md: "Kept.", project_id: String(project.id) }, ctx);
 		const id = Number(created.redirectTo!.match(/journey\/(\d+)/)![1]);
 		await core.deleteProjectCore(db, idle, { project_id: String(project.id), confirm_slug: project.slug });
 		expect(await getJourney(db, id)).toMatchObject({ projectId: null });

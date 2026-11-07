@@ -4,6 +4,7 @@ import { CopyButton } from "@/components/admin/copy-button";
 import { CheckboxField, FieldError, Hidden, SelectField, SettingsForm, TextArea, TextField } from "@/components/admin/form";
 import { Switch } from "@/components/admin/switch";
 import { TaglineFields } from "@/components/admin/tagline-fields";
+import { FunnelRows } from "@/components/admin/funnel-rows";
 import { Pill, ProjectLogo } from "@/components/admin/ui";
 import { adminIcons } from "@/lib/admin/icons";
 import { getIconMeta } from "@/lib/db/icons";
@@ -27,11 +28,11 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 	const db = env.DB;
 	const [metrics, numbers, iconMeta] = await Promise.all([listMetrics(db, project.id), outcomeNumbers(db, project.id, utcDay(requestTime())), getIconMeta(db, project.id)]);
 	return (
-		<div className="max-w-3xl space-y-12">
+		<div className="space-y-12">
 			<Section title="About">
 				<SettingsForm action={saveDetailsAction}>
 					<Hidden name="project_id" value={project.id} />
-					<div className="grid gap-4 sm:grid-cols-2">
+					<div className="space-y-4">
 						<TextField name="name" label="Name" defaultValue={project.name} maxLength={60} required />
 						<SelectField
 							name="status"
@@ -47,7 +48,7 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 						/>
 					</div>
 					<TextField type="url" name="site_url" label="Site address" defaultValue={project.siteUrl ?? ""} placeholder="https://" hint="Where the public card links to. It's checked every 5 minutes to see if it's up." />
-					<div className="grid gap-4 sm:grid-cols-[14rem_10rem]">
+					<div className="space-y-4">
 						<TextField type="date" name="started_on" label="Live since" defaultValue={project.startedOn ?? ""} hint="The day it went live. Its charts start here (or when tracking started, if that's later)." />
 						<TextField type="number" name="sort_order" label="Order" defaultValue={String(project.sortOrder)} hint="Position in lists. 1 is first." />
 					</div>
@@ -114,9 +115,10 @@ async function IconBlock({ project, db }: { project: Project; db: D1Database }) 
 	);
 }
 
+/** A Settings section: its own bordered card, the heading 16px above its one-column form. */
 function Section({ title, children }: { title: string; children: ReactNode }) {
 	return (
-		<section>
+		<section className="rounded-2xl border border-line bg-card p-4">
 			<h2 className="mb-4 text-[15px] font-medium tracking-tight">{title}</h2>
 			{children}
 		</section>
@@ -259,15 +261,17 @@ function Advanced({ project }: { project: Project }) {
 			</Sub>
 
 			<Sub title="Funnel steps">
-				<p className="text-sm text-ink-2">Up to 8 steps: a page (like /pricing) or an action. Clear a row to remove it. The funnel shows on the Overview once there&rsquo;s a step.</p>
+				<p className="text-sm text-ink-2">Up to 8 steps: a page (like /pricing) or an action. Clear a step to remove it. The funnel shows on the Overview once there&rsquo;s a step.</p>
 				<SettingsForm action={funnelAction} submitLabel="Save funnel">
 					<Hidden name="project_id" value={project.id} />
-					<div className="space-y-3">
-						{Array.from({ length: FUNNEL_ROWS }, (_, i) => {
+					<FunnelRows
+						saved={steps.length}
+						rows={Array.from({ length: FUNNEL_ROWS }, (_, i) => {
 							const step = steps[i];
 							return (
-								<div key={i} className="grid gap-3 sm:grid-cols-[1fr_8rem_1fr]">
-									<TextField name={`step_label_${i}`} label={`Step ${i + 1} label`} defaultValue={step?.label ?? ""} maxLength={40} />
+								<fieldset key={i} className="space-y-3 rounded-xl border border-line p-3">
+									<legend className="px-1 text-sm font-medium">Step {i + 1}</legend>
+									<TextField name={`step_label_${i}`} label="Label" defaultValue={step?.label ?? ""} maxLength={40} />
 									<SelectField
 										name={`step_kind_${i}`}
 										label="Type"
@@ -278,13 +282,11 @@ function Advanced({ project }: { project: Project }) {
 										]}
 									/>
 									<TextField name={`step_value_${i}`} label="Page or action name" defaultValue={step?.path ?? step?.event ?? ""} placeholder={i === 0 ? "/" : ""} />
-									<div className="sm:col-span-3">
-										<FieldError name={`step_${i}`} />
-									</div>
-								</div>
+									<FieldError name={`step_${i}`} />
+								</fieldset>
 							);
 						})}
-					</div>
+					/>
 				</SettingsForm>
 			</Sub>
 
@@ -293,7 +295,7 @@ function Advanced({ project }: { project: Project }) {
 				<SettingsForm action={addMetricAction} submitLabel="Add number">
 					<Hidden name="project_id" value={project.id} />
 					<Hidden name="source" value="product" />
-					<div className="grid gap-4 sm:grid-cols-2">
+					<div className="space-y-4">
 						<TextField name="label" label="Label" maxLength={60} placeholder="Open jobs" />
 						<TextField name="key" label="Code name" maxLength={40} hint="Made from the label if left blank." />
 					</div>
@@ -310,7 +312,7 @@ function Advanced({ project }: { project: Project }) {
 function DangerZone({ project, metrics }: { project: Project; metrics: Metric[] }) {
 	const products = metrics.filter((m) => m.source === "product");
 	return (
-		<section aria-labelledby="danger-heading" className="mt-16 border-t-2 border-[color-mix(in_srgb,var(--critical)_35%,transparent)] pt-8">
+		<section aria-labelledby="danger-heading" className="rounded-2xl border border-danger-line bg-card p-4">
 			<h2 id="danger-heading" className="mb-4 text-[15px] font-medium tracking-tight text-critical-ink">
 				Danger zone
 			</h2>

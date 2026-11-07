@@ -175,7 +175,8 @@ export function ProjectSelect({
 /** A table only screen readers see, with the same numbers as the chart next to it. */
 export function ScreenReaderTable({ caption, head, rows }: { caption: string; head: string[]; rows: (string | number)[][] }) {
 	return (
-		<table className="sr-only">
+		<div className="sr-only">
+		<table>
 			<caption>{caption}</caption>
 			<thead>
 				<tr>
@@ -194,6 +195,7 @@ export function ScreenReaderTable({ caption, head, rows }: { caption: string; he
 				))}
 			</tbody>
 		</table>
+		</div>
 	);
 }
 

@@ -107,9 +107,10 @@ export async function moneyAction(prev: FormState, form: FormData) {
 	return run(prev, form, core.moneyCore);
 }
 
-export async function copyCostsAction(prev: FormState, form: FormData) {
+
+export async function journeyStatusAction(prev: FormState, form: FormData) {
 	await requireAdmin();
-	return run(prev, form, core.copyCostsCore);
+	return run(prev, form, core.journeyStatusCore);
 }
 
 export async function refreshIconAction(prev: FormState, form: FormData) {

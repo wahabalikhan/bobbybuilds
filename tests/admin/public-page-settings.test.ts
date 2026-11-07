@@ -104,7 +104,8 @@ describe("paused", () => {
 describe("profile", () => {
 	it("saves the start date and the activity switch", async () => {
 		expect(validateProfile({ building_since: "2026-02-30" })).toMatchObject({ ok: false, errors: { building_since: expect.any(String) } });
-		await core.profileCore(db, idle, { building_since: "2026-06-30", show_activity: "on" });
+		// Only the start date is saved now; Activity is always on.
+		await core.profileCore(db, idle, { building_since: "2026-06-30" });
 		expect(await getProfile(db)).toEqual({ buildingSince: "2026-06-30", showActivity: true });
 	});
 });
@@ -124,7 +125,8 @@ describe("costs and revenue", () => {
 	it("replaces a month, and copies last month's costs into an empty month", async () => {
 		await core.moneyCore(db, idle, { month: "2031-01", service_0: "Cloudflare", amount_0: "5", kind_1: "revenue", service_1: "Tech Jobs", amount_1: "0" });
 		expect(await listMonth(db, "2031-01")).toHaveLength(2);
-		const copied = await core.copyCostsCore(db, idle, { month: "2031-02" });
+		// "Copy costs" is a secondary button in the money form itself (intent=copy).
+		const copied = await core.moneyCore(db, idle, { month: "2031-02", intent: "copy" });
 		expect(copied).toMatchObject({ state: { status: "ok" }, redirectTo: "/admin/settings/money?month=2031-02&copied=1" });
 		expect(await listMonth(db, "2031-02")).toEqual([{ kind: "cost", service: "Cloudflare", projectId: null, amountPence: 500 }]);
 		expect((await core.copyCostsCore(db, idle, { month: "2031-02" })).state.status).toBe("error");

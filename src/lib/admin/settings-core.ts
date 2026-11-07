@@ -14,6 +14,7 @@ import {
 	deleteProject,
 	hideUntilFirstVisit,
 	saveJourney,
+	setJourneyPublished,
 	setBrowserEvents,
 	setFunnel,
 	setMetricVisibility,
@@ -319,6 +320,14 @@ export async function journeyCore(db: D1Database, prev: FormState, values: FormV
 	}
 }
 
+/** Publish or Unpublish, straight from an entry's view: just its status, nothing else changes. */
+export async function journeyStatusCore(db: D1Database, prev: FormState, values: FormValues, ctx: Context): Promise<ActionResult> {
+	const id = Number(values.entry_id);
+	const publish = values.publish === "on";
+	if (!Number.isInteger(id) || !(await setJourneyPublished(db, id, publish, ctx.now))) return { state: { status: "error", version: prev.version + 1, message: "That entry no longer exists." } };
+	return { state: ok(prev, publish ? "Published." : "Unpublished. It's a draft now.") };
+}
+
 // --- On your public page: the card --------------------------------------------------------
 
 /** The keys a project's outcomes can use: its product numbers, and visitors (30 days). */
@@ -353,6 +362,8 @@ export async function profileCore(db: D1Database, prev: FormState, values: FormV
 // --- Costs and revenue ------------------------------------------------------------------
 
 export async function moneyCore(db: D1Database, prev: FormState, values: FormValues): Promise<ActionResult> {
+	// "Copy costs from <last month>" is a secondary button in the same form.
+	if (values.intent === "copy") return copyCostsCore(db, prev, values);
 	const month = values.month ?? "";
 	if (!isMonth(month)) return { state: failed(prev, values, {}, "Choose a month.") };
 	const result = validateMoney(values, (await listProjects(db)).map((p) => p.id));

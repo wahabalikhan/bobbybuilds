@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { CopyButton } from "@/components/admin/copy-button";
-import { inputBaseClass, inputClass, selectBaseClass } from "@/components/admin/field-styles";
-import { buttonClass, Card, Delta, Empty, quietButtonClass, RangePicker } from "@/components/admin/ui";
+import { MakeLink } from "@/components/admin/make-link";
+import { selectBaseClass } from "@/components/admin/field-styles";
+import { AutoSubmitForm } from "@/components/admin/auto-submit-form";
+import { Card, Delta, Empty, quietButtonClass, RangePicker } from "@/components/admin/ui";
 import { RankedList, StatusBadge, UptimeStrip, type Status } from "@/components/charts";
 import { clampToRaw, type DateRange } from "@/lib/admin/range";
 import { sourceName } from "@/lib/admin/sources";
@@ -30,7 +31,7 @@ import { ArrowIcon } from "@/components/public/icons";
 import { WeekChart } from "@/components/public/mono-charts";
 import { funnel, parseFunnel } from "@/lib/db/funnel";
 import type { Project } from "@/lib/db/projects";
-import { change, formatCount, formatDay, formatDuration, formatPercent, formatSeconds, formatTime, formatUkTime, formatWhole } from "@/lib/format";
+import { change, formatCount, formatDuration, formatLongDay, formatLongUkTime, formatPercent, formatSeconds, formatWhole } from "@/lib/format";
 import { adminHref } from "@/lib/site";
 
 export type OverviewProps = {
@@ -78,11 +79,18 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 		? await Promise.all([searchCounts(db, project.id, raw.from, raw.to), searchTerms(db, project.id, "search", raw.from, raw.to), searchTerms(db, project.id, "search_no_results", raw.from, raw.to)])
 		: [null, [], []];
 	const rawNote = raw.clipped ? "From the last 90 days (detail older than that is deleted)." : undefined;
+	// Sources leave out localhost and the project's own site (moving between its own pages isn't a source).
+	const own = ownHosts(project);
+	const outside = sources.filter((r) => !own.has(bareHost(r.key)));
+	const noVisits = pages.length === 0 && outside.length === 0;
 
 	return (
 		<div className="space-y-12">
 			<Headline project={project} range={range} today={today} visitors={totals.visitors} previous={previous.visitors} series={visitors} hrefFor={hrefFor} />
 
+			{noVisits ? (
+				<p className="text-sm text-muted">No visits in this range yet.</p>
+			) : (
 			<div className="grid gap-6 md:grid-cols-2">
 				<Top
 					title="Top pages"
@@ -92,20 +100,21 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 				/>
 				<Top
 					title="Top sources"
-					rows={sources.slice(0, 5).map((r) => ({ label: sourceName(r.key), value: r.visitors }))}
+					rows={outside.slice(0, 5).map((r) => ({ label: sourceName(r.key), value: r.visitors }))}
 					empty="No visits in this range."
 					all={
 						<>
 							<p className="mb-2 text-sm text-muted">Direct means we couldn&rsquo;t tell (typed in, bookmarked, or an app).</p>
-							<RankedList title="All sources" keyLabel="Source" rows={sources.map((r) => ({ key: r.key, value: r.visitors, secondary: r.pageviews }))} formatKey={sourceName} />
+							<RankedList title="All sources" keyLabel="Source" rows={outside.map((r) => ({ key: r.key, value: r.visitors, secondary: r.pageviews }))} formatKey={sourceName} />
 						</>
 					}
 				/>
 			</div>
+			)}
 
 			<Searches project={project} range={range} today={today} searches={searches} topSearches={topSearches} emptySearches={emptySearches} numbers={numbers} rawNote={rawNote} />
 
-			<TrackedLinks links={links} project={project} query={query} hrefFor={hrefFor} />
+			<TrackedLinks links={links} project={project} />
 
 			{funnelResult.length > 0 && (
 				<Section title="Funnel" note="Each step counts people who did it after the step before, on the same day.">
@@ -126,6 +135,24 @@ export async function Overview({ project, range, today, now, query, hrefFor }: O
 			</Disclosure>
 		</div>
 	);
+}
+
+/** A referrer's host, lower case, without "www." or a port. */
+function bareHost(key: string): string {
+	return key.toLowerCase().replace(/^www\./, "").replace(/:\d+$/, "");
+}
+
+/** Hosts that aren't sources for this project: localhost, and its own site (its address and allowed websites). */
+function ownHosts(project: Project): Set<string> {
+	const hosts = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+	for (const url of [project.siteUrl, ...project.allowedOrigins]) {
+		try {
+			if (url) hosts.add(bareHost(new URL(url).host));
+		} catch {
+			// Not a full address: nothing to leave out.
+		}
+	}
+	return hosts;
 }
 
 /** A closed section with a chevron: "All the detail" and "Advanced". */
@@ -205,26 +232,25 @@ function Headline({
 	series: { day: string; value: number }[];
 	hrefFor: (changes: Record<string, string>) => string;
 }) {
+	// The range options sit above the chart card; the chart has one fixed height, whatever the range.
 	return (
-		<section aria-label="Visitors" className="rounded-2xl border border-line bg-card p-4">
-			<div className="flex flex-wrap items-start justify-between gap-3">
+		<section aria-label="Visitors" className="space-y-3">
+			<RangePicker range={range} hrefFor={hrefFor} />
+			<div className="rounded-2xl border border-line bg-card p-4">
 				<p className="flex flex-wrap items-baseline gap-x-2 text-ink-2">
 					<span className="text-3xl font-semibold tracking-tight tabular text-ink">{formatWhole(visitors)}</span>
 					visitors, {range.label.toLowerCase()}
 					<Delta value={change(visitors, previous)} period="previous" />
 				</p>
-				<div>
-					<RangePicker range={range} hrefFor={hrefFor} />
-				</div>
-			</div>
-			<div className="mt-4">
+				<div className="mt-4">
 				<WeekChart
 					period="day"
-					height={80}
+					height={180}
 					unfinishedLast={range.to === today}
 					weeks={series}
 					label={`${project.name}: visitors per day, ${range.label.toLowerCase()}, ${formatCount(visitors)} in total.${range.to === today ? " Today so far is dashed." : ""}`}
 				/>
+				</div>
 			</div>
 		</section>
 	);
@@ -282,7 +308,7 @@ function Searches({
 	let health: string | null = null;
 	if (failed || median) {
 		const day = [failed?.day, median?.day].filter((d): d is string => !!d).sort().at(-1)!;
-		const when = day === today ? "today" : day === addDays(today, -1) ? "yesterday" : `on ${formatDay(day)}`;
+		const when = day === today ? "today" : day === addDays(today, -1) ? "yesterday" : `on ${formatLongDay(day)}`;
 		health = `${[failed && `${formatWhole(failed.value)} failed search${failed.value === 1 ? "" : "es"}`, median && `searches typically take ${formatSeconds(median.value)}`].filter(Boolean).join(" · ")} ${when}`;
 	}
 	const words = (w: string) => w || "(no words, just filters)";
@@ -318,7 +344,7 @@ function Searches({
 				</div>
 			)}
 			{waiting && (
-				<p className="mt-4 text-sm text-ink-2" title={`Sent ${formatDay(waiting.day, true)}`}>
+				<p className="mt-4 text-sm text-ink-2" title={`Sent ${formatLongDay(waiting.day)}`}>
 					{admin ? (
 						<a href={admin} target="_blank" rel="noopener noreferrer" className="link inline-flex items-center gap-1">
 							Companies waiting for review: {formatWhole(waiting.value)} <ArrowIcon />
@@ -333,39 +359,37 @@ function Searches({
 	);
 }
 
-/** Visitors who arrived through a tagged link, and what they read, with "Make a link" (open while it's being used). */
-function TrackedLinks({ links, project, query, hrefFor }: { links: Awaited<ReturnType<typeof trackedLinks>>; project: Project; query: Record<string, string>; hrefFor: OverviewProps["hrefFor"] }) {
+/** Visitors who arrived through a tagged link, and what they read, with "Make a link" (a small dialog) at the right of the heading. */
+function TrackedLinks({ links, project }: { links: Awaited<ReturnType<typeof trackedLinks>>; project: Project }) {
 	return (
-		<Section title="Tracked links" note="Visitors who arrived through a tagged link, and what they read.">
-			{links.length > 0 ? (
-				<ul className="divide-y divide-line rounded-2xl border border-line bg-card">
-					{links.map((l) => (
-						<li key={`${l.kind}:${l.label}`} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm">
-							<span className="min-w-0">
-								<span className="font-medium">{l.label}</span>
-								{l.read.length > 0 && <span className="block truncate text-muted">Read {l.read.join(", ")}</span>}
-							</span>
-							<span className="tabular text-ink-2">
-								{formatCount(l.visitors)} visitor{l.visitors === 1 ? "" : "s"}
-							</span>
-						</li>
-					))}
-				</ul>
-			) : (
-				<p className="text-sm text-muted">No visits from tracked links in this range.</p>
-			)}
-			<details open={Boolean(query.build)} className="group mt-3 rounded-2xl border border-line bg-card">
-				<summary className="flex list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
-					Make a link
-					<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="text-muted transition-transform group-open:rotate-180">
-						<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-					</svg>
-				</summary>
-				<div className="border-t border-line p-4">
-					<LinkBuilder project={project} query={query} hrefFor={hrefFor} />
+		<section>
+			<div className="flex flex-wrap items-start justify-between gap-3">
+				<div>
+					<h2 className="text-[15px] font-medium tracking-tight">Tracked links</h2>
+					<p className="mt-0.5 text-sm text-muted">Visitors who arrived through a tagged link, and what they read.</p>
 				</div>
-			</details>
-		</Section>
+				<MakeLink siteUrl={project.siteUrl ?? ""} />
+			</div>
+			<div className="mt-4">
+				{links.length > 0 ? (
+					<ul className="divide-y divide-line rounded-2xl border border-line bg-card">
+						{links.map((l) => (
+							<li key={`${l.kind}:${l.label}`} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm">
+								<span className="min-w-0">
+									<span className="font-medium">{l.label}</span>
+									{l.read.length > 0 && <span className="block truncate text-muted">Read {l.read.join(", ")}</span>}
+								</span>
+								<span className="tabular text-ink-2">
+									{formatCount(l.visitors)} visitor{l.visitors === 1 ? "" : "s"}
+								</span>
+							</li>
+						))}
+					</ul>
+				) : (
+					<p className="text-sm text-muted">No visits from tracked links in this range.</p>
+				)}
+			</div>
+		</section>
 	);
 }
 
@@ -417,7 +441,7 @@ async function AllTheDetail({
 					<RankedList title="Pages not found" keyLabel="Path" valueLabel="Times" rows={notFound.map((r) => ({ key: r.key, value: r.count }))} emptyText="No missing pages visited." />
 				</Card>
 			</div>
-			<Card title="Uptime" note="The last 30 days, checking the site every 5 minutes. Hover a day to see it.">
+			<Card title="Daily uptime" note="The last 30 days, checking the site every 5 minutes. Hover a day to see it.">
 				<UptimeStrip days={days.slice(-30)} />
 				<div className="mt-4">
 					{found.length === 0 ? (
@@ -426,7 +450,7 @@ async function AllTheDetail({
 						<ul className="space-y-1 text-sm">
 							{found.map((o) => (
 								<li key={o.start}>
-									<StatusBadge status="critical" label={`${formatTime(o.start)}: ${o.end ? `down for about ${formatDuration(o.end - o.start)}` : "still down"} (${o.checks} failed check${o.checks === 1 ? "" : "s"})`} />
+									<StatusBadge status="critical" label={`${formatLongUkTime(o.start)}: ${o.end ? `down for about ${formatDuration(o.end - o.start)}` : "still down"} (${o.checks} failed check${o.checks === 1 ? "" : "s"})`} />
 								</li>
 							))}
 						</ul>
@@ -434,74 +458,6 @@ async function AllTheDetail({
 				</div>
 			</Card>
 		</>
-	);
-}
-
-/** "Make a link": a ref for a single post or place, or UTM values for a campaign. Saves nothing. */
-function LinkBuilder({ project, query, hrefFor }: { project: Project; query: Record<string, string>; hrefFor: OverviewProps["hrefFor"] }) {
-	const base = query.url || project.siteUrl || "";
-	let built: string | null = null;
-	let problem: string | null = null;
-	if (query.build) {
-		try {
-			const url = new URL(base);
-			if (!/^https?:$/.test(url.protocol)) throw new Error();
-			const clean = (v: string | undefined) => (v ?? "").trim();
-			if (clean(query.ref)) {
-				if (!/^[A-Za-z0-9-]{1,40}$/.test(clean(query.ref))) problem = "A name can only use letters, numbers and hyphens, up to 40.";
-				else url.searchParams.set("ref", clean(query.ref));
-			}
-			for (const key of ["utm_source", "utm_medium", "utm_campaign"]) {
-				const value = clean(query[key]).toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9._-]/g, "");
-				if (value) url.searchParams.set(key, value.slice(0, 50));
-			}
-			built = problem ? null : url.toString();
-		} catch {
-			problem = "Enter a full web address, starting with https://.";
-		}
-	}
-	const input = inputClass;
-	return (
-		<div>
-			<p className="mb-3 text-sm text-muted">Give it a name for one post, or say where it&rsquo;s shared (site, type, campaign).</p>
-			<form method="get" className="grid gap-3 sm:grid-cols-2">
-				<input type="hidden" name="build" value="1" />
-				{query.range && <input type="hidden" name="range" value={query.range} />}
-				<label className="text-sm sm:col-span-2">
-					<span className="text-ink-2">Page address</span>
-					<input name="url" type="url" required defaultValue={base} className={input} />
-				</label>
-				<label className="text-sm">
-					<span className="text-ink-2">Name (like linkedin-post-12)</span>
-					<input name="ref" defaultValue={query.ref ?? ""} maxLength={40} pattern="[A-Za-z0-9\-]*" className={input} />
-				</label>
-				<label className="text-sm">
-					<span className="text-ink-2">Site (like linkedin)</span>
-					<input name="utm_source" defaultValue={query.utm_source ?? ""} maxLength={50} className={input} />
-				</label>
-				<label className="text-sm">
-					<span className="text-ink-2">Type (like social)</span>
-					<input name="utm_medium" defaultValue={query.utm_medium ?? ""} maxLength={50} className={input} />
-				</label>
-				<label className="text-sm">
-					<span className="text-ink-2">Campaign (like launch)</span>
-					<input name="utm_campaign" defaultValue={query.utm_campaign ?? ""} maxLength={50} className={input} />
-				</label>
-				<div className="flex items-center gap-3 sm:col-span-2">
-					<button className={buttonClass}>Make link</button>
-					<Link href={hrefFor({ build: "", url: "", ref: "", utm_source: "", utm_medium: "", utm_campaign: "" })} className="link text-sm">
-						Clear
-					</Link>
-				</div>
-			</form>
-			{problem && <p className="mt-3 text-sm text-critical-ink">{problem}</p>}
-			{built && (
-				<div className="mt-4 flex flex-wrap items-center gap-2">
-					<input readOnly value={built} aria-label="Your tracked link" className={`${inputBaseClass} min-w-0 flex-1 font-mono`} />
-					<CopyButton text={built} />
-				</div>
-			)}
-		</div>
 	);
 }
 
@@ -528,7 +484,7 @@ async function Events({ project, range, today, query, hrefFor }: Pick<OverviewPr
 				</a>
 			}
 		>
-			<form method="get" className="mb-4 flex flex-wrap items-end gap-3 text-sm">
+			<AutoSubmitForm className="mb-4 flex flex-wrap items-end gap-3 text-sm">
 				{query.range && <input type="hidden" name="range" value={query.range} />}
 				{query.from && <input type="hidden" name="from" value={query.from} />}
 				{query.to && <input type="hidden" name="to" value={query.to} />}
@@ -551,8 +507,7 @@ async function Events({ project, range, today, query, hrefFor }: Pick<OverviewPr
 						<option value="server">Its server</option>
 					</select>
 				</label>
-				<button className={quietButtonClass}>Filter</button>
-			</form>
+			</AutoSubmitForm>
 			{rows.length === 0 ? (
 				<Empty>No events in this range.</Empty>
 			) : (
@@ -570,7 +525,7 @@ async function Events({ project, range, today, query, hrefFor }: Pick<OverviewPr
 						<tbody>
 							{rows.map((e) => (
 								<tr key={e.id} className="border-t border-line align-top">
-									<td className="whitespace-nowrap py-1.5 pr-3 tabular text-ink-2">{formatUkTime(e.ts)}</td>
+									<td className="whitespace-nowrap py-1.5 pr-3 tabular text-ink-2">{formatLongUkTime(e.ts)}</td>
 									<td className="py-1.5 pr-3 font-medium">{e.name}</td>
 									<td className="max-w-48 truncate py-1.5 pr-3" title={e.path ?? ""}>
 										{e.path ?? "–"}

@@ -23,8 +23,8 @@ export function chipClass(selected: boolean): string {
 	return `control inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 text-sm ${selected ? "btn-selected" : "btn-secondary text-ink-2"}`;
 }
 
-/** A square icon button (40px, 44px on phones). Always give it an aria-label and a Tooltip with the same words. */
-export const iconButtonClass = "btn-icon control inline-flex w-11 shrink-0 items-center justify-center sm:w-10";
+/** A square icon button, Tech Jobs' size: 32px (44px on phones, for the tap). Always give it an aria-label and a Tooltip with the same words. */
+export const iconButtonClass = "btn-icon rounded-control inline-flex h-11 w-11 shrink-0 items-center justify-center sm:h-8 sm:w-8";
 
 /** "+" for the add buttons (Add a project, Add an entry). */
 export function PlusIcon({ className = "h-[18px] w-[18px]" }: { className?: string }) {
@@ -63,6 +63,16 @@ export function PageHeader({ title, subtitle, action }: { title: ReactNode; subt
 			</div>
 			{action}
 		</div>
+	);
+}
+
+/** A journey entry's status: a dot and its word, like a project's StatusDot: green "Published", grey "Draft". */
+export function EntryStatus({ published }: { published: boolean }) {
+	return (
+		<span className="inline-flex shrink-0 items-center gap-1.5 text-sm text-ink-2">
+			<span aria-hidden className="h-2 w-2 rounded-full" style={{ background: published ? "var(--good)" : "var(--muted)" }} />
+			{published ? "Published" : "Draft"}
+		</span>
 	);
 }
 
@@ -157,6 +167,8 @@ export function Pill({ children, title }: { children: ReactNode; title?: string 
 
 /** Up is good for every number here, so a rise reads green and a fall red (always with an arrow). */
 export function Delta({ value, period }: { value: number | null; period?: string }) {
+	// Nothing to compare with (no earlier period): say nothing, rather than "new".
+	if (value === null) return null;
 	const tone = value === null || value === 0 ? "text-muted" : value > 0 ? "text-good-ink" : "text-critical-ink";
 	const arrow = value === null || value === 0 ? "" : value > 0 ? "↑ " : "↓ ";
 	return (
@@ -199,8 +211,8 @@ export function Tabs({ tabs, current, hrefFor }: { tabs: { key: string; label: s
 	);
 }
 
-/** Preset range pills, then "Custom…", which opens the From/To dates (plain GET, no JavaScript needed; open while a custom range is shown). */
-export function RangePicker({ range, hrefFor, hidden = {} }: { range: DateRange; hrefFor: (params: Record<string, string>) => string; hidden?: Record<string, string> }) {
+/** The range presets (7 days, 30 days, 90 days, 12 months) as a segmented control. No custom dates. */
+export function RangePicker({ range, hrefFor }: { range: DateRange; hrefFor: (params: Record<string, string>) => string }) {
 	return (
 		<div className="flex flex-wrap items-center gap-2">
 			<div className="flex flex-wrap gap-1.5" role="group" aria-label="Range">
@@ -215,26 +227,6 @@ export function RangePicker({ range, hrefFor, hidden = {} }: { range: DateRange;
 					</Link>
 				))}
 			</div>
-			<details open={range.key === "custom"}>
-				<summary
-					aria-current={range.key === "custom" ? "true" : undefined}
-					className={`list-none [&::-webkit-details-marker]:hidden ${chipClass(range.key === "custom")}`}
-				>
-					Custom…
-				</summary>
-				<form method="get" className="mt-2 flex items-center gap-1 text-sm">
-					{Object.entries(hidden).map(([name, value]) => (
-						<input key={name} type="hidden" name={name} value={value} />
-					))}
-					<input type="hidden" name="range" value="custom" />
-					<label className="sr-only" htmlFor="range-from">From</label>
-					<input id="range-from" type="date" name="from" defaultValue={range.from} className="control border border-field bg-card px-3" />
-					<span className="text-muted">to</span>
-					<label className="sr-only" htmlFor="range-to">To</label>
-					<input id="range-to" type="date" name="to" defaultValue={range.to} className="control border border-field bg-card px-3" />
-					<button className={quietButtonClass}>Apply</button>
-				</form>
-			</details>
 		</div>
 	);
 }

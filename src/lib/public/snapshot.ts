@@ -280,7 +280,8 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			html: renderMarkdown(e.body_md),
 			excerpt: excerpt(e.body_md),
 		})),
-		activity: profile.showActivity ? await activity(db, today, entries) : null,
+		// Always shown (the "Show my activity" switch was removed; profile.show_shipping_rhythm is unused).
+		activity: await activity(db, today, entries),
 		icons,
 	};
 }

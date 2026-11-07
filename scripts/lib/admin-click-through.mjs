@@ -2,7 +2,7 @@
  * Clicks through the admin in real Chrome (headless, via the DevTools protocol), the way a person
  * moves around: Home (and the status pill) → each project card → Overview with every closed section
  * open ("See all", "Make a link", "All the detail", "Advanced") → the Settings tab with "Advanced:
- * connecting the site" open → the breadcrumb back Home → the "+" (Add a project) New project page, and the
+ * connecting the site" open → the wordmark back Home → the "+" (Add a project) New project page, and the
  * public home page (with its dropdown open) and 404, in a full desktop window (1440 × 900). Fails on
  * "Something went wrong", an uncaught page error, a wrong cursor (CURSOR_CHECK), or project cards
  * of different heights on the same page (CARD_CHECK). Client-side navigation is what plain fetches
@@ -147,9 +147,10 @@ export async function clickThrough(origin) {
 			if (!(await openAll("Advanced: connecting the site"))) problems.push(`${href} Settings has no "Advanced: connecting the site" section.`);
 			await sleep(300);
 			await check(`${href} Settings, every section open`);
-			if (!(await click('nav[aria-label="Breadcrumb"] a', "Home"))) problems.push(`${href} has no breadcrumb back to Home.`);
+			// No breadcrumbs: the wordmark in the top bar goes Home.
+			if (!(await click('header a[href="/admin"]'))) problems.push(`${href} has no wordmark link back to Home.`);
 			await settle();
-			await check(`${href} breadcrumb → Home`);
+			await check(`${href} wordmark → Home`);
 		}
 		await send("Page.navigate", { url: `${origin}/admin` });
 		await settle();

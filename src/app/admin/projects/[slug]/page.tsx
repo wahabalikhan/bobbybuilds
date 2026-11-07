@@ -2,7 +2,7 @@ import { StatusDot } from "@/components/status-dot";
 import type { Metadata } from "next";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
-import { Breadcrumb, ProjectLogo, Tabs } from "@/components/admin/ui";
+import { ProjectLogo, Tabs } from "@/components/admin/ui";
 import { ArrowIcon } from "@/components/public/icons";
 import { parseRange } from "@/lib/admin/range";
 import { requestTime } from "@/lib/admin/clock";
@@ -68,33 +68,36 @@ export default async function ProjectPage({
 
 	return (
 		<div className="space-y-6">
-			<div className="space-y-3">
-				<Breadcrumb items={tab === "settings" ? [{ label: "Home", href: adminHref() }, { label: project.name, href: base }, { label: "Settings" }] : [{ label: "Home", href: adminHref() }, { label: project.name }]} />
+			{/* No breadcrumbs: the wordmark goes Home. First line: icon and name, with Visit site on the
+			    right; second line: the status, whether it's hidden, its public numbers and any icon problem. */}
+			<header className="space-y-2">
 				<div className="flex flex-wrap items-center justify-between gap-3">
-					<div className="flex flex-wrap items-center gap-3">
+					<div className="flex min-w-0 items-center gap-3">
 						<ProjectLogo name={project.name} logoPath={iconFor(project)} size={36} />
-						<h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
-						<StatusDot status={project.status} up={up} />
-						{!project.showPublic && <span className="text-sm text-muted">{project.showOnFirstVisit ? "Hidden until its first visit" : "Hidden from public page"}</span>}
-						{project.siteUrl && (
-							<a href={project.siteUrl} target="_blank" rel="noopener noreferrer" className="link inline-flex items-center gap-1 text-sm">
-								Visit site <ArrowIcon />
-								<span className="sr-only">(opens in a new tab)</span>
-							</a>
-						)}
+						<h1 className="min-w-0 text-3xl font-bold tracking-tight break-words">{project.name}</h1>
 					</div>
+					{project.siteUrl && (
+						<a href={project.siteUrl} target="_blank" rel="noopener noreferrer" className="link inline-flex items-center gap-1 text-sm">
+							Visit site <ArrowIcon />
+							<span className="sr-only">(opens in a new tab)</span>
+						</a>
+					)}
+				</div>
+				<div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+					<StatusDot status={project.status} up={up} />
+					{!project.showPublic && <span className="text-sm text-muted">{project.showOnFirstVisit ? "Hidden until its first visit" : "Hidden from public page"}</span>}
+					{numbers && (
+						<span className="text-sm font-semibold tabular text-ink" title="Numbers you've made public">
+							{numbers}
+						</span>
+					)}
 					{iconMeta?.lastError && (
 						<Link href={`${settingsHref}#advanced`} className="text-sm" title={iconMeta.lastError}>
 							<StatusBadge status="warning" label="Its icon couldn't be checked" />
 						</Link>
 					)}
-					{numbers && (
-						<p className="text-sm font-semibold tabular text-ink" title="Numbers you've made public">
-							{numbers}
-						</p>
-					)}
 				</div>
-			</div>
+			</header>
 			<div>
 				<Tabs tabs={[...PROJECT_TABS]} current={tab} hrefFor={(key) => (key === "settings" ? settingsHref : base)} />
 			</div>

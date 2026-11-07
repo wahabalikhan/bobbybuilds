@@ -1,45 +1,45 @@
 import type { Metadata } from "next";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { CheckboxField, Hidden, SettingsForm } from "@/components/admin/form";
-import { JourneyForm } from "@/components/admin/journey-form";
-import { Breadcrumb, PageHeader } from "@/components/admin/ui";
+import { BackLink } from "@/components/admin/back-link";
+import { EntryActions } from "@/components/admin/entry-actions";
 import { ToastOnLoad } from "@/components/admin/toast";
+import { EntryStatus } from "@/components/admin/ui";
 import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
+import { JourneyList } from "@/components/public/journey";
+import { requestTime } from "@/lib/admin/clock";
+import { utcDay } from "@/lib/days";
 import { listProjects } from "@/lib/db/projects";
 import { getJourney } from "@/lib/db/settings";
+import { renderMarkdown } from "@/lib/markdown";
 import { adminHref } from "@/lib/site";
-import { journeyAction } from "../../actions";
 
 export const metadata: Metadata = { title: "Journey entry" };
 
-export default async function EditJourneyEntry({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
-	const { id } = await params;
-	const query = await searchParams;
+/**
+ * An entry as it looks on the public page (the public journey's own entry design), with its status
+ * as a dot and its three actions: Edit, Publish or Unpublish, and Delete (which asks first).
+ */
+export default async function JourneyEntryView({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
+	const [{ id }, query] = await Promise.all([params, searchParams]);
 	const { env } = await getCloudflareContext({ async: true });
 	const entryId = Number.parseInt(id, 10);
 	const entry = Number.isInteger(entryId) ? await getJourney(env.DB, entryId) : null;
 	if (!entry) return <AdminNotFoundMessage what="That journey entry doesn't exist." />;
 	const projects = await listProjects(env.DB);
+	// The public page names only public projects.
+	const project = entry.projectId ? projects.find((p) => p.id === entry.projectId && p.showPublic) : undefined;
+	const day = entry.publishedAt ? new Date(entry.publishedAt).toISOString().slice(0, 10) : utcDay(requestTime());
 	return (
-		<div className="max-w-3xl space-y-6">
-			<div className="space-y-3">
-				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Journey", href: adminHref("/settings/journey") }, { label: entry.title }]} />
-				<PageHeader title={entry.title} subtitle={entry.isPublished ? "Published: it's on your public page." : "A draft: not on your public page."} />
-				{query.created && <ToastOnLoad tone="success" text={entry.isPublished ? "Entry published." : "Draft saved."} param="created" />}
+		<div className="space-y-6">
+			{query.created && <ToastOnLoad tone="success" text={entry.isPublished ? "Entry published." : "Draft saved."} param="created" />}
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<BackLink href={adminHref("/settings/journey")}>Journey</BackLink>
+				<EntryStatus published={entry.isPublished} />
 			</div>
-			<section className="rounded-2xl border border-line bg-card p-4">
-				<JourneyForm entry={entry} projects={projects} />
+			<section aria-label="As it looks on your public page" className="rounded-2xl border border-line bg-card p-6">
+				<JourneyList entries={[{ slug: entry.slug, type: entry.type, day, title: entry.title, html: renderMarkdown(entry.bodyMd), linkUrl: entry.linkUrl, projectName: project?.name ?? null }]} />
 			</section>
-			<details className="rounded-2xl border border-line bg-card p-4">
-				<summary className="text-[15px] font-medium tracking-tight">Delete this entry</summary>
-				<div className="mt-4">
-					<SettingsForm action={journeyAction} submitLabel="Delete entry for good" danger>
-						<Hidden name="entry_id" value={entry.id} />
-						<Hidden name="intent" value="delete" />
-						<CheckboxField name="confirm" label="Delete it, and take it off your public page. This can't be undone." />
-					</SettingsForm>
-				</div>
-			</details>
+			<EntryActions id={entry.id} published={entry.isPublished} editHref={adminHref(`/settings/journey/${entry.id}/edit`)} />
 		</div>
 	);
 }

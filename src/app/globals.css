@@ -352,6 +352,16 @@ body {
 	.btn-danger-outline:hover:not(:disabled) {
 		background-color: var(--danger-bg);
 	}
+	/* Filled red: only for the final confirm inside a dialog ("Delete entry"). */
+	.btn-danger {
+		border: 1px solid var(--critical);
+		background-color: var(--critical);
+		color: #ffffff;
+		transition: opacity 120ms ease-out;
+	}
+	.btn-danger:hover:not(:disabled) {
+		opacity: 0.88;
+	}
 	:is(.btn-primary, .btn-secondary, .btn-icon, .btn-danger-outline):disabled {
 		opacity: 0.6;
 	}

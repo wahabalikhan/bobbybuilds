@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { FieldError, Hidden, SelectField, SettingsForm, TextField } from "@/components/admin/form";
-import { Breadcrumb, PageHeader, quietButtonClass } from "@/components/admin/ui";
+import { PageHeader } from "@/components/admin/ui";
 import { ToastOnLoad } from "@/components/admin/toast";
 import { requestTime } from "@/lib/admin/clock";
 import { previousMonth } from "@/lib/admin/settings-core";
@@ -10,9 +10,9 @@ import { isMonth, MONEY_MAX_ROWS } from "@/lib/admin/validate";
 import { utcDay } from "@/lib/days";
 import { listMonth, listMonths, listServices } from "@/lib/db/money";
 import { listRealProjects } from "@/lib/db/projects";
-import { formatMonth, formatPence, penceInput } from "@/lib/format";
+import { formatLongMonth, formatPence, penceInput } from "@/lib/format";
 import { adminHref } from "@/lib/site";
-import { copyCostsAction, moneyAction } from "../actions";
+import { moneyAction } from "../actions";
 
 export const metadata: Metadata = { title: "Costs and revenue" };
 
@@ -39,26 +39,28 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 	const hasCosts = rows.some((r) => r.kind === "cost");
 
 	return (
-		<div className="max-w-3xl space-y-6">
+		<div className="space-y-6">
 			<div className="space-y-3">
-				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Costs and revenue" }]} />
 				<PageHeader title="Costs and revenue" subtitle="What it costs to run everything each month, and what it earns (even £0). The latest month with anything in it is shown on your public page, with its costs by service." />
 			</div>
 
-			<nav aria-label="Month" className="flex items-center justify-between gap-3">
-				<Link href={adminHref(`/settings/money?month=${previousMonth(month)}`)} className={quietButtonClass}>
-					← {formatMonth(previousMonth(month))}
+			{/* Month navigation as text links, not buttons. */}
+			<nav aria-label="Month" className="flex items-center justify-between gap-3 text-sm">
+				<Link href={adminHref(`/settings/money?month=${previousMonth(month)}`)} className="link">
+					<span aria-hidden>‹ </span>
+					{formatLongMonth(previousMonth(month), false)}
 				</Link>
 				<h2 className="text-[15px] font-medium tracking-tight" aria-live="polite">
-					{formatMonth(month)}
+					{formatLongMonth(month)}
 					{month === thisMonth && <span className="ml-2 text-sm font-normal text-muted">this month</span>}
 				</h2>
 				{month < thisMonth ? (
-					<Link href={adminHref(`/settings/money?month=${nextMonth(month)}`)} className={quietButtonClass}>
-						{formatMonth(nextMonth(month))} →
+					<Link href={adminHref(`/settings/money?month=${nextMonth(month)}`)} className="link">
+						{formatLongMonth(nextMonth(month), false)}
+						<span aria-hidden> ›</span>
 					</Link>
 				) : (
-					<span aria-hidden className="w-24" />
+					<span aria-hidden className="w-20" />
 				)}
 			</nav>
 
@@ -66,17 +68,17 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 				Costs <span className="font-semibold tabular text-ink">{formatPence(cost)}</span> · Revenue <span className="font-semibold tabular text-ink">{formatPence(revenue)}</span>
 			</p>
 
-			{params.copied && hasCosts && <ToastOnLoad tone="success" text={`Copied ${params.copied === "1" ? "1 cost" : `${Number(params.copied) || ""} costs`} from ${formatMonth(previousMonth(month))}. Check the amounts, then save.`} param="copied" />}
-
-			{!hasCosts && (
-				<SettingsForm action={copyCostsAction} submitLabel={`Copy costs from ${formatMonth(previousMonth(month))}`}>
-					<Hidden name="month" value={month} />
-					<p className="text-sm text-muted">Most bills repeat. Copy last month&rsquo;s costs, then change any that differ.</p>
-				</SettingsForm>
-			)}
+			{params.copied && hasCosts && <ToastOnLoad tone="success" text={`Copied ${params.copied === "1" ? "1 cost" : `${Number(params.copied) || ""} costs`} from ${formatLongMonth(previousMonth(month))}. Check the amounts, then save.`} param="copied" />}
 
 			<section className="rounded-2xl border border-line bg-card p-4">
-				<SettingsForm action={moneyAction} submitLabel="Save month">
+				{/* One form: "Copy costs from <last month>" (secondary, only when this month has no costs) on the left, "Save month" on the far right. */}
+				<SettingsForm
+					action={moneyAction}
+					buttons={[
+						...(hasCosts ? [] : [{ label: `Copy costs from ${formatLongMonth(previousMonth(month), false)}`, name: "intent", value: "copy", quiet: true }]),
+						{ label: "Save month", name: "intent", value: "save" },
+					]}
+				>
 					<Hidden name="month" value={month} />
 					<datalist id="money-services">
 						{services.map((s) => (
@@ -127,7 +129,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 						{months.map((m) => (
 							<li key={m.month}>
 								<Link href={adminHref(`/settings/money?month=${m.month}`)} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface">
-									<span className="font-medium">{formatMonth(m.month)}</span>
+									<span className="font-medium">{formatLongMonth(m.month)}</span>
 									<span className="tabular text-ink-2">
 										Costs {formatPence(m.costPence)} · Revenue {formatPence(m.revenuePence)}
 									</span>

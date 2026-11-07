@@ -123,11 +123,11 @@ describe("public snapshot", () => {
 		expect(await env.PUBLIC_CACHE.get(SNAPSHOT_KEY)).not.toBeNull();
 	});
 
-	it("has Activity only when it's switched on: Shipped entries per month and the GitHub calendar, oldest day first", async () => {
+	it("always has Activity (there's no switch any more): Shipped entries per month and the GitHub calendar, oldest day first", async () => {
 		await db.prepare("DELETE FROM github_contributions").run();
+		// The old switch's column is ignored: off or on, Activity is there.
 		await db.prepare("UPDATE profile SET show_shipping_rhythm = 0 WHERE id = 1").run();
-		expect((await buildSnapshot(db, TODAY, NOW)).activity).toBeNull();
-		await db.prepare("UPDATE profile SET show_shipping_rhythm = 1 WHERE id = 1").run();
+		expect((await buildSnapshot(db, TODAY, NOW)).activity).not.toBeNull();
 		expect((await buildSnapshot(db, TODAY, NOW)).activity?.github).toBeNull();
 		for (const [day, count] of [["2026-11-01", 4], ["2026-10-31", 0], ["2026-11-02", 9], ["2026-10-30", 2]] as const) await insert("github_contributions", { day, count, updated_at: NOW });
 		await insert("journey_entries", { slug: "activity-shipped", type: "shipped", title: "Shipped alerts", is_published: 1, published_at: NOW - 86_400_000 });

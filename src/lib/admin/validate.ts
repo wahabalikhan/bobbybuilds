@@ -273,7 +273,8 @@ export function validateJourney(values: FormValues, projectIds: number[], now: n
 	const type = text(values.type) as JourneyType;
 	if (!JOURNEY_TYPES.some((t) => t.value === type)) errors.type = "Choose a type.";
 	const bodyMd = text(values.body_md);
-	if (bodyMd.length > JOURNEY_BODY_MAX) errors.body_md = `Keep it to a few sentences: ${JOURNEY_BODY_MAX} characters or fewer (this is ${bodyMd.length}).`;
+	if (!bodyMd) errors.body_md = "Add a few sentences.";
+	else if (bodyMd.length > JOURNEY_BODY_MAX) errors.body_md = `Keep it to a few sentences: ${JOURNEY_BODY_MAX} characters or fewer (this is ${bodyMd.length}).`;
 	const linkUrl = httpsUrl(text(values.link_url), "link_url", errors, "The link");
 	const projectId = text(values.project_id) ? Number(values.project_id) : null;
 	if (projectId !== null && !projectIds.includes(projectId)) errors.project_id = "Choose a project from the list.";
@@ -369,7 +370,8 @@ export function validateProfile(values: FormValues): Result<Profile> {
 	if (since && !isDay(since)) errors.building_since = "Choose a date.";
 	return Object.keys(errors).length
 		? { ok: false, errors }
-		: { ok: true, value: { buildingSince: since || null, showActivity: values.show_activity === "on" } };
+		: // The Activity section is always shown now (there's no switch); the column stays, kept on.
+			{ ok: true, value: { buildingSince: since || null, showActivity: true } };
 }
 
 // --- Costs and revenue ------------------------------------------------------------------

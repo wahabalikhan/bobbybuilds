@@ -25,7 +25,6 @@ export async function checkLiveBanner(origin, extraPaths = []) {
 		"/admin/does-not-exist",
 		"/admin/settings/journey",
 		"/admin/settings/journey/new",
-		"/admin/settings/profile",
 		"/admin/settings/money",
 		...extraPaths,
 	];
@@ -35,6 +34,8 @@ export async function checkLiveBanner(origin, extraPaths = []) {
 	const redirects = [
 		["/admin/settings", "/admin"],
 		["/admin/settings/projects/new", "/admin/projects/new"],
+		// Public page settings moved into Home's Settings card.
+		["/admin/settings/profile", "/admin"],
 		...(first ? [[first.replace("/admin/projects/", "/admin/settings/projects/"), `${first}?tab=settings`]] : []),
 	];
 	for (const [from, to] of redirects) {

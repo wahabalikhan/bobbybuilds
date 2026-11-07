@@ -65,8 +65,14 @@ export function SettingsForm({
 			<form key={state.version} action={formAction} className={`space-y-4 ${className}`} noValidate>
 				{children}
 				<FormProblem state={state} />
-				<div className="flex flex-wrap items-center gap-3 pt-1">
-					{buttons ? buttons.map((b) => <SubmitButton key={b.label} label={b.label} name={b.name} value={b.value} quiet={b.quiet} />) : <SubmitButton label={submitLabel} danger={danger} />}
+				{/* Secondary (outlined) actions on the left; the one main action on the far right. */}
+				<div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+					<div className="flex flex-wrap items-center gap-3">
+						{buttons?.filter((b) => b.quiet).map((b) => <SubmitButton key={b.label} label={b.label} name={b.name} value={b.value} quiet />)}
+					</div>
+					<div className="ml-auto flex flex-wrap items-center gap-3">
+						{buttons ? buttons.filter((b) => !b.quiet).map((b) => <SubmitButton key={b.label} label={b.label} name={b.name} value={b.value} />) : <SubmitButton label={submitLabel} danger={danger} />}
+					</div>
 				</div>
 				{state.secret && <SecretOnce secret={state.secret} />}
 			</form>
@@ -114,18 +120,24 @@ function useField(name: string, defaultValue: string | undefined) {
 	return { error, value, id: `field-${name}` };
 }
 
-function Label({ id, label, hint, srOnly }: { id: string; label: string; hint?: ReactNode; srOnly?: boolean }) {
+/**
+ * Every field follows the New project form: the label (14px medium), the field, then its hint
+ * under it (14px grey), then any error. Never a hint beside or above the field.
+ */
+function Label({ id, label, srOnly }: { id: string; label: string; srOnly?: boolean }) {
 	return (
-		<>
-			<label htmlFor={id} className={srOnly ? "sr-only" : "block text-sm font-medium"}>
-				{label}
-			</label>
-			{hint && (
-				<p id={`${id}-hint`} className="mt-0.5 text-xs text-muted">
-					{hint}
-				</p>
-			)}
-		</>
+		<label htmlFor={id} className={srOnly ? "sr-only" : "block text-sm font-medium"}>
+			{label}
+		</label>
+	);
+}
+
+function Hint({ id, hint }: { id: string; hint?: ReactNode }) {
+	if (!hint) return null;
+	return (
+		<p id={id} className="mt-1 text-sm text-muted">
+			{hint}
+		</p>
 	);
 }
 
@@ -156,7 +168,7 @@ export function TextField({ type = "text", list, inputMode, ...props }: FieldPro
 	const { error, value, id } = useField(props.name, props.defaultValue);
 	return (
 		<div>
-			<Label id={id} label={props.label} hint={props.hint} srOnly={props.srLabel} />
+			<Label id={id} label={props.label} srOnly={props.srLabel} />
 			<input
 				id={id}
 				name={props.name}
@@ -171,6 +183,7 @@ export function TextField({ type = "text", list, inputMode, ...props }: FieldPro
 				aria-describedby={[props.hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined}
 				className={inputClass}
 			/>
+			<Hint id={`${id}-hint`} hint={props.hint} />
 			<ErrorText id={`${id}-error`} error={error} />
 		</div>
 	);
@@ -180,7 +193,7 @@ export function TextArea({ rows = 4, mono = false, ...props }: FieldProps & { ro
 	const { error, value, id } = useField(props.name, props.defaultValue);
 	return (
 		<div>
-			<Label id={id} label={props.label} hint={props.hint} srOnly={props.srLabel} />
+			<Label id={id} label={props.label} srOnly={props.srLabel} />
 			<textarea
 				id={id}
 				name={props.name}
@@ -192,6 +205,7 @@ export function TextArea({ rows = 4, mono = false, ...props }: FieldProps & { ro
 				aria-describedby={[props.hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined}
 				className={`${textAreaClass} ${mono ? "font-mono" : ""}`}
 			/>
+			<Hint id={`${id}-hint`} hint={props.hint} />
 			<ErrorText id={`${id}-error`} error={error} />
 		</div>
 	);
@@ -201,7 +215,7 @@ export function SelectField({ options, ...props }: FieldProps & { options: { val
 	const { error, value, id } = useField(props.name, props.defaultValue);
 	return (
 		<div>
-			<Label id={id} label={props.label} hint={props.hint} srOnly={props.srLabel} />
+			<Label id={id} label={props.label} srOnly={props.srLabel} />
 			<select id={id} name={props.name} defaultValue={value} aria-invalid={error ? true : undefined} aria-describedby={[props.hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined} className={selectClass}>
 				{options.map((o) => (
 					<option key={o.value} value={o.value}>
@@ -209,6 +223,7 @@ export function SelectField({ options, ...props }: FieldProps & { options: { val
 					</option>
 				))}
 			</select>
+			<Hint id={`${id}-hint`} hint={props.hint} />
 			<ErrorText id={`${id}-error`} error={error} />
 		</div>
 	);
@@ -222,7 +237,7 @@ export function CheckboxField({ name, label, defaultChecked, hint }: { name: str
 			<input type="checkbox" name={name} defaultChecked={checked} className="mt-0.5 h-4 w-4 accent-[var(--ink)]" />
 			<span>
 				{label}
-				{hint && <span className="block text-xs text-muted">{hint}</span>}
+				{hint && <span className="mt-1 block text-muted">{hint}</span>}
 			</span>
 		</label>
 	);

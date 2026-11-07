@@ -74,8 +74,7 @@ function TableView({ caption, head, rows }: { caption: string; head: string[]; r
 		<details className="mt-2 text-sm">
 			<summary className="text-muted select-none">Show as a table</summary>
 			<div className="mt-2 max-h-72 overflow-auto rounded-lg border border-line">
-				<table className="w-full text-left tabular">
-					<caption className="sr-only">{caption}</caption>
+				<table className="w-full text-left tabular" aria-label={caption}>
 					<thead className="sticky top-0 bg-card text-muted">
 						<tr>{head.map((h) => <th key={h} className="px-3 py-1.5 font-medium">{h}</th>)}</tr>
 					</thead>
@@ -394,8 +393,8 @@ export function RankedList({
 	const hasSecondary = rows.some((r) => r.secondary !== undefined);
 	return (
 		// Fixed layout: long names truncate inside the box instead of widening the page.
-		<table className="w-full table-fixed text-sm tabular">
-			<caption className="sr-only">{title}</caption>
+		// Named for screen readers with aria-label, not a <caption> (a caption repeats the card's own heading).
+		<table aria-label={title} className="w-full table-fixed text-sm tabular">
 			<thead className="text-muted">
 				<tr>
 					<th className="pb-1 text-left font-medium">{keyLabel}</th>

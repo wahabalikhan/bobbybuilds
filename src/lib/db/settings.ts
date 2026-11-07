@@ -255,6 +255,15 @@ export async function saveJourney(db: D1Database, id: number | null, input: Jour
 	}
 }
 
+/** Publish or unpublish an entry as it is. Publishing one with no date gives it today's, so it's never published undated. */
+export async function setJourneyPublished(db: D1Database, id: number, publish: boolean, at: number): Promise<boolean> {
+	const result = await db
+		.prepare("UPDATE journey_entries SET is_published = ?2, published_at = coalesce(published_at, ?3), updated_at = ?3 WHERE id = ?1")
+		.bind(id, publish ? 1 : 0, at)
+		.run();
+	return (result.meta.changes ?? 0) > 0;
+}
+
 export async function deleteJourney(db: D1Database, id: number): Promise<void> {
 	await db.prepare("DELETE FROM journey_entries WHERE id = ?1").bind(id).run();
 }
