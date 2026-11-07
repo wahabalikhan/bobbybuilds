@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { NewProjectWizard } from "@/components/admin/new-project-wizard";
-import { Breadcrumb } from "@/components/admin/ui";
+import { Breadcrumb, PageHeader } from "@/components/admin/ui";
 import { adminHref } from "@/lib/site";
 import { startProjectAction } from "../../settings/actions";
 
@@ -11,7 +11,7 @@ export default function NewProject() {
 		<div className="max-w-2xl space-y-6">
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "New project" }]} />
-				<h1 className="text-3xl font-bold tracking-tight">New project</h1>
+				<PageHeader title="New project" subtitle="Connect a site in three steps." />
 			</div>
 			<NewProjectWizard action={startProjectAction} />
 		</div>

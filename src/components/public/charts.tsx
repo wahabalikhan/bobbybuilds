@@ -133,7 +133,7 @@ export function ProjectSelect({
 				aria-label={`${label}: ${options[selected].name}`}
 				onClick={() => (open ? setOpen(false) : show())}
 				onKeyDown={onButtonKey}
-				className="inline-flex items-center gap-2 rounded-full border border-line bg-card py-1.5 pl-3.5 pr-3 text-sm text-ink hover:bg-pill"
+				className="btn-secondary control inline-flex items-center gap-2 pl-3.5 pr-3 text-sm"
 			>
 				{options[selected].slug && <ProjectLogo name={options[selected].name} logoPath={options[selected].logoPath} size={16} />}
 				{options[selected].name}

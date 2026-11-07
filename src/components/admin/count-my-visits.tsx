@@ -35,28 +35,24 @@ function write(ignore: boolean) {
 }
 
 /**
- * "Don't count my visits": a switch for this site (the admin shares bobbybuilds.app with the
- * public pages, so it covers BobbyBuilds), and a link to open once on each other site. t.js reads
- * the same flag (src/tracker/ignore.ts) and sends nothing from this browser while it's set.
+ * "Don't count my own visits": a switch for this site (the admin shares bobbybuilds.app with the
+ * public pages, so it covers BobbyBuilds), and a button to open once on each other site
+ * ("Turn off on Tech Jobs ↗"). t.js reads the same flag (src/tracker/ignore.ts) and sends nothing
+ * from this browser while it's set.
  */
 export function CountMyVisits({ sites }: { sites: { name: string; origin: string }[] }) {
 	const ignored = useSyncExternalStore(subscribe, read, () => null);
-	const host = useSyncExternalStore(subscribe, () => window.location.host, () => "");
 	return (
 		<section aria-labelledby="count-heading" className="space-y-4">
 			<h2 id="count-heading" className="text-[15px] font-medium tracking-tight">
-				This browser
+				Don&rsquo;t count my own visits
 			</h2>
 			<div className="divide-y divide-line rounded-2xl border border-line bg-card">
 				<div className="flex items-start justify-between gap-4 px-4 py-4">
 					<span className="text-sm" id="count-label">
-						<span className="font-medium">Don&rsquo;t count my visits on {host || "this site"}</span>
+						<span className="font-medium">On BobbyBuilds</span>
 						<span className="block text-muted">
-							{ignored === null
-								? "This browser won't let us remember this setting."
-								: ignored
-									? "On: your visits to BobbyBuilds from this browser aren't counted."
-									: "Off: your visits to BobbyBuilds from this browser are counted."}
+							{ignored === null ? "This browser won't let us remember this setting." : "Stops your own visits from this browser counting in your numbers."}
 						</span>
 					</span>
 					<button
@@ -73,21 +69,20 @@ export function CountMyVisits({ sites }: { sites: { name: string; origin: string
 					</button>
 				</div>
 				{sites.length > 0 && (
-					<div className="space-y-2 px-4 py-4 text-sm">
-						<p className="text-ink-2">On your other sites, open each link once, in every browser you use (on each device). The site shows a message to say it&rsquo;s done.</p>
-						<ul className="space-y-1">
+					<div className="space-y-3 px-4 py-4 text-sm">
+						<p className="text-ink-2">On your other sites, press each once in every browser you use.</p>
+						<ul className="flex flex-wrap gap-2">
 							{sites.map((s) => (
-								<li key={s.origin} className="flex flex-wrap items-baseline gap-x-2">
-									<span className="font-medium">{s.name}</span>
-									<a href={`${s.origin}/${IGNORE_HASH}`} target="_blank" rel="noopener noreferrer" className="link inline-flex items-center gap-1 break-all">
-										{s.origin.replace(/^https:\/\//, "")}/{IGNORE_HASH} <ArrowIcon />
+								<li key={s.origin}>
+									<a href={`${s.origin}/${IGNORE_HASH}`} target="_blank" rel="noopener noreferrer" className="btn-secondary control inline-flex items-center gap-1.5 px-3.5 text-sm">
+										Turn off on {s.name === "Portfolio" ? "my portfolio" : s.name} <ArrowIcon />
 										<span className="sr-only">(opens in a new tab)</span>
 									</a>
 								</li>
 							))}
 						</ul>
-						<p className="text-muted">
-							To be counted again, open the same address ending in <code>{COUNT_HASH}</code> instead.
+						<p className="text-xs text-muted">
+							To be counted again, open the site with <code>{COUNT_HASH}</code> at the end of its address.
 						</p>
 					</div>
 				)}

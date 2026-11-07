@@ -2,7 +2,7 @@
  * Clicks through the admin in real Chrome (headless, via the DevTools protocol), the way a person
  * moves around: Home (and the status pill) → each project card → Overview with every closed section
  * open ("See all", "Make a link", "All the detail", "Advanced") → the Settings tab with "Advanced:
- * connecting the site" open → the breadcrumb back Home → the "+ New project" page, and the
+ * connecting the site" open → the breadcrumb back Home → the "+" (Add a project) New project page, and the
  * public home page (with its dropdown open) and 404, in a full desktop window (1440 × 900). Fails on
  * "Something went wrong", an uncaught page error, a wrong cursor (CURSOR_CHECK), or project cards
  * of different heights on the same page (CARD_CHECK). Client-side navigation is what plain fetches
@@ -153,7 +153,7 @@ export async function clickThrough(origin) {
 		}
 		await send("Page.navigate", { url: `${origin}/admin` });
 		await settle();
-		if (!(await click('a[aria-label="New project"]'))) problems.push('Home has no "+ New project" button.');
+		if (!(await click('a[aria-label="Add a project"]'))) problems.push('Home has no "+" (Add a project) button.');
 		await settle();
 		await check("New project");
 		ws.close();

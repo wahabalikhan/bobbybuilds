@@ -2,7 +2,7 @@ import Link from "next/link";
 import { StatusDot } from "@/components/status-dot";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { CountMyVisits } from "@/components/admin/count-my-visits";
-import { Delta, ProjectLogo, quietButtonClass } from "@/components/admin/ui";
+import { Delta, iconButtonClass, PlusIcon, ProjectLogo, Tooltip } from "@/components/admin/ui";
 import { StatusStrip } from "@/components/admin/status-menu";
 import { ArrowRightIcon } from "@/components/public/icons";
 import { WeekChart } from "@/components/public/mono-charts";
@@ -22,8 +22,9 @@ import { trackingNote } from "@/lib/trend";
 import { adminHref, site } from "@/lib/site";
 
 /**
- * Home, top to bottom: the status (one line, or the problems listed open), my projects, visitors in
- * 12 months (public projects only, so it matches the public total), my public page, and this browser.
+ * Home, top to bottom: the problems (only when something needs attention), visitors in 12 months
+ * (public projects only, so it matches the public total), my projects, my public page, and
+ * "Don't count my own visits".
  */
 export default async function AdminHome() {
 	const { env } = await getCloudflareContext({ async: true });
@@ -46,7 +47,7 @@ export default async function AdminHome() {
 	const published = journey.filter((e) => e.isPublished).length;
 	const sum = (kind: "cost" | "revenue") => money.filter((r) => r.kind === kind).reduce((t, r) => t + r.amountPence, 0);
 	const publicPage = [
-		{ href: adminHref("/settings/profile"), label: "Public page settings", detail: [profile.buildingSince ? `building since ${profile.buildingSince}` : "no start date yet", profile.showActivity ? "Activity shown" : "Activity hidden"].join(" · ") },
+		{ href: adminHref("/settings/profile"), label: "Public page", detail: [profile.buildingSince ? `building since ${profile.buildingSince}` : "no start date yet", profile.showActivity ? "Activity shown" : "Activity hidden"].join(" · ") },
 		{ href: adminHref("/settings/journey"), label: "Journey", detail: journey.length ? `${published} published${journey.length > published ? `, ${journey.length - published} draft${journey.length - published === 1 ? "" : "s"}` : ""}` : "No entries yet" },
 		{ href: adminHref("/settings/money"), label: "Costs and revenue", detail: `${formatMonth(today.slice(0, 7))}: costs ${formatPence(sum("cost"))} · revenue ${formatPence(sum("revenue"))}` },
 	];
@@ -56,14 +57,23 @@ export default async function AdminHome() {
 		<div className="space-y-12">
 			<StatusStrip items={attention} />
 
+			{chart.length > 0 && (
+				<section aria-label="Visitors in 12 months" className="space-y-2">
+					<HeadlineCard projects={chart} />
+					<p className="text-xs text-muted">Only projects shown on your public page, so it matches the public total.</p>
+				</section>
+			)}
+
 			<section aria-labelledby="projects-heading">
-				<div className="mb-4 flex items-center justify-between gap-3">
+				<div className="mb-4 flex items-center gap-3">
 					<h2 id="projects-heading" className="text-[15px] font-medium tracking-tight">
 						My projects <span className="font-normal text-muted">({main.length})</span>
 					</h2>
-					<Link href={adminHref("/projects/new")} aria-label="New project" className={quietButtonClass}>
-						<span aria-hidden>+</span> New project
-					</Link>
+					<Tooltip text="Add a project">
+						<Link href={adminHref("/projects/new")} aria-label="Add a project" className={iconButtonClass}>
+							<PlusIcon />
+						</Link>
+					</Tooltip>
 				</div>
 				<div className="grid auto-rows-fr gap-4 md:grid-cols-2">
 					{main.map((s) => (
@@ -72,12 +82,6 @@ export default async function AdminHome() {
 				</div>
 			</section>
 
-			{chart.length > 0 && (
-				<section aria-label="Visitors in 12 months" className="space-y-2">
-					<HeadlineCard projects={chart} />
-					<p className="text-xs text-muted">Only projects shown on your public page, so it matches the public total.</p>
-				</section>
-			)}
 
 			<section aria-labelledby="public-page-heading">
 				<h2 id="public-page-heading" className="mb-4 text-[15px] font-medium tracking-tight">

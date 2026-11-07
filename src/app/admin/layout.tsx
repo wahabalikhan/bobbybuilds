@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { LiveDataBanner } from "@/components/admin/live-banner";
 import { StatusMenu } from "@/components/admin/status-menu";
+import { Toaster } from "@/components/admin/toast";
 import { Wordmark } from "@/components/wordmark";
 import { ArrowIcon } from "@/components/public/icons";
 import { requestTime } from "@/lib/admin/clock";
@@ -50,14 +51,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 						<Wordmark suffix="HQ" icon />
 					</Link>
 					<StatusMenu items={attention} />
-					{/* The visible way back to the public site; Option + A (Alt + A) does the same. */}
+					{/* "Public site ↗": the visible way to the public site; Option + A (Alt + A) does the same. */}
 					<a href={site.url} target="_blank" rel="noopener noreferrer" aria-keyshortcuts="Alt+A" title="Or press Option + A (Alt + A on Windows)" className="link ml-auto inline-flex items-center gap-1 text-sm">
-						View site <ArrowIcon />
+						Public site <ArrowIcon />
 						<span className="sr-only">(opens in a new tab)</span>
 					</a>
 				</div>
 			</header>
-			<main className={`${PAGE} min-w-0 pb-12 pt-12`}>{children}</main>
+			<main className={`${PAGE} min-w-0 pb-12 pt-8 sm:pt-12`}>{children}</main>
+			{/* Every toast (showToast), at the bottom centre. */}
+			<Toaster />
 		</div>
 	);
 }

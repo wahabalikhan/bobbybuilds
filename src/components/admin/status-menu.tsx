@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StatusIcon, type Status } from "@/components/charts";
+import { ToneIcon, toneBox } from "./message";
 import type { Attention } from "@/lib/db/dashboard";
 import { adminHref } from "@/lib/site";
 
@@ -64,35 +65,28 @@ export function StatusMenu({ items }: { items: Attention[] }) {
 }
 
 /**
- * Home's status, at the top of the page: one clear line when everything's running normally, or
- * the list of problems shown open (each linking to its project). The top bar's pill stays too.
+ * Home's problems list, at the top of the page, only when something needs attention (the top
+ * bar's pill says "Everything's running normally" otherwise). In the message style: red when
+ * something is down or failed, amber when it's worth a look, each with its icon.
  */
 export function StatusStrip({ items }: { items: Attention[] }) {
-	const tone = statusTone(items);
-	if (items.length === 0) {
-		return (
-			<p role="status" className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium ${TONE[tone]}`}>
-				<span aria-hidden>●</span> {statusText(items)}
-			</p>
-		);
-	}
+	if (items.length === 0) return null;
+	const tone = statusTone(items) === "critical" ? "error" : "warning";
 	return (
-		<section aria-labelledby="status-heading" className={`rounded-2xl px-4 py-3 ${TONE[tone]}`}>
-			<h2 id="status-heading" className="flex items-center gap-2 text-sm font-medium">
-				<span aria-hidden>●</span> {statusText(items)}
+		<section aria-labelledby="status-heading" className={`rounded-xl px-4 py-3 ${toneBox[tone]}`}>
+			<h2 id="status-heading" className="flex items-center gap-2 text-sm font-semibold">
+				<ToneIcon tone={tone} />
+				{statusText(items)}
 			</h2>
-			<ul className="mt-2 space-y-2">
+			<ul className="mt-2 space-y-1.5 pl-[26px] text-sm text-ink">
 				{items.map((item, i) => (
-					<li key={i} className="flex items-start gap-2 text-sm text-ink">
-						<span className="mt-0.5">
-							<StatusIcon status={item.level as Status} />
-						</span>
+					<li key={i}>
 						{item.projectSlug ? (
 							<Link className="link" href={adminHref(`/projects/${item.projectSlug}`)}>
 								{item.message}
 							</Link>
 						) : (
-							<span>{item.message}</span>
+							item.message
 						)}
 					</li>
 				))}

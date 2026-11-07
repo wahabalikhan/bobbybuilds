@@ -57,6 +57,29 @@
 	--on-muted: #ffffff;
 	--background: var(--page);
 	--foreground: var(--ink);
+	/*
+	 * Messages (Tech Jobs' colour rule): green success, blue information (BobbyBuilds' accent), amber
+	 * needs attention, red error, each as tone text on a tint with a thin border (-line), and a
+	 * darker edge for toasts (-edge). Text on its tint: 6.6, 6.0, 7.6 and 5.9:1. Always with the
+	 * tone's icon (ToneIcon), never colour alone. --field: the border of inputs and buttons.
+	 */
+	--field: #d4d4d8;
+	--success: #17663a;
+	--success-bg: #eef8f1;
+	--success-line: #bfe3cb;
+	--success-edge: #2e8a55;
+	--info: #2747d6;
+	--info-bg: #eef2fd;
+	--info-line: #c7d2fa;
+	--info-edge: #4a66de;
+	--notice: #6b4600;
+	--notice-bg: #fdf3e1;
+	--notice-line: #f0d49a;
+	--notice-edge: #b7862a;
+	--danger: #b42323;
+	--danger-bg: #fef3f2;
+	--danger-line: #f9c9c3;
+	--danger-edge: #d2564b;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -98,6 +121,24 @@
 		--act-2: #2a3d8f;
 		--act-3: #4f68d9;
 		--act-4: #8199f8;
+
+		--field: #3a3a3f;
+		--success: #6ee7a0;
+		--success-bg: #0f2418;
+		--success-line: #1f4d32;
+		--success-edge: #2e8a55;
+		--info: #8199f8;
+		--info-bg: #141a33;
+		--info-line: #2a3566;
+		--info-edge: #4f68d9;
+		--notice: #fcd34d;
+		--notice-bg: #261e0b;
+		--notice-line: #5c4716;
+		--notice-edge: #b7862a;
+		--danger: #f87171;
+		--danger-bg: #2a1212;
+		--danger-line: #5c2323;
+		--danger-edge: #d2564b;
 	}
 
 }
@@ -138,6 +179,23 @@
 	--color-critical: var(--critical);
 	--color-critical-ink: var(--critical-ink);
 	--color-warning-ink: var(--warning-ink);
+	--color-field: var(--field);
+	--color-success: var(--success);
+	--color-success-bg: var(--success-bg);
+	--color-success-line: var(--success-line);
+	--color-success-edge: var(--success-edge);
+	--color-info: var(--info);
+	--color-info-bg: var(--info-bg);
+	--color-info-line: var(--info-line);
+	--color-info-edge: var(--info-edge);
+	--color-notice: var(--notice);
+	--color-notice-bg: var(--notice-bg);
+	--color-notice-line: var(--notice-line);
+	--color-notice-edge: var(--notice-edge);
+	--color-danger: var(--danger);
+	--color-danger-bg: var(--danger-bg);
+	--color-danger-line: var(--danger-line);
+	--color-danger-edge: var(--danger-edge);
 	--font-sans: var(--font-geist-sans);
 	--font-mono: var(--font-geist-mono);
 }
@@ -222,17 +280,136 @@ body {
 
 /* Text links (public and admin): ink and underlined, so they're links without the colour, and blue on hover. */
 /*
- * One dropdown style for the admin's native selects, like its project dropdown: a rounded,
- * outlined pill with a grey chevron on the right (#71717a reads on both the light and dark card).
+ * Admin controls, after Tech Jobs: one shape for every input, select, textarea and button, a 10px
+ * rounded square (--radius-control), 44px tall on phones and 40px from 640px (.control). Pills are
+ * only for labels (status pills, filter chips, counts). In the components layer, so Tailwind
+ * utilities (padding, width) still apply on top.
  */
-.select-pill {
-	appearance: none;
-	border-radius: 9999px;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-	background-repeat: no-repeat;
-	background-position: right 12px center;
-	background-size: 12px;
-	padding-right: 2.25rem;
+@layer components {
+	.control {
+		height: 2.75rem;
+		border-radius: 10px;
+	}
+	@media (min-width: 640px) {
+		.control {
+			height: 2.5rem;
+		}
+	}
+	.rounded-control {
+		border-radius: 10px;
+	}
+	/* Native selects: the chevron on the right. */
+	.select-chevron {
+		appearance: none;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 12px center;
+		background-size: 12px;
+		padding-right: 2.25rem;
+	}
+	/* Buttons: primary (ink, for saving), secondary (outlined), selected (a toggle that's on: grey,
+	   never black), icon (square, with a tooltip) and danger (outlined red). 120ms colour changes. */
+	.btn-primary,
+	.btn-secondary,
+	.btn-selected,
+	.btn-icon,
+	.btn-danger-outline {
+		border: 1px solid transparent;
+		transition: background-color 120ms ease-out, border-color 120ms ease-out, color 120ms ease-out;
+	}
+	.btn-primary {
+		background-color: var(--ink);
+		color: var(--page);
+	}
+	.btn-primary:hover:not(:disabled) {
+		opacity: 0.85;
+	}
+	.btn-secondary,
+	.btn-icon {
+		border-color: var(--field);
+		background-color: var(--card);
+		color: var(--ink);
+	}
+	.btn-icon {
+		color: var(--ink-2);
+	}
+	.btn-secondary:hover:not(:disabled),
+	.btn-icon:hover:not(:disabled) {
+		background-color: var(--pill);
+		color: var(--ink);
+	}
+	.btn-selected {
+		border-color: var(--field);
+		background-color: var(--pill);
+		color: var(--ink);
+		font-weight: 600;
+	}
+	.btn-danger-outline {
+		border-color: var(--danger);
+		background-color: var(--card);
+		color: var(--danger);
+	}
+	.btn-danger-outline:hover:not(:disabled) {
+		background-color: var(--danger-bg);
+	}
+	:is(.btn-primary, .btn-secondary, .btn-icon, .btn-danger-outline):disabled {
+		opacity: 0.6;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.btn-primary,
+		.btn-secondary,
+		.btn-selected,
+		.btn-icon,
+		.btn-danger-outline {
+			transition: none;
+		}
+	}
+}
+
+/* Toasts: in, up about 8px with a fade (200ms, ease-out); out, a fade with a 4px drop (150ms, ease-in). Fades only with reduced motion. */
+@keyframes toast-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+@keyframes toast-out {
+	from {
+		opacity: 1;
+		transform: translateY(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+}
+@keyframes toast-fade-in {
+	from {
+		opacity: 0;
+	}
+}
+@keyframes toast-fade-out {
+	to {
+		opacity: 0;
+	}
+}
+.toast {
+	animation: toast-in 200ms ease-out both;
+}
+.toast[data-leaving] {
+	animation: toast-out 150ms ease-in both;
+}
+@media (prefers-reduced-motion: reduce) {
+	.toast {
+		animation: toast-fade-in 200ms ease-out both;
+	}
+	.toast[data-leaving] {
+		animation: toast-fade-out 150ms ease-in both;
+	}
 }
 
 .link { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { JourneyForm } from "@/components/admin/journey-form";
-import { Breadcrumb } from "@/components/admin/ui";
+import { Breadcrumb, PageHeader } from "@/components/admin/ui";
 import { listProjects } from "@/lib/db/projects";
 import { adminHref } from "@/lib/site";
 
@@ -14,7 +14,7 @@ export default async function NewJourneyEntry() {
 		<div className="max-w-3xl space-y-6">
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Journey", href: adminHref("/settings/journey") }, { label: "New entry" }]} />
-				<h1 className="text-3xl font-bold tracking-tight">New entry</h1>
+				<PageHeader title="New entry" subtitle="Something you shipped, decided or learned." />
 			</div>
 			<section className="rounded-2xl border border-line bg-card p-4">
 				<JourneyForm projects={projects} />

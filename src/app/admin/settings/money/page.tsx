@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { FieldError, Hidden, SelectField, SettingsForm, TextField } from "@/components/admin/form";
-import { Breadcrumb, quietButtonClass } from "@/components/admin/ui";
+import { Breadcrumb, PageHeader, quietButtonClass } from "@/components/admin/ui";
+import { ToastOnLoad } from "@/components/admin/toast";
 import { requestTime } from "@/lib/admin/clock";
 import { previousMonth } from "@/lib/admin/settings-core";
 import { isMonth, MONEY_MAX_ROWS } from "@/lib/admin/validate";
@@ -41,8 +42,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 		<div className="max-w-3xl space-y-6">
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Costs and revenue" }]} />
-				<h1 className="text-3xl font-bold tracking-tight">Costs and revenue</h1>
-				<p className="text-sm text-ink-2">What it costs to run everything each month, and what it earns (even £0). The latest month with anything in it is shown on your public page, with its costs by service.</p>
+				<PageHeader title="Costs and revenue" subtitle="What it costs to run everything each month, and what it earns (even £0). The latest month with anything in it is shown on your public page, with its costs by service." />
 			</div>
 
 			<nav aria-label="Month" className="flex items-center justify-between gap-3">
@@ -66,11 +66,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 				Costs <span className="font-semibold tabular text-ink">{formatPence(cost)}</span> · Revenue <span className="font-semibold tabular text-ink">{formatPence(revenue)}</span>
 			</p>
 
-			{params.copied && hasCosts && (
-				<p role="status" className="text-sm text-good-ink">
-					✓ Copied {params.copied === "1" ? "1 cost" : `${Number(params.copied) || ""} costs`} from {formatMonth(previousMonth(month))}. Check the amounts, then save.
-				</p>
-			)}
+			{params.copied && hasCosts && <ToastOnLoad tone="success" text={`Copied ${params.copied === "1" ? "1 cost" : `${Number(params.copied) || ""} costs`} from ${formatMonth(previousMonth(month))}. Check the amounts, then save.`} param="copied" />}
 
 			{!hasCosts && (
 				<SettingsForm action={copyCostsAction} submitLabel={`Copy costs from ${formatMonth(previousMonth(month))}`}>

@@ -114,11 +114,11 @@ describe("the reverse shortcut, admin → public site", () => {
 		}
 	});
 
-	it("is on every admin page (the admin layout), with a visible View site link that names it", () => {
+	it("is on every admin page (the admin layout), with a visible Public site link that names it", () => {
 		const layout = readFileSync("src/app/admin/layout.tsx", "utf8");
 		expect(layout).toContain("<AdminKeyboardShortcut to={site.url} />");
 		// The visible version of the shortcut (batch 1 of the admin changes): the public site, in the top bar.
 		expect(layout).toMatch(/href=\{site\.url\}[^>]*aria-keyshortcuts="Alt\+A"/);
-		expect(layout).toContain("View site");
+		expect(layout).toContain("Public site");
 	});
 });

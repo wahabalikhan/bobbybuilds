@@ -8,16 +8,88 @@ import { RANGE_PRESETS, type DateRange } from "@/lib/admin/range";
 import { formatChange } from "@/lib/format";
 import { logoScale } from "@/lib/project-logo";
 
-export const buttonClass = "inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-sm font-medium text-page hover:opacity-85";
 /**
- * The public journey chip: an outlined pill, ink when selected. Used for the project tabs and the
- * range picker (never black filled pills at rest).
+ * Buttons, after Tech Jobs: one shape (`control`: a 10px rounded square, 44px tall on phones and
+ * 40px from 640px). Primary (ink) is for saving; secondary is outlined; icon buttons are square,
+ * with a tooltip and an accessible name; danger is outlined red. The styles live in globals.css.
+ */
+export const buttonClass = "btn-primary control inline-flex items-center justify-center gap-1.5 px-4 text-sm font-medium";
+/**
+ * A segmented control's option (the project tabs, the range presets and "Custom…"), after Tech
+ * Jobs: outlined at rest; the chosen one grey (`btn-selected`, never black, which is for primary
+ * actions) and in bolder text, so it's clear without relying on colour.
  */
 export function chipClass(selected: boolean): string {
-	return `inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm ${selected ? "border-ink bg-ink font-medium text-page" : "border-line text-ink-2 hover:bg-pill hover:text-ink"}`;
+	return `control inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 text-sm ${selected ? "btn-selected" : "btn-secondary text-ink-2"}`;
 }
 
-export const quietButtonClass = "inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3.5 py-1.5 text-sm text-ink hover:bg-pill";
+/** A square icon button (40px, 44px on phones). Always give it an aria-label and a Tooltip with the same words. */
+export const iconButtonClass = "btn-icon control inline-flex w-11 shrink-0 items-center justify-center sm:w-10";
+
+/** "+" for the add buttons (Add a project, Add an entry). */
+export function PlusIcon({ className = "h-[18px] w-[18px]" }: { className?: string }) {
+	return (
+		<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden className={className}>
+			<path d="M10 4.5v11M4.5 10h11" />
+		</svg>
+	);
+}
+
+/** A small ink tooltip, centred above its element on hover and keyboard focus. The element keeps its own aria-label. */
+export function Tooltip({ text, children }: { text: string; children: ReactNode }) {
+	return (
+		<span className="group/tip relative inline-flex">
+			{children}
+			<span
+				aria-hidden
+				className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-xs font-medium text-page opacity-0 transition-opacity group-hover/tip:opacity-100 group-has-[:focus-visible]/tip:opacity-100 motion-reduce:transition-none"
+			>
+				{text}
+			</span>
+		</span>
+	);
+}
+
+/**
+ * Every admin page's title, after Tech Jobs' PageHeader: the h1 (30px bold), an optional subtitle
+ * 8px below in body text, and an optional action on the right.
+ */
+export function PageHeader({ title, subtitle, action }: { title: ReactNode; subtitle?: ReactNode; action?: ReactNode }) {
+	return (
+		<div className="flex flex-wrap items-end justify-between gap-4">
+			<div className="min-w-0">
+				<h1 className="text-3xl font-bold tracking-tight break-words">{title}</h1>
+				{subtitle && <p className="mt-2 text-ink-2">{subtitle}</p>}
+			</div>
+			{action}
+		</div>
+	);
+}
+
+/** A status label, a pill (labels are the only pills): green (Published) or grey (Draft). */
+export function Badge({ tone, children }: { tone: "success" | "neutral"; children: ReactNode }) {
+	return (
+		<span className={`inline-flex shrink-0 items-center rounded-full px-2 py-[3px] text-xs font-semibold leading-none ${tone === "success" ? "bg-success-bg text-success" : "bg-pill text-ink-2"}`}>
+			{children}
+		</span>
+	);
+}
+
+/** A whole page with nothing in it yet, after Tech Jobs: an icon square, a heading, a line of explanation and the main action. */
+export function EmptyState({ icon, title, children, action }: { icon: ReactNode; title: string; children: ReactNode; action?: ReactNode }) {
+	return (
+		<section className="rounded-2xl border border-line bg-card px-6 py-8">
+			<span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-control bg-pill text-xl">
+				{icon}
+			</span>
+			<h2 className="mt-4 text-xl font-bold tracking-tight">{title}</h2>
+			<p className="mt-2 text-ink-2">{children}</p>
+			{action && <div className="mt-6">{action}</div>}
+		</section>
+	);
+}
+
+export const quietButtonClass = "btn-secondary control inline-flex items-center justify-center gap-1.5 px-3.5 text-sm";
 
 export function Card({ title, note, children, className = "", action }: { title?: string; note?: ReactNode; children: ReactNode; className?: string; action?: ReactNode }) {
 	return (
@@ -131,7 +203,7 @@ export function Tabs({ tabs, current, hrefFor }: { tabs: { key: string; label: s
 export function RangePicker({ range, hrefFor, hidden = {} }: { range: DateRange; hrefFor: (params: Record<string, string>) => string; hidden?: Record<string, string> }) {
 	return (
 		<div className="flex flex-wrap items-center gap-2">
-			<div className="flex flex-wrap gap-1.5">
+			<div className="flex flex-wrap gap-1.5" role="group" aria-label="Range">
 				{Object.entries(RANGE_PRESETS).map(([key, preset]) => (
 					<Link
 						key={key}
@@ -156,10 +228,10 @@ export function RangePicker({ range, hrefFor, hidden = {} }: { range: DateRange;
 					))}
 					<input type="hidden" name="range" value="custom" />
 					<label className="sr-only" htmlFor="range-from">From</label>
-					<input id="range-from" type="date" name="from" defaultValue={range.from} className="rounded-full border border-line bg-card px-3 py-1" />
+					<input id="range-from" type="date" name="from" defaultValue={range.from} className="control border border-field bg-card px-3" />
 					<span className="text-muted">to</span>
 					<label className="sr-only" htmlFor="range-to">To</label>
-					<input id="range-to" type="date" name="to" defaultValue={range.to} className="rounded-full border border-line bg-card px-3 py-1" />
+					<input id="range-to" type="date" name="to" defaultValue={range.to} className="control border border-field bg-card px-3" />
 					<button className={quietButtonClass}>Apply</button>
 				</form>
 			</details>

@@ -5,6 +5,7 @@ import { useActionState, useEffect, useState } from "react";
 import { CopyButton } from "@/components/admin/copy-button";
 import { inputClass } from "@/components/admin/form";
 import { buttonClass } from "@/components/admin/ui";
+import { Notice } from "@/components/admin/message";
 import type { FormState } from "@/lib/admin/form-state";
 import { adminHref } from "@/lib/site";
 
@@ -33,15 +34,11 @@ export function NewProjectWizard({ action }: { action: Action }) {
 					<form action={formAction} className="space-y-4" noValidate>
 						<Field name="name" label="Name" placeholder="Tech Jobs" state={state} hint="Its address in HQ is made from this, like tech-jobs." />
 						<Field name="site_url" label="Site address" placeholder="https://" type="url" state={state} hint="Visits are only accepted from this site, and it's checked every 5 minutes." />
+						{state.status === "error" && state.message && <Notice tone="error">{state.message}</Notice>}
 						<div className="flex items-center gap-3">
 							<button className={buttonClass} disabled={pending}>
 								{pending ? "Setting up…" : "Continue"}
 							</button>
-							{state.status === "error" && state.message && (
-								<p role="alert" className="text-sm text-critical-ink">
-									✕ {state.message}
-								</p>
-							)}
 						</div>
 					</form>
 				)}
@@ -130,10 +127,10 @@ function WaitForFirstVisit({ slug }: { slug: string }) {
 	}, [slug, arrived]);
 
 	return arrived ? (
-		<div role="status" className="space-y-3">
-			<p className="flex items-center gap-2 text-sm font-medium text-good-ink">
-				<span aria-hidden>✓</span> The first visit has arrived. It&rsquo;s connected, and it&rsquo;ll be on your public page within a few minutes.
-			</p>
+		<div className="space-y-3">
+			<Notice tone="success" live="status">
+				The first visit has arrived. It&rsquo;s connected, and it&rsquo;ll be on your public page within a few minutes.
+			</Notice>
 			<div className="flex flex-wrap gap-3 text-sm">
 				<Link href={adminHref(`/projects/${slug}`)} className={buttonClass}>
 					Open its dashboard

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { CopyButton } from "@/components/admin/copy-button";
+import { inputBaseClass, inputClass, selectBaseClass } from "@/components/admin/field-styles";
 import { buttonClass, Card, Delta, Empty, quietButtonClass, RangePicker } from "@/components/admin/ui";
 import { RankedList, StatusBadge, UptimeStrip, type Status } from "@/components/charts";
 import { clampToRaw, type DateRange } from "@/lib/admin/range";
@@ -212,7 +213,7 @@ function Headline({
 					visitors, {range.label.toLowerCase()}
 					<Delta value={change(visitors, previous)} period="previous" />
 				</p>
-				<div className="text-xs [&_a]:text-xs [&_summary]:text-xs">
+				<div>
 					<RangePicker range={range} hrefFor={hrefFor} />
 				</div>
 			</div>
@@ -459,7 +460,7 @@ function LinkBuilder({ project, query, hrefFor }: { project: Project; query: Rec
 			problem = "Enter a full web address, starting with https://.";
 		}
 	}
-	const input = "mt-1 w-full rounded-xl border border-line bg-card px-3 py-2";
+	const input = inputClass;
 	return (
 		<div>
 			<p className="mb-3 text-sm text-muted">Give it a name for one post, or say where it&rsquo;s shared (site, type, campaign).</p>
@@ -496,7 +497,7 @@ function LinkBuilder({ project, query, hrefFor }: { project: Project; query: Rec
 			{problem && <p className="mt-3 text-sm text-critical-ink">{problem}</p>}
 			{built && (
 				<div className="mt-4 flex flex-wrap items-center gap-2">
-					<input readOnly value={built} aria-label="Your tracked link" className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2 font-mono text-sm" />
+					<input readOnly value={built} aria-label="Your tracked link" className={`${inputBaseClass} min-w-0 flex-1 font-mono`} />
 					<CopyButton text={built} />
 				</div>
 			)}
@@ -533,7 +534,7 @@ async function Events({ project, range, today, query, hrefFor }: Pick<OverviewPr
 				{query.to && <input type="hidden" name="to" value={query.to} />}
 				<label>
 					<span className="block text-ink-2">Event</span>
-					<select name="name" defaultValue={name ?? ""} className="select-pill mt-1 border border-line bg-card py-1.5 pl-3.5">
+					<select name="name" defaultValue={name ?? ""} className={`${selectBaseClass} mt-1`}>
 						<option value="">All events</option>
 						{names.map((n) => (
 							<option key={n} value={n}>
@@ -544,7 +545,7 @@ async function Events({ project, range, today, query, hrefFor }: Pick<OverviewPr
 				</label>
 				<label>
 					<span className="block text-ink-2">Sent by</span>
-					<select name="source" defaultValue={source ?? ""} className="select-pill mt-1 border border-line bg-card py-1.5 pl-3.5">
+					<select name="source" defaultValue={source ?? ""} className={`${selectBaseClass} mt-1`}>
 						<option value="">The site and its server</option>
 						<option value="browser">The site</option>
 						<option value="server">Its server</option>

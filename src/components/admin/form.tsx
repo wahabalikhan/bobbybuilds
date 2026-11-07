@@ -5,31 +5,30 @@
  * result with the fields inside it (errors, and the values you typed if something needs fixing).
  * Fields are plain inputs, so forms also work before JavaScript loads.
  */
-import { createContext, useActionState, useContext, type ReactNode } from "react";
+import { createContext, useActionState, useContext, useEffect, useRef, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import type { FormState } from "@/lib/admin/form-state";
 import { CopyButton } from "./copy-button";
+import { inputBaseClass, inputClass, selectClass, textAreaClass } from "./field-styles";
+import { Notice, ToneIcon } from "./message";
+
+export { inputBaseClass, inputClass, selectBaseClass, selectClass, textAreaClass } from "./field-styles";
+import { showToast } from "./toast";
 
 export type { FormState } from "@/lib/admin/form-state";
 
 const StateContext = createContext<FormState>({ status: "idle", version: 0 });
 
-export const inputClass =
-	"mt-1.5 w-full rounded-xl border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-muted aria-[invalid=true]:border-critical";
-
 /** A second way to submit the same form, sending `name=value` with it (e.g. "Save draft" next to "Publish"). */
 export type FormButton = { label: string; name: string; value: string; quiet?: boolean };
-
-/** The one dropdown style: a rounded, outlined pill with a chevron (.select-pill in globals.css). */
-export const selectClass = "select-pill mt-1.5 w-full border border-line bg-card py-2 pl-3.5 text-sm text-ink aria-[invalid=true]:border-critical";
 
 function SubmitButton({ label, danger, name, value, quiet }: { label: string; danger?: boolean; name?: string; value?: string; quiet?: boolean }) {
 	const { pending, data } = useFormStatus();
 	// With several buttons, only the one that was pressed says "Saving…".
 	const pressed = pending && (!name || data?.get(name) === value);
-	const look = danger ? "border border-critical text-critical-ink hover:bg-[color-mix(in_srgb,var(--critical)_8%,transparent)]" : quiet ? "border border-line bg-card text-ink hover:bg-pill" : "bg-ink text-page hover:opacity-85";
+	const look = danger ? "btn-danger-outline" : quiet ? "btn-secondary" : "btn-primary";
 	return (
-		<button name={name} value={value} disabled={pending} className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-medium disabled:opacity-60 ${look}`}>
+		<button name={name} value={value} disabled={pending} className={`control inline-flex items-center justify-center px-4 text-sm font-medium ${look}`}>
 			{pressed ? "Saving…" : label}
 		</button>
 	);
@@ -52,13 +51,22 @@ export function SettingsForm({
 	buttons?: FormButton[];
 }) {
 	const [state, formAction] = useActionState(action, { status: "idle", version: 0 } satisfies FormState);
+	// A save that worked is a toast (green; amber when it came with a note to read). A problem
+	// stays in place: under its field, and once above the buttons.
+	const toasted = useRef(0);
+	useEffect(() => {
+		if (state.status !== "ok" || !state.message || toasted.current === state.version) return;
+		toasted.current = state.version;
+		const notes = state.notes ?? [];
+		showToast(notes.length ? "warning" : "success", [state.message, ...notes].join(" "));
+	}, [state]);
 	return (
 		<StateContext.Provider value={state}>
 			<form key={state.version} action={formAction} className={`space-y-4 ${className}`} noValidate>
 				{children}
+				<FormProblem state={state} />
 				<div className="flex flex-wrap items-center gap-3 pt-1">
 					{buttons ? buttons.map((b) => <SubmitButton key={b.label} label={b.label} name={b.name} value={b.value} quiet={b.quiet} />) : <SubmitButton label={submitLabel} danger={danger} />}
-					<StatusMessage state={state} />
 				</div>
 				{state.secret && <SecretOnce secret={state.secret} />}
 			</form>
@@ -66,21 +74,16 @@ export function SettingsForm({
 	);
 }
 
-function StatusMessage({ state }: { state: FormState }) {
-	if (state.status === "idle" || !state.message) return null;
-	const ok = state.status === "ok";
+/** A problem saving the form: once, just above its buttons (red), with any notes. */
+function FormProblem({ state }: { state: FormState }) {
+	if (state.status !== "error" || !state.message) return null;
 	return (
-		<div role={ok ? "status" : "alert"} className="text-sm">
-			<p className={ok ? "text-good-ink" : "text-critical-ink"}>
-				<span aria-hidden>{ok ? "✓ " : "✕ "}</span>
-				{state.message}
-			</p>
+		<Notice tone="error">
+			<p>{state.message}</p>
 			{state.notes?.map((note) => (
-				<p key={note} className="text-muted">
-					{note}
-				</p>
+				<p key={note}>{note}</p>
 			))}
-		</div>
+		</Notice>
 	);
 }
 
@@ -92,7 +95,7 @@ function SecretOnce({ secret }: { secret: string }) {
 				Save it in the product&rsquo;s secrets, never in its code.
 			</p>
 			<div className="mt-3 flex flex-wrap items-center gap-2">
-				<input readOnly value={secret} aria-label="Secret key" className={`${inputClass} mt-0 min-w-0 flex-1 font-mono`} />
+				<input readOnly value={secret} aria-label="Secret key" className={`${inputBaseClass} min-w-0 flex-1 font-mono`} />
 				<CopyButton text={secret} label="Copy secret key" />
 			</div>
 		</div>
@@ -111,7 +114,7 @@ function useField(name: string, defaultValue: string | undefined) {
 	return { error, value, id: `field-${name}` };
 }
 
-function Label({ id, label, hint, error, srOnly }: { id: string; label: string; hint?: ReactNode; error?: string; srOnly?: boolean }) {
+function Label({ id, label, hint, srOnly }: { id: string; label: string; hint?: ReactNode; srOnly?: boolean }) {
 	return (
 		<>
 			<label htmlFor={id} className={srOnly ? "sr-only" : "block text-sm font-medium"}>
@@ -122,12 +125,18 @@ function Label({ id, label, hint, error, srOnly }: { id: string; label: string; 
 					{hint}
 				</p>
 			)}
-			{error && (
-				<p id={`${id}-error`} className="mt-1 text-sm text-critical-ink">
-					{error}
-				</p>
-			)}
 		</>
+	);
+}
+
+/** A field's error, under it: red, with the warning icon (after Tech Jobs' FieldError). */
+function ErrorText({ id, error }: { id: string; error?: string }) {
+	if (!error) return null;
+	return (
+		<p id={id} className="mt-1.5 flex items-start gap-1.5 text-sm text-danger">
+			<ToneIcon tone="warning" className="mt-0.5 h-4 w-4" />
+			{error}
+		</p>
 	);
 }
 
@@ -147,7 +156,7 @@ export function TextField({ type = "text", list, inputMode, ...props }: FieldPro
 	const { error, value, id } = useField(props.name, props.defaultValue);
 	return (
 		<div>
-			<Label id={id} label={props.label} hint={props.hint} error={error} srOnly={props.srLabel} />
+			<Label id={id} label={props.label} hint={props.hint} srOnly={props.srLabel} />
 			<input
 				id={id}
 				name={props.name}
@@ -162,6 +171,7 @@ export function TextField({ type = "text", list, inputMode, ...props }: FieldPro
 				aria-describedby={[props.hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined}
 				className={inputClass}
 			/>
+			<ErrorText id={`${id}-error`} error={error} />
 		</div>
 	);
 }
@@ -170,7 +180,7 @@ export function TextArea({ rows = 4, mono = false, ...props }: FieldProps & { ro
 	const { error, value, id } = useField(props.name, props.defaultValue);
 	return (
 		<div>
-			<Label id={id} label={props.label} hint={props.hint} error={error} srOnly={props.srLabel} />
+			<Label id={id} label={props.label} hint={props.hint} srOnly={props.srLabel} />
 			<textarea
 				id={id}
 				name={props.name}
@@ -180,8 +190,9 @@ export function TextArea({ rows = 4, mono = false, ...props }: FieldProps & { ro
 				maxLength={props.maxLength}
 				aria-invalid={error ? true : undefined}
 				aria-describedby={[props.hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined}
-				className={`${inputClass} ${mono ? "font-mono" : ""}`}
+				className={`${textAreaClass} ${mono ? "font-mono" : ""}`}
 			/>
+			<ErrorText id={`${id}-error`} error={error} />
 		</div>
 	);
 }
@@ -190,14 +201,15 @@ export function SelectField({ options, ...props }: FieldProps & { options: { val
 	const { error, value, id } = useField(props.name, props.defaultValue);
 	return (
 		<div>
-			<Label id={id} label={props.label} hint={props.hint} error={error} srOnly={props.srLabel} />
-			<select id={id} name={props.name} defaultValue={value} aria-invalid={error ? true : undefined} className={selectClass}>
+			<Label id={id} label={props.label} hint={props.hint} srOnly={props.srLabel} />
+			<select id={id} name={props.name} defaultValue={value} aria-invalid={error ? true : undefined} aria-describedby={[props.hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined} className={selectClass}>
 				{options.map((o) => (
 					<option key={o.value} value={o.value}>
 						{o.label}
 					</option>
 				))}
 			</select>
+			<ErrorText id={`${id}-error`} error={error} />
 		</div>
 	);
 }
@@ -220,7 +232,12 @@ export function CheckboxField({ name, label, defaultChecked, hint }: { name: str
 export function FieldError({ name }: { name: string }) {
 	const state = useContext(StateContext);
 	const error = state.errors?.[name];
-	return error ? <p className="text-sm text-critical-ink">{error}</p> : null;
+	return error ? (
+		<p className="flex items-start gap-1.5 text-sm text-danger">
+			<ToneIcon tone="warning" className="mt-0.5 h-4 w-4" />
+			{error}
+		</p>
+	) : null;
 }
 
 export function Hidden({ name, value }: { name: string; value: string | number }) {

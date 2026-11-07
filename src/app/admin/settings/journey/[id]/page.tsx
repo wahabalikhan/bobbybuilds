@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { CheckboxField, Hidden, SettingsForm } from "@/components/admin/form";
 import { JourneyForm } from "@/components/admin/journey-form";
-import { Breadcrumb } from "@/components/admin/ui";
+import { Breadcrumb, PageHeader } from "@/components/admin/ui";
+import { ToastOnLoad } from "@/components/admin/toast";
 import { AdminNotFoundMessage } from "@/components/admin/not-found-message";
 import { listProjects } from "@/lib/db/projects";
 import { getJourney } from "@/lib/db/settings";
@@ -23,8 +24,8 @@ export default async function EditJourneyEntry({ params, searchParams }: { param
 		<div className="max-w-3xl space-y-6">
 			<div className="space-y-3">
 				<Breadcrumb items={[{ label: "Home", href: adminHref() }, { label: "Journey", href: adminHref("/settings/journey") }, { label: entry.title }]} />
-				<h1 className="text-3xl font-bold tracking-tight">{entry.title}</h1>
-				{query.created && <p role="status" className="mt-1 text-sm text-good-ink">✓ Entry created.</p>}
+				<PageHeader title={entry.title} subtitle={entry.isPublished ? "Published: it's on your public page." : "A draft: not on your public page."} />
+				{query.created && <ToastOnLoad tone="success" text={entry.isPublished ? "Entry published." : "Draft saved."} param="created" />}
 			</div>
 			<section className="rounded-2xl border border-line bg-card p-4">
 				<JourneyForm entry={entry} projects={projects} />

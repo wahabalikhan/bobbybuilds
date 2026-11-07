@@ -15,7 +15,6 @@ import * as core from "@/lib/admin/settings-core";
 import { formValues } from "@/lib/admin/validate";
 import { LOGOS, SCREENSHOTS } from "@/lib/logos.generated";
 import { utcDay } from "@/lib/days";
-import { renderMarkdown } from "@/lib/markdown";
 import { publishSnapshot } from "@/lib/public/snapshot";
 import { adminHref } from "@/lib/site";
 
@@ -116,10 +115,4 @@ export async function copyCostsAction(prev: FormState, form: FormData) {
 export async function refreshIconAction(prev: FormState, form: FormData) {
 	await requireAdmin();
 	return run(prev, form, core.refreshIconCore);
-}
-
-/** Markdown preview for the journey editor, with the same sanitising as the public pages. */
-export async function previewMarkdownAction(source: string): Promise<string> {
-	await requireAdmin();
-	return renderMarkdown(typeof source === "string" ? source : "");
 }
