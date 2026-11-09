@@ -180,7 +180,9 @@ export function validateOrigins(value: string, siteUrl: string | null): Result<s
 			errors.origins = `"${url.origin}" must use https:// (plain http is only allowed for localhost).`;
 			continue;
 		}
-		if (!origins.includes(url.origin)) origins.push(url.origin);
+		// A trailing dot ("https://example.com.") is valid DNS but never matches a browser's Origin, so drop it.
+		const origin = url.origin.replace(/\.(:\d+)?$/, "$1");
+		if (!origins.includes(origin)) origins.push(origin);
 	}
 	if (Object.keys(errors).length) return { ok: false, errors };
 
@@ -303,7 +305,7 @@ export type NewProjectStart = { name: string; slug: string; siteUrl: string; ori
 
 /**
  * Step 1 of the new project setup: a name and the site's address. The slug is made from the name
- * ("Tech Jobs" → tech-jobs) and the allowed origin from the address (https://example.com/a → https://example.com).
+ * ("RealTechJobs" → realtechjobs) and the allowed origin from the address (https://example.com/a → https://example.com).
  */
 export function validateNewProject(values: FormValues): Result<NewProjectStart> {
 	const errors: Errors = {};

@@ -58,11 +58,11 @@ describe("days", () => {
 describe("project queries", () => {
 	it("returns the seeded projects in order with parsed lists", async () => {
 		const projects = await listProjects(db);
-		const [portfolio, jobBoard] = projects.filter((p) => ["portfolio", "job-board"].includes(p.slug));
+		const [portfolio, jobBoard] = projects.filter((p) => ["portfolio", "realtechjobs"].includes(p.slug));
 		expect(portfolio.allowedOrigins).toEqual(["https://wahabalikhan.com", "https://www.wahabalikhan.com"]);
 		expect(portfolio.browserEvents).toEqual(["case_study_read", "contact_click", "comments_opened", "comment_posted"]);
 		expect(jobBoard.status).toBe("building");
-		expect(jobBoard.allowedOrigins).toEqual(["https://jobboard.wahab-ali-khan.workers.dev"]);
+		expect(jobBoard.allowedOrigins).toEqual(["https://realtechjobs.co.uk", "https://techjobs.bobbybuilds.app"]);
 	});
 
 	it("sets keys, finds the project by them, and never returns the hash", async () => {

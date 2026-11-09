@@ -51,12 +51,12 @@ describe("taglines with numbers", () => {
 
 	it("shows the numbers in bold on the public card, and only the numbers", () => {
 		const project = {
-			slug: "tech-jobs",
-			name: "Tech Jobs",
+			slug: "realtechjobs",
+			name: "RealTechJobs",
 			tagline: "4,868 real tech jobs, straight from 838 companies",
 			taglineParts: fillTaglineParts(TEMPLATE, FALLBACK, [k("open_jobs", 4868, "2026-11-04"), k("active_companies", 838, "2026-11-04")], "2026-11-04"),
 			status: "building",
-			siteUrl: "https://techjobs.bobbybuilds.app",
+			siteUrl: "https://realtechjobs.co.uk",
 			logoPath: null,
 			weekly: null,
 			outcomes: [],

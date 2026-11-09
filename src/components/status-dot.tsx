@@ -1,7 +1,7 @@
 /**
  * A project's status, the same on the public page and in the admin: a dot, always with its word
  * (never colour alone).
- * - Live: green, pulsing like Tech Jobs' live dot while its latest uptime check is up (still for
+ * - Live: green, pulsing like RealTechJobs' live dot while its latest uptime check is up (still for
  *   reduced motion, and still green before its first check); "Down" with a still grey dot when the
  *   latest check failed.
  * - Building: still amber. Paused, Idea, Retired: still grey.

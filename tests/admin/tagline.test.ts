@@ -24,7 +24,7 @@ const publicTagline = async (slug: string) => (await buildSnapshot(db, TODAY, NO
 
 describe("Tech Jobs' tagline", () => {
 	it("is set by the migration, with its fallback", async () => {
-		expect(await getProjectBySlug(db, "job-board")).toMatchObject({ tagline: TEMPLATE, taglineFallback: FALLBACK });
+		expect(await getProjectBySlug(db, "realtechjobs")).toMatchObject({ tagline: TEMPLATE, taglineFallback: FALLBACK });
 	});
 });
 

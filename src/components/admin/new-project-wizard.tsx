@@ -32,7 +32,7 @@ export function NewProjectWizard({ action }: { action: Action }) {
 					</div>
 				) : (
 					<form action={formAction} className="space-y-4" noValidate>
-						<Field name="name" label="Name" placeholder="Tech Jobs" state={state} hint="Its address in HQ is made from this, like tech-jobs." />
+						<Field name="name" label="Name" placeholder="RealTechJobs" state={state} hint="Its address in HQ is made from this, like realtechjobs." />
 						<Field name="site_url" label="Site address" placeholder="https://" type="url" state={state} hint="Visits are only accepted from this site, and it's checked every 5 minutes." />
 						{state.status === "error" && state.message && <Notice tone="error">{state.message}</Notice>}
 						<div className="flex items-center gap-3">

@@ -166,10 +166,12 @@ describe("public snapshot", () => {
 	});
 
 	it("uses public/logos/<slug>.* as a project's logo when none is chosen in Settings", async () => {
-		await project("tech-jobs");
+		// The seeded RealTechJobs (migration 0023) already has the slug; move it aside so this project gets the logo file.
+		await db.prepare("UPDATE projects SET slug = 'seeded-realtechjobs' WHERE slug = 'realtechjobs'").run();
+		await project("realtechjobs");
 		await project("pub-no-logo-file");
 		const snapshot = await buildSnapshot(db, TODAY, NOW);
-		expect(snapshot.projects.find((p) => p.slug === "tech-jobs")!.logoPath).toBe("/logos/tech-jobs.svg");
+		expect(snapshot.projects.find((p) => p.slug === "realtechjobs")!.logoPath).toBe("/logos/realtechjobs.svg");
 		expect(snapshot.projects.find((p) => p.slug === "pub-no-logo-file")!.logoPath).toBeNull();
 	});
 

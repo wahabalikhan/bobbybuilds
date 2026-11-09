@@ -48,9 +48,9 @@ describe("the BobbyBuilds project", () => {
 		expect(site.trackerKey).toMatch(PUBLIC_KEY_PATTERN);
 	});
 
-	it("comes first, then Portfolio, then Tech Jobs", async () => {
-		const order = (await listRealProjects(db)).map((p) => p.slug).filter((s) => ["bobbybuilds", "portfolio", "job-board", "tech-jobs"].includes(s));
-		expect(order).toEqual(["bobbybuilds", "portfolio", "job-board"]);
+	it("comes first, then Portfolio, then RealTechJobs", async () => {
+		const order = (await listRealProjects(db)).map((p) => p.slug).filter((s) => ["bobbybuilds", "portfolio", "realtechjobs"].includes(s));
+		expect(order).toEqual(["bobbybuilds", "portfolio", "realtechjobs"]);
 	});
 
 	it("never appears in public output, even with visitors, public numbers, milestones and a journey entry", async () => {

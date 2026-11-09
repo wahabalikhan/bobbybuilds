@@ -52,9 +52,9 @@ async function insert(table: string, row: Row) {
 	await flush();
 }
 
-const projects = (await db.prepare("SELECT id, slug FROM projects WHERE slug IN ('portfolio', 'job-board')").all<{ id: number; slug: string }>()).results;
+const projects = (await db.prepare("SELECT id, slug FROM projects WHERE slug IN ('portfolio', 'realtechjobs')").all<{ id: number; slug: string }>()).results;
 const portfolio = projects.find((p) => p.slug === "portfolio");
-const jobBoard = projects.find((p) => p.slug === "job-board");
+const jobBoard = projects.find((p) => p.slug === "realtechjobs");
 if (!portfolio || !jobBoard) {
 	console.error("Couldn't find the seeded projects. Run `npm run db:migrate:local` first.");
 	await proxy.dispose();
@@ -301,7 +301,7 @@ for (const [projectId, day, title, note, isPublic] of [
 await db.prepare("DELETE FROM journey_entries WHERE slug LIKE 'demo-%'").run();
 // One entry of each type, plus a draft that must never appear publicly.
 for (const [slug, type, title, body, link, projectId, published, daysAgo] of [
-	["demo-shipped-alerts", "shipped", "Demo: job alerts are live", "Pick a role and a city, and get one email a week. No account needed.", "https://techjobs.bobbybuilds.app", jobBoard.id, 1, 3],
+	["demo-shipped-alerts", "shipped", "Demo: job alerts are live", "Pick a role and a city, and get one email a week. No account needed.", "https://realtechjobs.co.uk", jobBoard.id, 1, 3],
 	["demo-decision-no-recruiters", "decision", "Demo: no recruiter listings", "Recruiter posts doubled the list but halved the trust. **Company careers pages only.**", null, jobBoard.id, 1, 9],
 	["demo-lesson-ghost-jobs", "lesson", "Demo: ghost jobs hide in plain sight", "A job open for 90 days with no changes is usually not a real opening.", null, jobBoard.id, 1, 16],
 	["demo-post-honest", "post", "Demo: what \"honest\" means for my tools", "No dark patterns, no fake urgency, no selling data. If a tool is free, it's free.", "https://linkedin.com/in/wahabalikhan", null, 1, 22],
@@ -334,7 +334,7 @@ for (const month of [lastMonth, thisMonth]) {
 		["cost", "running", "monthly", "Anthropic API (AI features)", jobBoard.id, month === thisMonth ? 640 : 410],
 		["cost", "running", "yearly", "Domains", null, 425],
 		["cost", "tools", "monthly", "Claude subscription", null, 9000],
-		["revenue", "running", "monthly", "Tech Jobs", jobBoard.id, 0],
+		["revenue", "running", "monthly", "RealTechJobs", jobBoard.id, 0],
 	] as const) {
 		await db
 			.prepare("INSERT INTO money (month, kind, cost_group, billing, service, project_id, amount_pence) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")

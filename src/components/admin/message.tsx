@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 /**
- * One colour rule for every admin message, after Tech Jobs (tokens in globals.css):
+ * One colour rule for every admin message, after RealTechJobs (tokens in globals.css):
  *   success  green  something worked ("Saved", "Published")
  *   info     blue   information (BobbyBuilds' accent)
  *   warning  amber  needs attention, but isn't a failure

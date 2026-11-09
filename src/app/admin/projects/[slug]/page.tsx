@@ -19,7 +19,7 @@ import { Overview } from "./overview";
 import { ProjectSettingsTab } from "./settings";
 import { PROJECT_TABS, tabFor } from "./tabs";
 
-/** "Tech Jobs · BobbyBuilds HQ", or "Tech Jobs settings · BobbyBuilds HQ" on the Settings tab. */
+/** "RealTechJobs · BobbyBuilds HQ", or "RealTechJobs settings · BobbyBuilds HQ" on the Settings tab. */
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }): Promise<Metadata> {
 	const [{ slug }, query] = await Promise.all([params, searchParams]);
 	const { env } = await getCloudflareContext({ async: true });

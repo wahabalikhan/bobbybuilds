@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ToneIcon, type Tone } from "./message";
 
 /**
- * Toasts, after Tech Jobs: one `<Toaster />` (in the admin layout) draws every toast, raised with
+ * Toasts, after RealTechJobs: one `<Toaster />` (in the admin layout) draws every toast, raised with
  * `showToast(tone, text)` from anywhere in the admin. One at a time (a new one replaces the old);
  * bottom centre, 24px up, 540px wide (phones: full width less 24px each side), 50px tall, the
  * tone's tint, icon and text with a darker edge and a clear shadow, and ✕ to close. 4 seconds,

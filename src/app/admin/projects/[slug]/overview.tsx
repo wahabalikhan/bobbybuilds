@@ -48,7 +48,7 @@ const ADVANCED_PARAMS = ["name", "source", "page"];
 
 /**
  * A project at a glance, one scrolling page, top to bottom: visitors; top pages and sources (each
- * with "See all"); Searches (projects that send them, like Tech Jobs: counts and search health on
+ * with "See all"); Searches (projects that send them, like RealTechJobs: counts and search health on
  * one line, top searches, found nothing, and companies waiting for review); tracked links, with
  * "Make a link"; the funnel as one line; uptime as one line. Then "All the detail" and "Advanced",
  * both closed.
@@ -279,7 +279,7 @@ function Uptime({ project, days, latestUp, broken }: { project: Project; days: {
 }
 
 /**
- * Searches, for projects that send them (Tech Jobs): the counts and search health on one line
+ * Searches, for projects that send them (RealTechJobs): the counts and search health on one line
  * (amber when a search failed), top searches and found nothing (each with "See all"), and
  * companies waiting for review at the end, linking to the project's own admin.
  */
@@ -363,7 +363,7 @@ function Searches({
 
 /**
  * Comments waiting for approval, from the admin-only product number the portfolio sends
- * (comments_waiting), the same way as Tech Jobs' review line: one line, no heading, linking to the
+ * (comments_waiting), the same way as RealTechJobs' review line: one line, no heading, linking to the
  * site, where comments are approved (signed in there). Only when it has a value.
  */
 function CommentsWaiting({ project, numbers }: { project: Project; numbers: Map<string, { value: number; day: string }> }) {

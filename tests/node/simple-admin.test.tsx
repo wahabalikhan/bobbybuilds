@@ -39,7 +39,7 @@ describe("the top bar's status pill", () => {
 describe("project icons", () => {
 	it("come automatically from public/logos/<slug>.*", () => {
 		expect(logoFor({ slug: "portfolio", logoPath: null })).toBe("/logos/portfolio.png");
-		expect(logoFor({ slug: "tech-jobs", logoPath: "/logos/old.png" })).toBe("/logos/tech-jobs.svg");
+		expect(logoFor({ slug: "realtechjobs", logoPath: "/logos/old.png" })).toBe("/logos/realtechjobs.svg");
 		expect(logoFor({ slug: "no-file-yet", logoPath: null })).toBeNull();
 	});
 
@@ -54,7 +54,7 @@ describe("project icons", () => {
 		for (const size of [16, 18, 20, 28, 36]) {
 			const round = renderToStaticMarkup(<ProjectLogo name="Portfolio" logoPath="/logos/portfolio.png" size={size} />);
 			expect(round).toContain(`width:${size}px;height:${size}px;transform:scale(1.1)`);
-			const square = renderToStaticMarkup(<ProjectLogo name="Tech Jobs" logoPath="/logos/tech-jobs.svg" size={size} />);
+			const square = renderToStaticMarkup(<ProjectLogo name="Tech Jobs" logoPath="/logos/realtechjobs.svg" size={size} />);
 			expect(square).toContain(`width:${size}px;height:${size}px"`);
 			expect(square).not.toContain("transform");
 		}

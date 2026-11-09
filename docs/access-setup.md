@@ -98,7 +98,7 @@ The full record list is in the "Domain plan" in CLAUDE.md.
 10. Click **Next**. Leave **Experience settings** and the cookie settings at their defaults, then click **Next** again and **Save**.
 11. **Copy the AUD tag.** Go to **Applications**, click `BobbyBuilds admin`, then **Configure** (or **Overview**). Click the copy button next to **Application Audience (AUD) Tag**.
 
-Never use a wildcard hostname (`*.bobbybuilds.app`) in this app. `techjobs.bobbybuilds.app` belongs to the job board.
+Never use a wildcard hostname (`*.bobbybuilds.app`) in this app. `techjobs.bobbybuilds.app` belongs to the job board (it redirects to `realtechjobs.co.uk`).
 
 ### Step 3: Give the app the two values
 
@@ -138,7 +138,7 @@ The job board builds its CSP (`script-src` and `connect-src`) from `HQ_URL`, so 
    ```
 3. **The job board's CLAUDE.md:** update the address in the "BobbyBuilds HQ" section.
 
-The job board's registered origin stays `https://jobboard.wahab-ali-khan.workers.dev` until the job board moves to `techjobs.bobbybuilds.app`. When it does, add the new origin in Settings first, then remove the old one.
+The job board now lives at `https://realtechjobs.co.uk` (`techjobs.bobbybuilds.app` redirects there), and both are its registered origins (migration 0023). Once the old address has had no visits for a while, remove it in Settings.
 
 ### Step 6: Close the workers.dev address
 

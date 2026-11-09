@@ -2,7 +2,7 @@
 export const LOGOS: string[] = [
 	"/logos/bobbybuilds.svg",
 	"/logos/portfolio.png",
-	"/logos/tech-jobs.svg"
+	"/logos/realtechjobs.svg"
 ];
 
 /** Hero screenshots in public/screenshots/, for each project's public card. */

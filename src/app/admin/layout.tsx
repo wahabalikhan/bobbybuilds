@@ -17,7 +17,7 @@ import { adminHref, adminName, site } from "@/lib/site";
 import { PAGE } from "@/lib/layout";
 
 export const metadata: Metadata = {
-	// "BobbyBuilds HQ" on Home; other admin pages set only their own name ("Tech Jobs · BobbyBuilds HQ").
+	// "BobbyBuilds HQ" on Home; other admin pages set only their own name ("RealTechJobs · BobbyBuilds HQ").
 	// absolute: the public layout's " · BobbyBuilds" template isn't added to the admin's own name.
 	title: { absolute: adminName, template: `%s · ${adminName}` },
 	robots: { index: false, follow: false },

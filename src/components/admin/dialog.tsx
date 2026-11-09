@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 /**
- * A dialog, after Tech Jobs: a native modal <dialog>, centred, 440px wide (less on phones), 20px
+ * A dialog, after RealTechJobs: a native modal <dialog>, centred, 440px wide (less on phones), 20px
  * corners, a title, a body and buttons at the bottom (secondary on the left, the main one on the
  * right). Escape or the close action closes it and focus goes back to the button that opened it.
  * `trigger` draws that button; `children` gets `close` for a Cancel or Keep button.

@@ -6,7 +6,7 @@ describe("seed", () => {
 		const { results } = await db
 			.prepare("SELECT slug, name, status, tagline, allowed_origins, public_key, secret_key_hash FROM projects ORDER BY sort_order")
 			.all<Record<string, string | null>>();
-		const seeded = results.filter((row) => row.slug === "portfolio" || row.slug === "job-board");
+		const seeded = results.filter((row) => row.slug === "portfolio" || row.slug === "realtechjobs");
 		expect(seeded).toEqual([
 			{
 				slug: "portfolio",
@@ -18,12 +18,13 @@ describe("seed", () => {
 				secret_key_hash: null,
 			},
 			{
-				slug: "job-board",
-				name: "Job Board",
+				// Renamed by migration 0023.
+				slug: "realtechjobs",
+				name: "RealTechJobs",
 				status: "building",
 				// Set by migration 0011 (numbers filled in on the public page, with a fallback).
 				tagline: "{open_jobs} real tech jobs, straight from {active_companies} companies",
-				allowed_origins: '["https://jobboard.wahab-ali-khan.workers.dev"]',
+				allowed_origins: '["https://realtechjobs.co.uk","https://techjobs.bobbybuilds.app"]',
 				public_key: null,
 				secret_key_hash: null,
 			},
@@ -36,9 +37,9 @@ describe("seed", () => {
 				"SELECT p.slug, m.key FROM metrics m JOIN projects p ON p.id = m.project_id WHERE m.is_headline = 1 AND m.is_public = 1 ORDER BY p.sort_order",
 			)
 			.all<{ slug: string; key: string }>();
-		expect(results.filter((r) => ["portfolio", "job-board"].includes(r.slug))).toEqual([
+		expect(results.filter((r) => ["portfolio", "realtechjobs"].includes(r.slug))).toEqual([
 			{ slug: "portfolio", key: "visitors" },
-			{ slug: "job-board", key: "visitors" },
+			{ slug: "realtechjobs", key: "visitors" },
 		]);
 	});
 });

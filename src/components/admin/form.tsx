@@ -141,7 +141,7 @@ function Hint({ id, hint }: { id: string; hint?: ReactNode }) {
 	);
 }
 
-/** A field's error, under it: red, with the warning icon (after Tech Jobs' FieldError). */
+/** A field's error, under it: red, with the warning icon (after RealTechJobs' FieldError). */
 function ErrorText({ id, error }: { id: string; error?: string }) {
 	if (!error) return null;
 	return (

@@ -9,7 +9,7 @@ import { formatChange } from "@/lib/format";
 import { logoScale } from "@/lib/project-logo";
 
 /**
- * Buttons, after Tech Jobs: one shape (`control`: a 10px rounded square, 44px tall on phones and
+ * Buttons, after RealTechJobs: one shape (`control`: a 10px rounded square, 44px tall on phones and
  * 40px from 640px). Primary (ink) is for saving; secondary is outlined; icon buttons are square,
  * with a tooltip and an accessible name; danger is outlined red. The styles live in globals.css.
  */
@@ -23,7 +23,7 @@ export function chipClass(selected: boolean): string {
 	return `control inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 text-sm ${selected ? "btn-selected" : "btn-secondary text-ink-2"}`;
 }
 
-/** A square icon button, Tech Jobs' size: 32px (44px on phones, for the tap). Always give it an aria-label and a Tooltip with the same words. */
+/** A square icon button, RealTechJobs' size: 32px (44px on phones, for the tap). Always give it an aria-label and a Tooltip with the same words. */
 export const iconButtonClass = "btn-icon rounded-control inline-flex h-11 w-11 shrink-0 items-center justify-center sm:h-8 sm:w-8";
 
 /** "+" for the add buttons (Add a project, Add an entry). */
@@ -51,7 +51,7 @@ export function Tooltip({ text, children }: { text: string; children: ReactNode 
 }
 
 /**
- * Every admin page's title, after Tech Jobs' PageHeader: the h1 (30px bold), an optional subtitle
+ * Every admin page's title, after RealTechJobs' PageHeader: the h1 (30px bold), an optional subtitle
  * 8px below in body text, and an optional action on the right.
  */
 export function PageHeader({ title, subtitle, action }: { title: ReactNode; subtitle?: ReactNode; action?: ReactNode }) {
@@ -85,7 +85,7 @@ export function Badge({ tone, children }: { tone: "success" | "neutral"; childre
 	);
 }
 
-/** A whole page with nothing in it yet, after Tech Jobs: an icon square, a heading, a line of explanation and the main action. */
+/** A whole page with nothing in it yet, after RealTechJobs: an icon square, a heading, a line of explanation and the main action. */
 export function EmptyState({ icon, title, children, action }: { icon: ReactNode; title: string; children: ReactNode; action?: ReactNode }) {
 	return (
 		<section className="rounded-2xl border border-line bg-card px-6 py-8">
@@ -132,7 +132,7 @@ export function SectionHeading({ id, children, aside, relaxed = false, divider =
 	);
 }
 
-/** "Home / Tech Jobs": where this page sits. The last item is the current page. */
+/** "Home / RealTechJobs": where this page sits. The last item is the current page. */
 export function Breadcrumb({ items }: { items: { label: string; href?: string }[] }) {
 	return (
 		<nav aria-label="Breadcrumb" className="text-sm text-muted">

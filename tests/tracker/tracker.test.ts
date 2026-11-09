@@ -98,14 +98,14 @@ describe("don't count my visits", () => {
 	});
 
 	it("#bobby-count clears the flag, so visits are counted again", async () => {
-		const { win, w, sent, send } = setup("https://techjobs.bobbybuilds.app/#bobby-count");
+		const { win, w, sent, send } = setup("https://realtechjobs.co.uk/#bobby-count");
 		const messages: string[] = [];
 		Object.defineProperty(win, "alert", { value: (message?: unknown) => void messages.push(String(message)), configurable: true });
 		win.localStorage.setItem(IGNORE_KEY, "1");
 		install({ win: w, key: "pk_test", send })!.start();
 		await tick();
 		expect(win.localStorage.getItem(IGNORE_KEY)).toBeNull();
-		expect(messages).toEqual(["Done: your visits to techjobs.bobbybuilds.app are counted again in this browser."]);
+		expect(messages).toEqual(["Done: your visits to realtechjobs.co.uk are counted again in this browser."]);
 		expect(sent.filter((s) => s.path === "/v1/pv")).toHaveLength(1);
 	});
 

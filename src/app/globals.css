@@ -58,7 +58,7 @@
 	--background: var(--page);
 	--foreground: var(--ink);
 	/*
-	 * Messages (Tech Jobs' colour rule): green success, blue information (BobbyBuilds' accent), amber
+	 * Messages (RealTechJobs' colour rule): green success, blue information (BobbyBuilds' accent), amber
 	 * needs attention, red error, each as tone text on a tint with a thin border (-line), and a
 	 * darker edge for toasts (-edge). Text on its tint: 6.6, 6.0, 7.6 and 5.9:1. Always with the
 	 * tone's icon (ToneIcon), never colour alone. --field: the border of inputs and buttons.
@@ -143,7 +143,7 @@
 
 }
 
-/* The pulsing status dot, the same as Tech Jobs' live dot (off for reduced motion where it's used). */
+/* The pulsing status dot, the same as RealTechJobs' live dot (off for reduced motion where it's used). */
 @theme {
 	--animate-live: live-pulse 2s ease-in-out infinite;
 	@keyframes live-pulse {
@@ -280,7 +280,7 @@ body {
 
 /* Text links (public and admin): ink and underlined, so they're links without the colour, and blue on hover. */
 /*
- * Admin controls, after Tech Jobs: one shape for every input, select, textarea and button, a 10px
+ * Admin controls, after RealTechJobs: one shape for every input, select, textarea and button, a 10px
  * rounded square (--radius-control), 44px tall on phones and 40px from 640px (.control). Pills are
  * only for labels (status pills, filter chips, counts). In the components layer, so Tailwind
  * utilities (padding, width) still apply on top.

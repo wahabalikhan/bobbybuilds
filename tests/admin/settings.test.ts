@@ -53,6 +53,10 @@ describe("validation", () => {
 		expect(validateOrigins("https://other.example", "https://example.com")).toMatchObject({ ok: true, notes: [expect.stringContaining("https://example.com")] });
 	});
 
+	it("drops a trailing dot, which would never match a browser's Origin", () => {
+		expect(validateOrigins("https://realtechjobs.co.uk.\nhttps://example.com.:8443", "https://realtechjobs.co.uk/")).toEqual({ ok: true, value: ["https://realtechjobs.co.uk", "https://example.com:8443"], notes: [] });
+	});
+
 	it("drops built-in events and refuses bad names", () => {
 		expect(validateBrowserEvents("case_study_read, contact_click\noutbound_click")).toMatchObject({ ok: true, value: ["case_study_read", "contact_click"], notes: [expect.stringContaining("outbound_click")] });
 		expect(validateBrowserEvents("Bad Name").ok).toBe(false);
