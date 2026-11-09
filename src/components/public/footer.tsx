@@ -34,7 +34,7 @@ const TOOLS: { label: string; icon: ReactNode }[] = [
 /** "Made with 🫶🏼 using" the tools, then the copyright, as on the portfolio. */
 export function SiteFooter({ year }: { year: number }) {
 	return (
-		<footer className={`${PAGE} pb-10`}>
+		<footer className={`${PAGE} pb-20 sm:pb-24`}>
 			<AdminKeyboardShortcut />
 			<div className="flex flex-wrap items-center gap-x-2 gap-y-2 pt-4 sm:pt-8 text-sm text-muted">
 				<span>
