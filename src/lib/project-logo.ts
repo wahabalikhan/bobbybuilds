@@ -19,10 +19,10 @@ export function hasPinnedLogo(project: { slug: string }): boolean {
 	return PINNED_LOGOS.includes(project.slug) && LOGOS.some((path) => path.replace(/\.[a-z]+$/, "") === `/logos/${project.slug}`);
 }
 
-/** Below this size (px), a logo's simpler `-small` version is used when there is one. */
-export const SMALL_LOGO_BELOW = 32;
+/** Below this size (px), a logo's simpler `-small` version is used when there is one (from 20px up, the full one). */
+export const SMALL_LOGO_BELOW = 20;
 
-/** The file to draw at this size: /logos/x-small.svg for /logos/x.svg below 32px, when it exists. */
+/** The file to draw at this size: /logos/x-small.svg for /logos/x.svg below 20px, when it exists. */
 export function logoAtSize(logoPath: string, size: number): string {
 	if (size >= SMALL_LOGO_BELOW) return logoPath;
 	const small = logoPath.replace(/(\.[a-z]+)$/, "-small$1");

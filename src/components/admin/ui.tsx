@@ -243,7 +243,7 @@ export function RawNote({ clipped }: { clipped: boolean }) {
 /** The project's icon (its stored copy from its own site, else its file in public/logos), or its first letter on a neutral square. */
 export function ProjectLogo({ name, logoPath: path, size = 28 }: { name: string; logoPath: string | null; size?: number }) {
 	if (path) {
-		// Below 32px, a logo's simpler -small version when it has one (logoAtSize).
+		// Below 20px, a logo's simpler -small version when it has one (logoAtSize).
 		const logoPath = logoAtSize(path, size);
 		// No container: the logo keeps its own shape (a circle, a rounded square…), fitted inside a
 		// fixed, invisible box so every logo lines up at the same size. Files are 2× or more, so they stay sharp.

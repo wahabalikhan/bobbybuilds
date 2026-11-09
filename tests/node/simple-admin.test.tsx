@@ -61,13 +61,13 @@ describe("project icons", () => {
 		for (const path of ROUND_LOGOS) expect(readFileSync(`public${path}`).length, path).toBeGreaterThan(0);
 	});
 
-	it("use their simpler -small version below 32px, when there is one", () => {
-		for (const size of [16, 18, 20, 28]) expect(logoAtSize("/logos/realtechjobs.svg", size)).toBe("/logos/realtechjobs-small.svg");
-		for (const size of [32, 36, 44]) expect(logoAtSize("/logos/realtechjobs.svg", size)).toBe("/logos/realtechjobs.svg");
+	it("use their simpler -small version below 20px, when there is one", () => {
+		for (const size of [16, 18, 19]) expect(logoAtSize("/logos/realtechjobs.svg", size)).toBe("/logos/realtechjobs-small.svg");
+		for (const size of [20, 28, 36, 44]) expect(logoAtSize("/logos/realtechjobs.svg", size)).toBe("/logos/realtechjobs.svg");
 		expect(logoAtSize("/logos/portfolio.png", 16)).toBe("/logos/portfolio.png");
 		expect(logoAtSize("/i/realtechjobs-0123456789ab.svg", 16)).toBe("/i/realtechjobs-0123456789ab.svg");
-		expect(renderToStaticMarkup(<ProjectLogo name="RealTechJobs" logoPath="/logos/realtechjobs.svg" size={28} />)).toContain('src="/logos/realtechjobs-small.svg"');
-		expect(renderToStaticMarkup(<ProjectLogo name="RealTechJobs" logoPath="/logos/realtechjobs.svg" size={36} />)).toContain('src="/logos/realtechjobs.svg"');
+		expect(renderToStaticMarkup(<ProjectLogo name="RealTechJobs" logoPath="/logos/realtechjobs.svg" size={18} />)).toContain('src="/logos/realtechjobs-small.svg"');
+		expect(renderToStaticMarkup(<ProjectLogo name="RealTechJobs" logoPath="/logos/realtechjobs.svg" size={20} />)).toContain('src="/logos/realtechjobs.svg"');
 	});
 
 	it("pinned ones (RealTechJobs) have their file, which wins over the icon fetched from the site", () => {
