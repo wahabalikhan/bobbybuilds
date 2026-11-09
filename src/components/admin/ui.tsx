@@ -6,7 +6,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { RANGE_PRESETS, type DateRange } from "@/lib/admin/range";
 import { formatChange } from "@/lib/format";
-import { logoScale } from "@/lib/project-logo";
+import { logoAtSize, logoScale } from "@/lib/project-logo";
 
 /**
  * Buttons, after RealTechJobs: one shape (`control`: a 10px rounded square, 44px tall on phones and
@@ -241,8 +241,10 @@ export function RawNote({ clipped }: { clipped: boolean }) {
 }
 
 /** The project's icon (its stored copy from its own site, else its file in public/logos), or its first letter on a neutral square. */
-export function ProjectLogo({ name, logoPath, size = 28 }: { name: string; logoPath: string | null; size?: number }) {
-	if (logoPath) {
+export function ProjectLogo({ name, logoPath: path, size = 28 }: { name: string; logoPath: string | null; size?: number }) {
+	if (path) {
+		// Below 32px, a logo's simpler -small version when it has one (logoAtSize).
+		const logoPath = logoAtSize(path, size);
 		// No container: the logo keeps its own shape (a circle, a rounded square…), fitted inside a
 		// fixed, invisible box so every logo lines up at the same size. Files are 2× or more, so they stay sharp.
 		// Round logos are drawn a little bigger inside that box (logoScale), so they look the same size.

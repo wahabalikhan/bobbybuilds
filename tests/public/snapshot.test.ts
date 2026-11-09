@@ -1,5 +1,6 @@
 import { env } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
+import { saveIconCheck } from "@/lib/db/icons";
 import { runTask } from "@/lib/jobs/run";
 import { rollupDay } from "@/lib/jobs/rollup";
 import { buildSnapshot, excerpt, publishSnapshot, readSnapshot, SNAPSHOT_KEY } from "@/lib/public/snapshot";
@@ -166,13 +167,23 @@ describe("public snapshot", () => {
 	});
 
 	it("uses public/logos/<slug>.* as a project's logo when none is chosen in Settings", async () => {
-		// The seeded RealTechJobs (migration 0023) already has the slug; move it aside so this project gets the logo file.
-		await db.prepare("UPDATE projects SET slug = 'seeded-realtechjobs' WHERE slug = 'realtechjobs'").run();
+		// The seeded RealTechJobs (migration 0023) already has the slug; move it (and any earlier test's) aside so this project gets the logo file.
+		await db.prepare("UPDATE projects SET slug = 'moved-' || id WHERE slug = 'realtechjobs'").run();
 		await project("realtechjobs");
 		await project("pub-no-logo-file");
 		const snapshot = await buildSnapshot(db, TODAY, NOW);
 		expect(snapshot.projects.find((p) => p.slug === "realtechjobs")!.logoPath).toBe("/logos/realtechjobs.svg");
 		expect(snapshot.projects.find((p) => p.slug === "pub-no-logo-file")!.logoPath).toBeNull();
+	});
+
+	it("uses a pinned logo file (RealTechJobs) even when an icon has been fetched from its site", async () => {
+		await db.prepare("UPDATE projects SET slug = 'moved-' || id WHERE slug = 'realtechjobs'").run();
+		const id = await project("realtechjobs");
+		const found = { data: new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"/>'), contentType: "image/svg+xml", kind: "svg" as const, sourceUrl: "https://realtechjobs.co.uk/icon.svg" };
+		expect((await saveIconCheck(db, id, found, NOW)).status).toBe("new");
+		const snapshot = await buildSnapshot(db, TODAY, NOW);
+		expect(snapshot.projects.find((p) => p.slug === "realtechjobs")!.logoPath).toBe("/logos/realtechjobs.svg");
+		expect(Object.keys(snapshot.icons).some((path) => path.startsWith("/i/realtechjobs-"))).toBe(false);
 	});
 
 	it("is refreshed by the 5-minute job every 10 minutes", async () => {

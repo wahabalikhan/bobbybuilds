@@ -21,7 +21,7 @@ import { chartStart, trendFrom, type Trend } from "@/lib/trend";
 import type { JourneyType } from "@/lib/journey-types";
 import { sha256Hex } from "@/lib/keys";
 import { renderMarkdown } from "@/lib/markdown";
-import { logoFor } from "@/lib/project-logo";
+import { hasPinnedLogo, logoFor } from "@/lib/project-logo";
 import { owner } from "@/lib/site";
 import { fillOutcome, fillTaglineParts, type TaglinePart } from "./product-line";
 
@@ -224,9 +224,10 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			taglineParts,
 			status: project.status,
 			lesson: project.lesson,
-			// Its own current icon when one has been fetched, else its file in public/logos, else its initial.
+			// Its pinned file in public/logos (PINNED_LOGOS), else its own current icon when one has been
+			// fetched, else its file in public/logos, else its initial.
 			logoPath: (() => {
-				const icon = storedIcons.get(project.id);
+				const icon = hasPinnedLogo(project) ? undefined : storedIcons.get(project.id);
 				if (!icon) return logoFor(project);
 				const path = iconPath(project.slug, icon);
 				icons[path] = { contentType: icon.contentType, base64: toBase64(icon.data) };

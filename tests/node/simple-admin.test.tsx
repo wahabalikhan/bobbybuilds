@@ -5,7 +5,7 @@ import { statusText, statusTone } from "@/components/admin/status-menu";
 import { ProjectLogo } from "@/components/admin/ui";
 import { SiteFooter } from "@/components/public/footer";
 import { sourceName } from "@/lib/admin/sources";
-import { logoFor, ROUND_LOGOS } from "@/lib/project-logo";
+import { hasPinnedLogo, logoAtSize, logoFor, PINNED_LOGOS, ROUND_LOGOS } from "@/lib/project-logo";
 
 describe("sources in plain words", () => {
 	it("names well-known referrers and utm_source values", () => {
@@ -54,11 +54,26 @@ describe("project icons", () => {
 		for (const size of [16, 18, 20, 28, 36]) {
 			const round = renderToStaticMarkup(<ProjectLogo name="Portfolio" logoPath="/logos/portfolio.png" size={size} />);
 			expect(round).toContain(`width:${size}px;height:${size}px;transform:scale(1.1)`);
-			const square = renderToStaticMarkup(<ProjectLogo name="Tech Jobs" logoPath="/logos/realtechjobs.svg" size={size} />);
+			const square = renderToStaticMarkup(<ProjectLogo name="RealTechJobs" logoPath="/logos/realtechjobs.svg" size={size} />);
 			expect(square).toContain(`width:${size}px;height:${size}px"`);
 			expect(square).not.toContain("transform");
 		}
 		for (const path of ROUND_LOGOS) expect(readFileSync(`public${path}`).length, path).toBeGreaterThan(0);
+	});
+
+	it("use their simpler -small version below 32px, when there is one", () => {
+		for (const size of [16, 18, 20, 28]) expect(logoAtSize("/logos/realtechjobs.svg", size)).toBe("/logos/realtechjobs-small.svg");
+		for (const size of [32, 36, 44]) expect(logoAtSize("/logos/realtechjobs.svg", size)).toBe("/logos/realtechjobs.svg");
+		expect(logoAtSize("/logos/portfolio.png", 16)).toBe("/logos/portfolio.png");
+		expect(logoAtSize("/i/realtechjobs-0123456789ab.svg", 16)).toBe("/i/realtechjobs-0123456789ab.svg");
+		expect(renderToStaticMarkup(<ProjectLogo name="RealTechJobs" logoPath="/logos/realtechjobs.svg" size={28} />)).toContain('src="/logos/realtechjobs-small.svg"');
+		expect(renderToStaticMarkup(<ProjectLogo name="RealTechJobs" logoPath="/logos/realtechjobs.svg" size={36} />)).toContain('src="/logos/realtechjobs.svg"');
+	});
+
+	it("pinned ones (RealTechJobs) have their file, which wins over the icon fetched from the site", () => {
+		for (const slug of PINNED_LOGOS) expect(hasPinnedLogo({ slug }), slug).toBe(true);
+		expect(hasPinnedLogo({ slug: "portfolio" })).toBe(false);
+		expect(hasPinnedLogo({ slug: "bobbybuilds" })).toBe(false);
 	});
 
 	it("the footer's tool icons too", () => {

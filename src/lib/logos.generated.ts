@@ -2,6 +2,7 @@
 export const LOGOS: string[] = [
 	"/logos/bobbybuilds.svg",
 	"/logos/portfolio.png",
+	"/logos/realtechjobs-small.svg",
 	"/logos/realtechjobs.svg"
 ];
 

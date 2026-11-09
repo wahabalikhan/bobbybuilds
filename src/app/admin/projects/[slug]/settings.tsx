@@ -7,6 +7,7 @@ import { TaglineFields } from "@/components/admin/tagline-fields";
 import { FunnelRows } from "@/components/admin/funnel-rows";
 import { Pill, ProjectLogo } from "@/components/admin/ui";
 import { adminIcons } from "@/lib/admin/icons";
+import { hasPinnedLogo } from "@/lib/project-logo";
 import { getIconMeta } from "@/lib/db/icons";
 import { requestTime } from "@/lib/admin/clock";
 import { FUNNEL_ROWS, OUTCOME_ROWS } from "@/lib/admin/validate";
@@ -95,7 +96,9 @@ async function IconBlock({ project, db }: { project: Project; db: D1Database }) 
 				<ProjectLogo name={project.name} logoPath={src} size={44} />
 				<div className="min-w-0 text-sm">
 					<p className="text-ink">
-						{meta?.hash && meta.kind
+						{hasPinnedLogo(project)
+							? "HQ's own logo, used here and on your public page in place of its site's icon."
+							: meta?.hash && meta.kind
 							? <>Taken from {KIND[meta.kind]}{meta.sourceUrl && <span className="block truncate text-muted" title={meta.sourceUrl}>{meta.sourceUrl}</span>}</>
 							: src
 								? "Not found on its site yet, so the saved logo is used."
