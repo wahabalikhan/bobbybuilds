@@ -121,7 +121,7 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
 						<div className="space-y-12">
 							{byMonth(entries).map((group) => (
 								<section key={group.month} aria-labelledby={`month-${group.month}`}>
-									<h2 id={`month-${group.month}`} className="mb-4 text-[15px] font-medium tracking-tight">
+									<h2 id={`month-${group.month}`} className="mb-4 text-base font-medium tracking-tight sm:text-lg">
 										{monthName(group.entries[0].day)}
 									</h2>
 									<JourneyList entries={group.entries} />

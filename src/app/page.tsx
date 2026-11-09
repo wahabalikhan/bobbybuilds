@@ -23,11 +23,6 @@ export const metadata: Metadata = {
 	alternates: { canonical: "/" },
 };
 
-/** The hairline between two sections (Projects, The honest numbers, Activity, The journey), not under the hero. */
-function SectionRule() {
-	return <hr className="border-line" />;
-}
-
 /** Statuses shown on the public page. Ideas and retired projects aren't, for now. */
 const SHOWN = new Set(["live", "building", "paused"]);
 
@@ -46,9 +41,9 @@ export default async function Home() {
 			<PublicTracker />
 			<SkipLink />
 			<SiteHeader showAfter="projects" />
-			<main id="content" className={`${PAGE} space-y-10 pb-16 pt-[72px] sm:space-y-12 sm:pt-[88px]`}>
-				{/* The hero keeps its own, larger space below (64px, 80px from sm). The other sections are 80px
-				    apart (96px from sm), with a hairline halfway between each (SectionRule). */}
+			<main id="content" className={`${PAGE} space-y-20 pb-16 pt-[72px] sm:space-y-24 sm:pt-[88px]`}>
+				{/* No dividers: space alone separates the sections. The hero has 64px below it (80px from sm),
+				    and the other sections are 80px apart (96px from sm). */}
 				<div className="mb-16! sm:mb-20!">
 					<Me />
 				</div>
@@ -66,17 +61,10 @@ export default async function Home() {
 					</section>
 				)}
 
-				{projects.length > 0 && <SectionRule />}
 				<HonestNumbers snapshot={snapshot} />
 
-				{snapshot.activity && (
-					<>
-						<SectionRule />
-						<Activity activity={snapshot.activity} />
-					</>
-				)}
+				{snapshot.activity && <Activity activity={snapshot.activity} />}
 
-				{snapshot.journey.length > 0 && <SectionRule />}
 				{snapshot.journey.length > 0 && (
 					<section id="journey" aria-labelledby="journey-heading" className="scroll-mt-20">
 						<SectionHeading id="journey-heading" aside={snapshot.journey.length} relaxed divider={PUBLIC_SECTION_DIVIDERS}>

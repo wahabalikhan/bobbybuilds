@@ -36,7 +36,7 @@ export function SiteFooter({ year }: { year: number }) {
 	return (
 		<footer className={`${PAGE} pb-10`}>
 			<AdminKeyboardShortcut />
-			<div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-t border-line pt-6 text-sm text-muted">
+			<div className="flex flex-wrap items-center gap-x-2 gap-y-2 pt-4 sm:pt-8 text-sm text-muted">
 				<span>
 					Made with <span aria-label="love">🫶🏼</span> using
 				</span>

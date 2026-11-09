@@ -9,7 +9,7 @@ import { ArrowIcon } from "@/components/public/icons";
  */
 export function OtherSites({ sites }: { sites: { name: string; origin: string }[] }) {
 	return (
-		<details className="group border-t border-line pt-4">
+		<details className="group pt-2">
 			<summary className="flex list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
 				Advanced
 				<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="shrink-0 text-muted transition-transform group-open:rotate-180">

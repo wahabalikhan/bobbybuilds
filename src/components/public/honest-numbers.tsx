@@ -2,7 +2,7 @@ import { SectionHeading } from "@/components/admin/ui";
 import { PUBLIC_SECTION_DIVIDERS } from "@/lib/layout";
 import { addDays } from "@/lib/days";
 import { formatMonth, formatPence, formatWhole } from "@/lib/format";
-import type { Month, PublicSnapshot } from "@/lib/public/snapshot";
+import type { Month, PublicCost, PublicSnapshot } from "@/lib/public/snapshot";
 
 /** Days from the start date to today, counting both (the first day is day 1). */
 export function daysBuilding(since: string, today: string): number {
@@ -41,21 +41,57 @@ function Trend({ months }: { months: Month[] }) {
 	);
 }
 
-function Figure({ label, value, children }: { label: string; value: string; children?: React.ReactNode }) {
+function Figure({ label, value, note, children }: { label: string; value: string; note?: string; children?: React.ReactNode }) {
 	return (
 		<div className="min-w-0">
 			<dt className="text-sm text-muted">{label}</dt>
-			<dd className="mt-1.5 flex flex-wrap items-end gap-x-3 gap-y-2">
-				<span className="tabular text-3xl font-semibold tracking-tight">{value}</span>
-				{children}
+			<dd className="mt-1.5">
+				<span className="flex flex-wrap items-end gap-x-3 gap-y-2">
+					<span className="tabular text-3xl font-semibold tracking-tight">{value}</span>
+					{children}
+				</span>
+				{note && <span className="mt-1 block text-sm text-muted">{note}</span>}
 			</dd>
 		</div>
 	);
 }
 
+/** One group of costs with its total. Yearly bills show their monthly share, labelled with the yearly price. */
+function CostTable({ title, costs, total, month }: { title: string; costs: PublicCost[]; total: number; month: string }) {
+	return (
+		<table className="w-full max-w-md text-sm">
+			<caption className="pb-2 text-left font-medium">
+				{title}
+				<span className="sr-only">, {month}, per month</span>
+			</caption>
+			<tbody>
+				{costs.map((c) => (
+					<tr key={`${c.service}|${c.yearlyPence === null ? "m" : "y"}`} className="border-b border-line last:border-0">
+						<th scope="row" className="py-2 text-left font-normal text-ink-2">
+							{c.service}
+							{c.yearlyPence !== null && <span className="text-muted"> ({formatPence(c.yearlyPence)} a year)</span>}
+						</th>
+						<td className="tabular py-2 text-right">{formatPence(c.pence)}</td>
+					</tr>
+				))}
+			</tbody>
+			<tfoot>
+				<tr>
+					<th scope="row" className="pt-3 text-left font-medium">
+						Total
+					</th>
+					<td className="tabular pt-3 text-right font-medium">{formatPence(total)}</td>
+				</tr>
+			</tfoot>
+		</table>
+	);
+}
+
 /**
- * Days building, visitors in the last 30 days (with the 12-month trend), and this month's running
- * costs and revenue (even £0), with the costs by service tucked away. Quiet: no cards, just figures.
+ * Days building, visitors in the last 30 days (with the trend since the first product's month), and
+ * this month's running costs and revenue (even £0). Running costs are only what keeps the products
+ * live; tools I build with (the Claude subscription) are counted separately, noted under the figure
+ * and listed with their own total in "Where the money goes". Quiet: no cards, just figures.
  */
 export function HonestNumbers({ snapshot }: { snapshot: PublicSnapshot }) {
 	const { profile, money, today } = snapshot;
@@ -76,12 +112,12 @@ export function HonestNumbers({ snapshot }: { snapshot: PublicSnapshot }) {
 				</Figure>
 				{money && (
 					<>
-						<Figure label={`Running costs, ${month}`} value={formatPence(money.costPence)} />
+						<Figure label={`Running costs, ${month}`} value={formatPence(money.runningPence)} note={money.toolsPence > 0 ? `Plus ${formatPence(money.toolsPence)} on tools I build with` : undefined} />
 						<Figure label={`Revenue, ${month}`} value={formatPence(money.revenuePence)} />
 					</>
 				)}
 			</dl>
-			{money && money.costs.length > 0 && (
+			{money && money.running.length + money.tools.length > 0 && (
 				<details className="group mt-8">
 					<summary className="inline-flex list-none items-center gap-2 rounded-sm text-sm font-medium text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
 						Where the money goes (monthly)
@@ -89,27 +125,10 @@ export function HonestNumbers({ snapshot }: { snapshot: PublicSnapshot }) {
 							<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 						</svg>
 					</summary>
-					<table className="mt-4 w-full max-w-md text-sm">
-						<caption className="sr-only">Running costs by service, {month}</caption>
-						<tbody>
-							{money.costs.map((c) => (
-								<tr key={c.service} className="border-b border-line last:border-0">
-									<th scope="row" className="py-2 text-left font-normal text-ink-2">
-										{c.service}
-									</th>
-									<td className="tabular py-2 text-right">{formatPence(c.pence)}</td>
-								</tr>
-							))}
-						</tbody>
-						<tfoot>
-							<tr>
-								<th scope="row" className="pt-3 text-left font-medium">
-									Total
-								</th>
-								<td className="tabular pt-3 text-right font-medium">{formatPence(money.costPence)}</td>
-							</tr>
-						</tfoot>
-					</table>
+					<div className="mt-4 space-y-6">
+						{money.running.length > 0 && <CostTable title="Running costs" costs={money.running} total={money.runningPence} month={month!} />}
+						{money.tools.length > 0 && <CostTable title="Tools I build with" costs={money.tools} total={money.toolsPence} month={month!} />}
+					</div>
 				</details>
 			)}
 		</section>

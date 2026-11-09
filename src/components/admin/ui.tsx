@@ -124,7 +124,7 @@ export function SectionHeading({ id, children, aside, relaxed = false, divider =
 	// Without the hairline the heading sits 16px above its content (mb-4), so it still reads as its title.
 	return (
 		<div className={`flex items-baseline justify-between gap-3 ${divider ? `border-b border-line ${relaxed ? "mb-4 pb-3" : "mb-4 pb-2"}` : "mb-4"}`}>
-			<h2 id={id} className="text-[15px] font-medium tracking-tight">
+			<h2 id={id} className="text-base font-medium tracking-tight sm:text-lg">
 				{children}
 			</h2>
 			{aside && <div className="text-sm text-muted">{aside}</div>}

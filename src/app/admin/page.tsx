@@ -16,7 +16,7 @@ import { requestTime } from "@/lib/admin/clock";
 import { utcDay } from "@/lib/days";
 import { attentionItems, listMetrics, monthlyVisitors, projectSummaries, publicProductNumbers, type ProjectSummary } from "@/lib/db/dashboard";
 import { listPublicProjects } from "@/lib/db/projects";
-import { listMonth } from "@/lib/db/money";
+import { listMonth, monthTotals } from "@/lib/db/money";
 import { getProfile } from "@/lib/db/profile";
 import { listJourney } from "@/lib/db/settings";
 import { change, formatCount, formatDay, formatLongDay, formatLongMonth, formatPence, formatPercent, formatWhole } from "@/lib/format";
@@ -51,7 +51,7 @@ export default async function AdminHome() {
 		return origin && origin !== site.url ? [{ name: s.project.name, origin }] : [];
 	});
 	const [profile, journey, money] = await Promise.all([getProfile(env.DB), listJourney(env.DB), listMonth(env.DB, today.slice(0, 7))]);
-	const sum = (kind: "cost" | "revenue") => money.filter((r) => r.kind === kind).reduce((t, r) => t + r.amountPence, 0);
+	const totals = monthTotals(money);
 	const projectName = new Map(summaries.map((s) => [s.project.id, s.project.name]));
 	const latest = journey.slice(0, 3);
 	const days = profile.buildingSince && profile.buildingSince <= today ? daysBetween(profile.buildingSince, today).length : 1;
@@ -121,7 +121,7 @@ export default async function AdminHome() {
 					<span className="min-w-0">
 						<span className="font-medium group-hover:underline">{formatLongMonth(today.slice(0, 7))}</span>
 						<span className="block truncate text-sm text-muted">
-							Costs {formatPence(sum("cost"))} · revenue {formatPence(sum("revenue"))}
+							Running costs {formatPence(totals.runningPence)} · tools {formatPence(totals.toolsPence)} · revenue {formatPence(totals.revenuePence)}
 						</span>
 					</span>
 					<span aria-hidden className="shrink-0 text-muted">

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { FormState } from "@/lib/admin/form-state";
 import * as core from "@/lib/admin/settings-core";
 import { parsePounds, validateMoney, validateProfile, validatePublicCard } from "@/lib/admin/validate";
-import { listMonth } from "@/lib/db/money";
+import { listMonth, monthlyPence, monthTotals } from "@/lib/db/money";
 import { getProfile } from "@/lib/db/profile";
 import { getProjectBySlug } from "@/lib/db/projects";
 import { db } from "../helpers";
@@ -116,7 +116,14 @@ describe("costs and revenue", () => {
 	});
 
 	it("skips blank rows and refuses duplicates and unknown projects", () => {
-		expect(validateMoney({ service_0: "Cloudflare", amount_0: "5", service_2: "", amount_2: "" }, [])).toEqual({ ok: true, value: [{ kind: "cost", service: "Cloudflare", projectId: null, amountPence: 500 }] });
+		expect(validateMoney({ service_0: "Cloudflare", amount_0: "5", service_2: "", amount_2: "" }, [])).toEqual({ ok: true, value: [{ kind: "cost", group: "running", billing: "monthly", service: "Cloudflare", projectId: null, amountPence: 500 }] });
+		expect(validateMoney({ kind_0: "tools", service_0: "Claude subscription", amount_0: "90", kind_1: "cost", billing_1: "yearly", service_1: "Domains", amount_1: "4.25" }, [])).toEqual({
+			ok: true,
+			value: [
+				{ kind: "cost", group: "tools", billing: "monthly", service: "Claude subscription", projectId: null, amountPence: 9000 },
+				{ kind: "cost", group: "running", billing: "yearly", service: "Domains", projectId: null, amountPence: 425 },
+			],
+		});
 		expect(validateMoney({ service_0: "Cloudflare", amount_0: "5", service_1: "cloudflare", amount_1: "1" }, [])).toMatchObject({ ok: false, errors: { row_1: expect.any(String) } });
 		expect(validateMoney({ service_0: "Anthropic", amount_0: "5", project_0: "999999" }, [])).toMatchObject({ ok: false, errors: { row_0: expect.any(String) } });
 		expect(validateMoney({ service_0: "Anthropic", amount_0: "lots" }, [])).toMatchObject({ ok: false, errors: { row_0: expect.any(String) } });
@@ -128,10 +135,22 @@ describe("costs and revenue", () => {
 		// "Copy costs" is a secondary button in the money form itself (intent=copy).
 		const copied = await core.moneyCore(db, idle, { month: "2031-02", intent: "copy" });
 		expect(copied).toMatchObject({ state: { status: "ok" }, redirectTo: "/admin/settings/money?month=2031-02&copied=1" });
-		expect(await listMonth(db, "2031-02")).toEqual([{ kind: "cost", service: "Cloudflare", projectId: null, amountPence: 500 }]);
+		expect(await listMonth(db, "2031-02")).toEqual([{ kind: "cost", group: "running", billing: "monthly", service: "Cloudflare", projectId: null, amountPence: 500 }]);
 		expect((await core.copyCostsCore(db, idle, { month: "2031-02" })).state.status).toBe("error");
 		await core.moneyCore(db, idle, { month: "2031-02" });
 		expect(await listMonth(db, "2031-02")).toEqual([]);
+	});
+
+	it("splits a yearly bill over 12 months, and totals running costs, tools and revenue apart", () => {
+		expect([monthlyPence({ billing: "yearly", amountPence: 425 }), monthlyPence({ billing: "yearly", amountPence: 1200 }), monthlyPence({ billing: "monthly", amountPence: 425 })]).toEqual([35, 100, 425]);
+		expect(
+			monthTotals([
+				{ kind: "cost", group: "running", billing: "yearly", service: "Domains", projectId: null, amountPence: 425 },
+				{ kind: "cost", group: "running", billing: "monthly", service: "Cloudflare", projectId: null, amountPence: 400 },
+				{ kind: "cost", group: "tools", billing: "monthly", service: "Claude subscription", projectId: null, amountPence: 9000 },
+				{ kind: "revenue", group: "running", billing: "yearly", service: "Tech Jobs", projectId: null, amountPence: 1200 },
+			]),
+		).toEqual({ runningPence: 435, toolsPence: 9000, revenuePence: 100 });
 	});
 
 	it("knows the month before", () => {

@@ -69,7 +69,7 @@ export async function ProjectSettingsTab({ project }: { project: Project }) {
 						<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 					</svg>
 				</summary>
-				<div className="space-y-8 border-t border-line p-4">
+				<div className="space-y-8 px-4 pb-4">
 					<Advanced project={project} />
 					<Sub title="Icon">
 						<IconBlock project={project} db={db} />
@@ -181,7 +181,7 @@ function Outcomes({ project, numbers }: { project: Project; numbers: Awaited<Ret
 					<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 				</svg>
 			</summary>
-			<div className="space-y-3 border-t border-line p-4">
+			<div className="space-y-3 px-4 pb-4">
 				<p className="text-xs text-muted">
 					Up to 3, each with a number in &#123;braces&#125;. A line whose number is private or over a week old is left out.
 					{numbers.length > 0 ? (

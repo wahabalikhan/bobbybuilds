@@ -167,7 +167,7 @@ function Disclosure({ title, open = false, children }: { title: string; open?: b
 					<path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 				</svg>
 			</summary>
-			<div className="space-y-6 border-t border-line p-4">{children}</div>
+			<div className="space-y-6 px-4 pb-4">{children}</div>
 		</details>
 	);
 }

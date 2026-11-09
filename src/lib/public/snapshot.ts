@@ -14,6 +14,7 @@
 import { addDays, weekStart } from "@/lib/days";
 import { latestUptime, listMetrics, metricSeries, type Metric } from "@/lib/db/dashboard";
 import { iconPath, listIcons, toBase64 } from "@/lib/db/icons";
+import { listMonth, monthlyPence, monthTotals, type CostGroup } from "@/lib/db/money";
 import { getProfile } from "@/lib/db/profile";
 import { firstTrackedDays, listPublicProjects, type ProjectLink, type ProjectStatus } from "@/lib/db/projects";
 import { chartStart, trendFrom, type Trend } from "@/lib/trend";
@@ -25,7 +26,10 @@ import { owner } from "@/lib/site";
 import { fillOutcome, fillTaglineParts, type TaglinePart } from "./product-line";
 
 export const SNAPSHOT_KEY = "public-snapshot";
-export const SNAPSHOT_VERSION = 10;
+export const SNAPSHOT_VERSION = 11;
+
+/** The first month any product existed: the combined visitors trend starts here, not 12 months back. */
+export const FIRST_PRODUCT_MONTH = "2026-10";
 
 export type Point = { day: string; value: number };
 export type Month = { month: string; value: number };
@@ -107,14 +111,21 @@ export type PublicGithub = { login: string; firstDay: string; counts: number[]; 
  */
 export type PublicActivity = { shipped: { month: string; titles: string[] }[]; github: PublicGithub | null };
 
-/** The latest month with any costs or revenue entered (this month, or the one before that was filled in). */
-export type PublicMoney = { month: string; costPence: number; revenuePence: number; costs: { service: string; pence: number }[] };
+/** One line of costs: its monthly share, and for a yearly bill the yearly price it comes from. */
+export type PublicCost = { service: string; pence: number; yearlyPence: number | null };
+
+/**
+ * The latest month with any costs or revenue entered (this month, or the one before that was
+ * filled in). Costs are in two groups with their own totals: running costs (what keeps the
+ * products live) and tools I build with. Every amount is per month (yearly bills ÷ 12).
+ */
+export type PublicMoney = { month: string; runningPence: number; toolsPence: number; revenuePence: number; running: PublicCost[]; tools: PublicCost[] };
 
 export type PublicSnapshot = {
 	version: number;
 	generatedAt: number;
 	today: string;
-	/** Visitors per month across projects whose visitors are public. */
+	/** Visitors per month across projects whose visitors are public, from FIRST_PRODUCT_MONTH (at most 12 months). */
 	monthly: Month[];
 	/** Visitors in the last 30 days across projects whose visitors are public. */
 	visitors30: number;
@@ -241,7 +252,7 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 		});
 	}
 
-	const monthly = months(today).map((month) => ({
+	const monthly = months(today).filter((month) => month >= FIRST_PRODUCT_MONTH).map((month) => ({
 		month,
 		value: sum(publicProjects.flatMap((p) => p.monthly?.filter((m) => m.month === month) ?? [])),
 	}));
@@ -290,12 +301,20 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 async function publicMoney(db: D1Database, thisMonth: string): Promise<PublicMoney | null> {
 	const latest = await db.prepare("SELECT max(month) AS month FROM money WHERE month <= ?1").bind(thisMonth).first<{ month: string | null }>();
 	if (!latest?.month) return null;
-	const { results } = await db
-		.prepare("SELECT kind, service, sum(amount_pence) AS pence FROM money WHERE month = ?1 GROUP BY kind, service ORDER BY kind, pence DESC, service COLLATE NOCASE")
-		.bind(latest.month)
-		.all<{ kind: "cost" | "revenue"; service: string; pence: number }>();
-	const costs = results.filter((r) => r.kind === "cost").map((r) => ({ service: r.service, pence: r.pence }));
-	return { month: latest.month, costPence: sum(costs.map((c) => ({ value: c.pence }))), revenuePence: sum(results.filter((r) => r.kind === "revenue").map((r) => ({ value: r.pence }))), costs };
+	const rows = await listMonth(db, latest.month);
+	const group = (keep: CostGroup): PublicCost[] => {
+		const lines = new Map<string, PublicCost>();
+		for (const r of rows.filter((r) => r.kind === "cost" && r.group === keep)) {
+			// One line per service and billing (a service on several projects is added up).
+			const key = `${r.service.toLowerCase()}|${r.billing}`;
+			const line = lines.get(key) ?? { service: r.service, pence: 0, yearlyPence: r.billing === "yearly" ? 0 : null };
+			line.pence += monthlyPence(r);
+			if (line.yearlyPence !== null) line.yearlyPence += r.amountPence;
+			lines.set(key, line);
+		}
+		return [...lines.values()].sort((a, b) => b.pence - a.pence || a.service.localeCompare(b.service, "en-GB", { sensitivity: "base" }));
+	};
+	return { month: latest.month, ...monthTotals(rows), running: group("running"), tools: group("tools") };
 }
 
 /** Shipped entries per month (from the published entries) and the GitHub calendar (see PublicActivity). */

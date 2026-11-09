@@ -457,6 +457,17 @@ describe("phase 10: profile, project cards, journey types and money", () => {
 			await expectRejected(insert("money", values));
 		}
 	});
+
+	it("keeps money's cost groups and billing to the known ones (migration 0022)", async () => {
+		await expect(insert("money", { month: "2026-11", kind: "cost", cost_group: "tools", billing: "yearly", service: "Domains", amount_pence: 425 })).resolves.toBeTruthy();
+		for (const values of [
+			{ month: "2026-11", kind: "cost", cost_group: "hobby", service: "Figma", amount_pence: 500 },
+			{ month: "2026-11", kind: "cost", billing: "weekly", service: "Figma", amount_pence: 500 },
+		]) {
+			await expectRejected(insert("money", values));
+		}
+		await expectRejected(insert("money", { month: "2026-11", kind: "cost", cost_group: null, service: "Figma", amount_pence: 500 }), /NOT NULL constraint failed/);
+	});
 });
 
 describe("phase 10b: a project's Now line", () => {

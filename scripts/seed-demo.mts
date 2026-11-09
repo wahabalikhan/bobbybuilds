@@ -328,14 +328,18 @@ const thisMonth = today.slice(0, 7);
 const lastMonth = addDays(`${thisMonth}-01`, -1).slice(0, 7);
 await db.prepare("DELETE FROM money WHERE month IN (?1, ?2)").bind(thisMonth, lastMonth).run();
 for (const month of [lastMonth, thisMonth]) {
-	for (const [kind, service, projectId, pence] of [
-		["cost", "Cloudflare", null, 500],
-		["cost", "Supabase", jobBoard.id, 0],
-		["cost", "Anthropic", jobBoard.id, month === thisMonth ? 640 : 410],
-		["cost", "Domains", null, 100],
-		["revenue", "Tech Jobs", jobBoard.id, 0],
+	for (const [kind, group, billing, service, projectId, pence] of [
+		["cost", "running", "monthly", "Cloudflare", null, 500],
+		["cost", "running", "monthly", "Supabase", jobBoard.id, 0],
+		["cost", "running", "monthly", "Anthropic API (AI features)", jobBoard.id, month === thisMonth ? 640 : 410],
+		["cost", "running", "yearly", "Domains", null, 425],
+		["cost", "tools", "monthly", "Claude subscription", null, 9000],
+		["revenue", "running", "monthly", "Tech Jobs", jobBoard.id, 0],
 	] as const) {
-		await db.prepare("INSERT INTO money (month, kind, service, project_id, amount_pence) VALUES (?1, ?2, ?3, ?4, ?5)").bind(month, kind, service, projectId, pence).run();
+		await db
+			.prepare("INSERT INTO money (month, kind, cost_group, billing, service, project_id, amount_pence) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
+			.bind(month, kind, group, billing, service, projectId, pence)
+			.run();
 	}
 }
 // A private number with a value that's easy to spot: it must never reach a public page.

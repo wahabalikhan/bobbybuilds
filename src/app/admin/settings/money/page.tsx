@@ -8,7 +8,7 @@ import { requestTime } from "@/lib/admin/clock";
 import { previousMonth } from "@/lib/admin/settings-core";
 import { isMonth, MONEY_MAX_ROWS } from "@/lib/admin/validate";
 import { utcDay } from "@/lib/days";
-import { listMonth, listMonths, listServices } from "@/lib/db/money";
+import { listMonth, listMonths, listServices, monthTotals } from "@/lib/db/money";
 import { listRealProjects } from "@/lib/db/projects";
 import { formatLongMonth, formatPence, penceInput } from "@/lib/format";
 import { adminHref } from "@/lib/site";
@@ -17,7 +17,7 @@ import { moneyAction } from "../actions";
 export const metadata: Metadata = { title: "Costs and revenue" };
 
 /** Suggested services, plus any used before. */
-const SUGGESTED = ["Cloudflare", "Supabase", "Anthropic", "Domains", "Resend", "GitHub", "Figma"];
+const SUGGESTED = ["Cloudflare", "Supabase", "Anthropic API (AI features)", "Claude subscription", "Domains", "Resend", "GitHub", "Figma"];
 
 const nextMonth = (month: string) => {
 	const [y, m] = month.split("-").map(Number);
@@ -32,8 +32,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 	const month = params.month && isMonth(params.month) ? params.month : thisMonth;
 	const [rows, months, used, projects] = await Promise.all([listMonth(env.DB, month), listMonths(env.DB), listServices(env.DB), listRealProjects(env.DB)]);
 	const services = [...new Set([...SUGGESTED, ...used])];
-	const cost = rows.filter((r) => r.kind === "cost").reduce((t, r) => t + r.amountPence, 0);
-	const revenue = rows.filter((r) => r.kind === "revenue").reduce((t, r) => t + r.amountPence, 0);
+	const totals = monthTotals(rows);
 	const blank = Math.min(MONEY_MAX_ROWS - rows.length, rows.length ? 3 : 5);
 	const projectOptions = [{ value: "", label: "Shared" }, ...projects.map((p) => ({ value: String(p.id), label: p.name }))];
 	const hasCosts = rows.some((r) => r.kind === "cost");
@@ -41,7 +40,10 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 	return (
 		<div className="space-y-6">
 			<div className="space-y-3">
-				<PageHeader title="Costs and revenue" subtitle="What it costs to run everything each month, and what it earns (even £0). The latest month with anything in it is shown on your public page, with its costs by service." />
+				<PageHeader
+					title="Costs and revenue"
+					subtitle="What it costs each month, and what it earns (even £0). The latest month with anything in it is shown on your public page: running costs (what keeps the products live) as the headline figure, and tools you build with listed separately."
+				/>
 			</div>
 
 			{/* Month navigation as text links, not buttons. */}
@@ -65,7 +67,9 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 			</nav>
 
 			<p className="text-sm text-ink-2">
-				Costs <span className="font-semibold tabular text-ink">{formatPence(cost)}</span> · Revenue <span className="font-semibold tabular text-ink">{formatPence(revenue)}</span>
+				Running costs <span className="font-semibold tabular text-ink">{formatPence(totals.runningPence)}</span> · Tools I build with <span className="font-semibold tabular text-ink">{formatPence(totals.toolsPence)}</span> · Revenue{" "}
+				<span className="font-semibold tabular text-ink">{formatPence(totals.revenuePence)}</span>
+				<span className="text-muted"> (a month, with yearly bills ÷ 12)</span>
 			</p>
 
 			{params.copied && hasCosts && <ToastOnLoad tone="success" text={`Copied ${params.copied === "1" ? "1 cost" : `${Number(params.copied) || ""} costs`} from ${formatLongMonth(previousMonth(month))}. Check the amounts, then save.`} param="copied" />}
@@ -85,38 +89,55 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 							<option key={s} value={s} />
 						))}
 					</datalist>
-					<div className="hidden grid-cols-[7rem_1fr_9rem_7rem] gap-3 text-xs font-medium text-muted sm:grid" aria-hidden>
+					<div className="hidden grid-cols-[10rem_1fr_9rem_7rem_7rem] gap-3 text-xs font-medium text-muted sm:grid" aria-hidden>
 						<span>Type</span>
 						<span>Service</span>
 						<span>Project</span>
 						<span>Amount (£)</span>
+						<span>Billed</span>
 					</div>
 					<div className="space-y-3">
 						{Array.from({ length: rows.length + blank }, (_, i) => {
 							const row = rows[i];
 							return (
-								<div key={i} className="grid gap-3 border-b border-line pb-3 last:border-0 sm:grid-cols-[7rem_1fr_9rem_7rem] sm:border-0 sm:pb-0 [&_input]:mt-0 [&_select]:mt-0">
+								<div key={i} className="grid gap-3 border-b border-line pb-3 last:border-0 sm:grid-cols-[10rem_1fr_9rem_7rem_7rem] sm:border-0 sm:pb-0 [&_input]:mt-0 [&_select]:mt-0">
 									<SelectField
 										name={`kind_${i}`}
 										label={`Row ${i + 1} type`}
 										srLabel
-										defaultValue={row?.kind ?? "cost"}
+										defaultValue={row?.kind === "revenue" ? "revenue" : row?.group === "tools" ? "tools" : "cost"}
 										options={[
-											{ value: "cost", label: "Cost" },
+											{ value: "cost", label: "Running cost" },
+											{ value: "tools", label: "Tool I build with" },
 											{ value: "revenue", label: "Revenue" },
 										]}
 									/>
 									<TextField name={`service_${i}`} label={`Row ${i + 1} service`} srLabel list="money-services" maxLength={40} defaultValue={row?.service ?? ""} placeholder={i === rows.length ? "Cloudflare" : ""} />
 									<SelectField name={`project_${i}`} label={`Row ${i + 1} project`} srLabel defaultValue={row?.projectId ? String(row.projectId) : ""} options={projectOptions} />
 									<TextField name={`amount_${i}`} label={`Row ${i + 1} amount in pounds`} srLabel inputMode="decimal" defaultValue={row ? penceInput(row.amountPence) : ""} placeholder="0.00" />
-									<div className="sm:col-span-4 empty:hidden">
+									<SelectField
+										name={`billing_${i}`}
+										label={`Row ${i + 1} billed`}
+										srLabel
+										defaultValue={row?.billing ?? "monthly"}
+										options={[
+											{ value: "monthly", label: "Monthly" },
+											{ value: "yearly", label: "Yearly" },
+										]}
+									/>
+									<div className="sm:col-span-5 empty:hidden">
 										<FieldError name={`row_${i}`} />
 									</div>
 								</div>
 							);
 						})}
 					</div>
-					<p className="text-xs text-muted">Clear a row to remove it. Need more rows? Save, and more appear. Amounts are in pounds, like 12.40.</p>
+					<div className="space-y-1 text-xs text-muted">
+						<p>Running costs keep the products live (hosting, domains, AI the products use). Tools you build with, like your Claude subscription, are shown separately.</p>
+						<p>For a yearly bill, enter the yearly price and choose Yearly: your public page shows a twelfth of it each month, like “Domains (£4.25 a year)”.</p>
+						<p>For Anthropic API (AI features), enter what you actually spent this month (Anthropic Console → Cost), not your spend limit.</p>
+						<p>Clear a row to remove it. Need more rows? Save, and more appear. Amounts are in pounds, like 12.40.</p>
+					</div>
 				</SettingsForm>
 			</section>
 
@@ -131,7 +152,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 								<Link href={adminHref(`/settings/money?month=${m.month}`)} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface">
 									<span className="font-medium">{formatLongMonth(m.month)}</span>
 									<span className="tabular text-ink-2">
-										Costs {formatPence(m.costPence)} · Revenue {formatPence(m.revenuePence)}
+										Running {formatPence(m.runningPence)} · Tools {formatPence(m.toolsPence)} · Revenue {formatPence(m.revenuePence)}
 									</span>
 								</Link>
 							</li>

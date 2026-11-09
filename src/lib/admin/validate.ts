@@ -6,7 +6,7 @@
 import { BUILT_IN_EVENTS, isEventName } from "@/lib/collector/validate";
 import { isDay } from "@/lib/days";
 import type { FunnelStep } from "@/lib/db/funnel";
-import type { MoneyKind, MoneyRow } from "@/lib/db/money";
+import type { MoneyRow } from "@/lib/db/money";
 import type { Profile } from "@/lib/db/profile";
 import type { ProjectLink, ProjectStatus } from "@/lib/db/projects";
 import { JOURNEY_BODY_MAX, JOURNEY_TYPES, type JourneyType } from "@/lib/journey-types";
@@ -391,7 +391,11 @@ export function parsePounds(value: string): number | null {
 	return pence <= 100_000_000 ? pence : null;
 }
 
-/** Rows kind_N, service_N, project_N, amount_N. Blank rows are skipped (that's how a row is removed). */
+/**
+ * Rows kind_N ("cost" for a running cost, "tools" for a tool I build with, or "revenue"),
+ * billing_N ("monthly" or "yearly": then the amount is the yearly price), service_N, project_N and
+ * amount_N. Blank rows are skipped (that's how a row is removed).
+ */
 export function validateMoney(values: FormValues, projectIds: number[]): Result<MoneyRow[]> {
 	const errors: Errors = {};
 	const rows: MoneyRow[] = [];
@@ -400,7 +404,10 @@ export function validateMoney(values: FormValues, projectIds: number[]): Result<
 		const service = text(values[`service_${i}`]).replace(/\s+/g, " ");
 		const amount = text(values[`amount_${i}`]);
 		if (!service && !amount) continue;
-		const kind: MoneyKind = text(values[`kind_${i}`]) === "revenue" ? "revenue" : "cost";
+		const type = text(values[`kind_${i}`]);
+		const kind = type === "revenue" ? "revenue" : "cost";
+		const group = type === "tools" ? "tools" : "running";
+		const billing = text(values[`billing_${i}`]) === "yearly" ? "yearly" : "monthly";
 		const projectId = text(values[`project_${i}`]) ? Number(values[`project_${i}`]) : null;
 		const pence = parsePounds(amount);
 		if (!service || service.length > 40) errors[`row_${i}`] = "Add what it's for (up to 40 characters), like Cloudflare.";
@@ -410,7 +417,7 @@ export function validateMoney(values: FormValues, projectIds: number[]): Result<
 			const key = `${kind}|${service.toLowerCase()}|${projectId ?? ""}`;
 			if (seen.has(key)) errors[`row_${i}`] = `${service} is already listed for this month${projectId ? " and project" : ""}. Add the amounts together on one row.`;
 			seen.add(key);
-			rows.push({ kind, service, projectId, amountPence: pence });
+			rows.push({ kind, group, billing, service, projectId, amountPence: pence });
 		}
 	}
 	return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value: rows };

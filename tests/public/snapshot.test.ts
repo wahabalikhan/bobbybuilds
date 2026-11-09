@@ -140,19 +140,27 @@ describe("public snapshot", () => {
 		await db.prepare("UPDATE profile SET show_shipping_rhythm = 0 WHERE id = 1").run();
 	});
 
-	it("has the latest month's costs by service and revenue, and nothing before any is entered", async () => {
+	it("has the latest month's running costs and tools (yearly bills ÷ 12) and revenue, and nothing before any is entered", async () => {
 		await db.prepare("DELETE FROM money").run();
 		expect((await buildSnapshot(db, TODAY, NOW)).money).toBeNull();
 		const last = `${Number(TODAY.slice(0, 4)) + 1}-01`;
 		await insert("money", { month: TODAY.slice(0, 7), kind: "cost", service: "Cloudflare", amount_pence: 500 });
-		await insert("money", { month: TODAY.slice(0, 7), kind: "cost", service: "Anthropic", amount_pence: 640 });
+		await insert("money", { month: TODAY.slice(0, 7), kind: "cost", service: "Anthropic API (AI features)", amount_pence: 640 });
+		await insert("money", { month: TODAY.slice(0, 7), kind: "cost", service: "Domains", billing: "yearly", amount_pence: 425 });
+		await insert("money", { month: TODAY.slice(0, 7), kind: "cost", cost_group: "tools", service: "Claude subscription", amount_pence: 9000 });
 		await insert("money", { month: TODAY.slice(0, 7), kind: "revenue", service: "Tech Jobs", amount_pence: 0 });
 		await insert("money", { month: last, kind: "cost", service: "Future", amount_pence: 999 });
 		expect((await buildSnapshot(db, TODAY, NOW)).money).toEqual({
 			month: TODAY.slice(0, 7),
-			costPence: 1140,
+			runningPence: 1175,
+			toolsPence: 9000,
 			revenuePence: 0,
-			costs: [{ service: "Anthropic", pence: 640 }, { service: "Cloudflare", pence: 500 }],
+			running: [
+				{ service: "Anthropic API (AI features)", pence: 640, yearlyPence: null },
+				{ service: "Cloudflare", pence: 500, yearlyPence: null },
+				{ service: "Domains", pence: 35, yearlyPence: 425 },
+			],
+			tools: [{ service: "Claude subscription", pence: 9000, yearlyPence: null }],
 		});
 		await db.prepare("DELETE FROM money").run();
 	});
