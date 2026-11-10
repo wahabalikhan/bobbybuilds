@@ -78,6 +78,9 @@ describe("projects", () => {
 		["a hash with no hint", { secret_key_hash: "a".repeat(64) }],
 		["show_public other than 0 or 1", { show_public: 2 }],
 		["show_on_first_visit other than 0 or 1", { show_on_first_visit: 2 }],
+		["a card theme in upper case", { card_theme: "Blue" }],
+		["a card theme with spaces", { card_theme: "brand blue" }],
+		["a card theme over 32 characters", { card_theme: "a".repeat(33) }],
 	])("rejects %s", async (_label, overrides) => {
 		await expectRejected(createProject(overrides));
 	});

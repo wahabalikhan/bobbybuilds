@@ -8,6 +8,7 @@ import { FunnelRows } from "@/components/admin/funnel-rows";
 import { Pill, ProjectLogo } from "@/components/admin/ui";
 import { adminIcons } from "@/lib/admin/icons";
 import { hasPinnedLogo } from "@/lib/project-logo";
+import { CARD_THEMES, cardTheme } from "@/lib/card-themes";
 import { getIconMeta } from "@/lib/db/icons";
 import { requestTime } from "@/lib/admin/clock";
 import { FUNNEL_ROWS, OUTCOME_ROWS } from "@/lib/admin/validate";
@@ -131,7 +132,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 /**
  * One form, saved together (publicPageAction): Show on my public page; the tagline (its fallback
  * only while it uses {numbers}); the switches for the numbers it can use, next to it; Show
- * visitors; and the extra lines for the chart's hover card.
+ * visitors; the card style; and the extra lines for the chart's hover card.
  */
 function PublicPage({ project, metrics, numbers }: { project: Project; metrics: Metric[]; numbers: Awaited<ReturnType<typeof outcomeNumbers>> }) {
 	const visitors = metrics.find((m) => m.source === "collector" && m.key === "visitors");
@@ -164,6 +165,13 @@ function PublicPage({ project, metrics, numbers }: { project: Project; metrics: 
 					<Switch id={`public_${visitors.id}`} name={`public_${visitors.id}`} label="Show visitors" hint="Its chart on the card, and in the public visitor totals." checked={visitors.isPublic} />
 				</div>
 			)}
+			<SelectField
+				name="card_theme"
+				label="Card style"
+				defaultValue={cardTheme(project.cardTheme).id}
+				options={CARD_THEMES.map((t) => ({ value: t.id, label: t.label }))}
+				hint={`How its card looks on your public page. ${CARD_THEMES.filter((t) => t.id).map((t) => `${t.label}: ${t.hint[0].toLowerCase()}${t.hint.slice(1)}`).join(" ")}`}
+			/>
 			<Outcomes project={project} numbers={numbers} />
 		</SettingsForm>
 	);

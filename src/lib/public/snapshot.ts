@@ -21,12 +21,13 @@ import { chartStart, trendFrom, type Trend } from "@/lib/trend";
 import type { JourneyType } from "@/lib/journey-types";
 import { sha256Hex } from "@/lib/keys";
 import { renderMarkdown } from "@/lib/markdown";
-import { hasPinnedLogo, logoFor } from "@/lib/project-logo";
+import { hasPinnedLogo, logoFor, reversedLogoFor } from "@/lib/project-logo";
+import { cardTheme } from "@/lib/card-themes";
 import { owner } from "@/lib/site";
 import { fillOutcome, fillTaglineParts, type TaglinePart } from "./product-line";
 
 export const SNAPSHOT_KEY = "public-snapshot";
-export const SNAPSHOT_VERSION = 11;
+export const SNAPSHOT_VERSION = 12;
 
 /** The first month any product existed: the combined visitors trend starts here, not 12 months back. */
 export const FIRST_PRODUCT_MONTH = "2026-10";
@@ -86,6 +87,10 @@ export type PublicProject = {
 	now: string;
 	/** Its latest uptime check in the last day: true up, false down, null when there's none (the status dot pulses only while it's up). */
 	up: boolean | null;
+	/** Its card's style (src/lib/card-themes.ts): "" is the standard card. */
+	theme: string;
+	/** Its white logo for a theme that uses one (public/logos/<slug>-reversed.*), else null. */
+	reversedLogoPath: string | null;
 };
 
 export type PublicEntry = {
@@ -250,6 +255,8 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			outcomes: project.outcomes.map((o) => fillOutcome(o, numbers, today)).filter((o): o is TaglinePart[] => o !== null),
 			now: project.nowText,
 			up: uptime.get(project.id) ?? null,
+			theme: cardTheme(project.cardTheme).id,
+			reversedLogoPath: reversedLogoFor(project),
 		});
 	}
 

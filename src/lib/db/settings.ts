@@ -106,6 +106,11 @@ export async function setShowPublic(db: D1Database, id: number, show: boolean): 
 	await db.prepare("UPDATE projects SET show_public = ?2, show_on_first_visit = 0, updated_at = ?3 WHERE id = ?1").bind(id, show ? 1 : 0, now()).run();
 }
 
+/** Its public card's style: an id from CARD_THEMES ("" for the standard card), checked by the caller. */
+export async function setCardTheme(db: D1Database, id: number, theme: string): Promise<void> {
+	await db.prepare("UPDATE projects SET card_theme = ?2, updated_at = ?3 WHERE id = ?1").bind(id, theme, now()).run();
+}
+
 /** A new project: off the public page until its first visit arrives (showProjectsWithFirstVisit). */
 export async function hideUntilFirstVisit(db: D1Database, id: number): Promise<void> {
 	await db.prepare("UPDATE projects SET show_public = 0, show_on_first_visit = 1, updated_at = ?2 WHERE id = ?1").bind(id, now()).run();

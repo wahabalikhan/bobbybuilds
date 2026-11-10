@@ -8,6 +8,11 @@ export function logoFor(project: { slug: string; logoPath: string | null }): str
 	return LOGOS.find((path) => path.replace(/\.[a-z]+$/, "") === `/logos/${project.slug}`) ?? project.logoPath ?? null;
 }
 
+/** The project's white logo, public/logos/<slug>-reversed.*, for dark card themes; null when there's none. */
+export function reversedLogoFor(project: { slug: string }): string | null {
+	return LOGOS.find((path) => path.replace(/\.[a-z]+$/, "") === `/logos/${project.slug}-reversed`) ?? null;
+}
+
 /**
  * Projects whose file in public/logos is shown everywhere (HQ and the public page) in place of the
  * icon fetched from their site. RealTechJobs: its new icon lives here; its site still serves the old one.

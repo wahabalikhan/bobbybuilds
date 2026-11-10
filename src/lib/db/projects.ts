@@ -47,6 +47,8 @@ export type Project = {
 	nowText: string;
 	/** 'YYYY-MM-DD': its charts start here, or when its tracking began if that's later. */
 	startedOn: string | null;
+	/** Its public card's style (src/lib/card-themes.ts). "" = the standard card. */
+	cardTheme: string;
 };
 
 type ProjectRow = {
@@ -79,12 +81,13 @@ type ProjectRow = {
 	outcomes: string;
 	now_text: string;
 	started_on: string | null;
+	card_theme: string;
 };
 
 // secret_key_hash is deliberately never selected into a Project.
 const PROJECT_COLUMNS = `id, slug, name, tagline, tagline_fallback, description_md, status, lesson, logo_path, site_url, health_url,
 	github_repo, links, allowed_origins, browser_events, funnel, public_key, secret_key_hint, sort_order, show_public, show_on_first_visit,
-	is_paused, emoji, screenshot_path, screenshot_alt, case_study_url, outcomes, now_text, started_on`;
+	is_paused, emoji, screenshot_path, screenshot_alt, case_study_url, outcomes, now_text, started_on, card_theme`;
 
 function parseJsonArray<T>(value: string): T[] {
 	try {
@@ -125,6 +128,7 @@ function toProject(row: ProjectRow): Project {
 		outcomes: parseJsonArray<unknown>(row.outcomes).filter((o): o is string => typeof o === "string"),
 		nowText: row.now_text,
 		startedOn: row.started_on,
+		cardTheme: row.card_theme,
 	};
 }
 

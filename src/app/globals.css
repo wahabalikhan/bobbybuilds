@@ -143,6 +143,106 @@
 
 }
 
+/*
+ * Card themes for the public project cards (src/lib/card-themes.ts, chosen in each project's
+ * Settings). Each resets the card's own tokens, so its text, status, chart and hover card follow.
+ * The card's focus outline sits on the page, outside the card, so it uses --card-ring (the page's
+ * accent) rather than the card's --accent.
+ */
+
+/*
+ * RealTechJobs blue: the brand blue #1D4ED8 filling the card, everything on it in white.
+ * Contrast on #1D4ED8: white 6.70:1; tagline and status 90% white 5.72:1; small grey text (chart
+ * labels) 82% white 5.03:1; the chart's baseline and hover line 60% white 3.42:1 and its dashed top
+ * line 55% white 3.10:1 (3:1 for graphics). The chart's hover card turns white with navy text
+ * (#172554: 14.69:1, its 70% label 5.65:1). The same in dark mode: it's the brand's colour.
+ */
+.card-theme-realtechjobs-blue {
+	--card: #1d4ed8;
+	--line: #1d4ed8;
+	--ink: #ffffff;
+	--ink-2: rgb(255 255 255 / 0.9);
+	--muted: rgb(255 255 255 / 0.82);
+	--accent: #ffffff;
+	--axis: rgb(255 255 255 / 0.6);
+	--grid: rgb(255 255 255 / 0.55);
+	--chart-fill: rgb(255 255 255 / 0.14);
+	/* The status dot is white too; its word ("Live") always says which. */
+	--good: #ffffff;
+	--warning: #ffffff;
+	/* The chart's hover card is drawn in --ink with --page text. */
+	--page: #172554;
+	/* Hovered: a deeper blue edge. */
+	--card-edge-hover: #1e3a8a;
+	--card-ring: #2747d6;
+	color: var(--ink);
+}
+
+/*
+ * Portfolio: the portfolio hero's blue tint (rgb(37 99 235) at 50%, 60% in dark mode, the same as
+ * wahabalikhan.com), fading in from the card's top-left corner, with comment pins under the content
+ * (CardPins). The tint is gone by 160px down, so the chart's labels sit on the plain card.
+ * Contrast where the tint is strongest (#92B1F5 light, #1D4294 dark), so it holds everywhere:
+ * - light: name #0A0A0A 9.27:1; tagline and status #3F3F46 4.89:1 (darker than the usual #52525B,
+ *   3.62:1 there); the name's hover blue #1E3A8A 4.85:1. Chart labels (#71717A, 4.83:1) sit below the tint.
+ * - dark: name #FAFAFA 8.91:1; tagline and status #C4C4C8 5.35:1; the name's hover blue #B4C0FB 5.26:1.
+ * The chart's blue line crosses only the faint end of the tint (5.67:1 light, 5.99:1 dark).
+ */
+.card-theme-portfolio-pins {
+	--ink-2: #3f3f46;
+	/* See-through, so the tint and the pins show under the chart. */
+	--chart-fill: rgb(10 10 10 / 0.05);
+	--card-ring: #2747d6;
+	color: var(--ink);
+	background-image: radial-gradient(ellipse 70% 160px at 0 0, rgb(37 99 235 / 0.5) 0%, transparent 100%);
+}
+.card-theme-portfolio-pins h3 {
+	--accent: #1e3a8a;
+}
+
+@media (prefers-color-scheme: dark) {
+	.card-theme-realtechjobs-blue {
+		--card-ring: #8199f8;
+	}
+	.card-theme-portfolio-pins {
+		--ink-2: #c4c4c8;
+		--chart-fill: rgb(255 255 255 / 0.06);
+		--card-ring: #8199f8;
+		background-image: radial-gradient(ellipse 70% 160px at 0 0, rgb(37 99 235 / 0.6) 0%, transparent 100%);
+	}
+	.card-theme-portfolio-pins h3 {
+		--accent: #b4c0fb;
+	}
+}
+
+/*
+ * The portfolio's collapsed comment pins (its components/CommentPins.jsx): 26px, round with one
+ * pointed corner, a 2px border in the card's colour, the commenter's initial in bold. Decorative only.
+ */
+.card-pin {
+	position: absolute;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	border: 2px solid var(--card);
+	border-radius: 50% 50% 50% 4px;
+	font-size: 0.75rem;
+	font-weight: 700;
+	line-height: 1;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(17, 24, 39, 0.06);
+}
+.card-pin[data-side="left"] {
+	border-radius: 50% 50% 4px 50%;
+}
+/* On the narrowest phones the gap beside the name fits only one pin (CardPins). */
+@media (max-width: 359px) {
+	.card-pin[data-wide] {
+		display: none;
+	}
+}
+
 /* The pulsing status dot, the same as RealTechJobs' live dot (off for reduced motion where it's used). */
 @theme {
 	--animate-live: live-pulse 2s ease-in-out infinite;

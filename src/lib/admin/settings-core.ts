@@ -20,6 +20,7 @@ import {
 	setMetricVisibility,
 	listJourney,
 	setOrigins,
+	setCardTheme,
 	setPublicCard,
 	setShowPublic,
 	SlugTakenError,
@@ -27,6 +28,7 @@ import {
 } from "@/lib/db/settings";
 import { listMonth, replaceMonth } from "@/lib/db/money";
 import { refreshProjectIcon } from "@/lib/icons/refresh";
+import { isCardTheme } from "@/lib/card-themes";
 import { saveProfile } from "@/lib/db/profile";
 import { addDays } from "@/lib/days";
 import { createPublicKey, createSecretKey, hashSecretKey, secretKeyHint } from "@/lib/keys";
@@ -250,17 +252,21 @@ export async function visibilityCore(db: D1Database, prev: FormState, values: Fo
 
 /**
  * "On the public page", one form: the tagline, its fallback and the extra lines (checked and saved
- * like About this project), then Show on my public page, Show visitors and the number switches.
- * Nothing is saved if the tagline or a line has a problem. The notes say which {numbers} in them
+ * like About this project), then Show on my public page, Show visitors, the number switches and the
+ * card style. Nothing is saved if the tagline, a line or the card style has a problem. The notes say which {numbers} in them
  * aren't public, as the switches now stand.
  */
 export async function publicPageCore(db: D1Database, prev: FormState, values: FormValues, ctx: Context): Promise<ActionResult> {
 	const project = await projectFrom(db, values);
 	if (!project) return missing(prev);
+	// Checked first, so a bad value saves nothing. Not sent: the saved style stays.
+	const theme = values.card_theme;
+	if (theme !== undefined && !isCardTheme(theme)) return { state: failed(prev, values, { card_theme: "Choose one of the card styles." }) };
 	const textValues = Object.fromEntries(Object.entries(values).filter(([key]) => key === "project_id" || key === "tagline" || key === "tagline_fallback" || /^outcome_\d+$/.test(key)));
 	const text = await saveDetailsCore(db, prev, textValues, ctx);
 	if (text.state.status !== "ok") return { state: { ...text.state, values } };
 	const visibility = await visibilityCore(db, prev, values);
+	if (theme !== undefined) await setCardTheme(db, project.id, theme);
 	const saved = (await listProjects(db)).find((p) => p.id === project.id)!;
 	const metrics = await listMetrics(db, project.id);
 	const isPublic = (key: string) => metrics.find((m) => m.key === key)?.isPublic ?? false;

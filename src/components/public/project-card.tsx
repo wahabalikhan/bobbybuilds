@@ -5,7 +5,9 @@ import type { TaglinePart } from "@/lib/public/product-line";
 import type { PublicProject } from "@/lib/public/snapshot";
 import { StatusDot } from "@/components/status-dot";
 import { trackingNote } from "@/lib/trend";
+import { cardTheme } from "@/lib/card-themes";
 import { ArrowIcon } from "./icons";
+import { CardPins } from "./card-pins";
 import { WeekChart } from "./mono-charts";
 
 /** Text with its numbers in bold ink. */
@@ -40,20 +42,32 @@ const text = (parts: TaglinePart[]) => parts.map((p) => p.text).join("");
  * own behaviour. On hover or keyboard focus the name underlines, a ↗ appears after it (its space is
  * always kept, so nothing shifts) and the border darkens; focus also draws an outline round the card.
  * Every card is the same height: each line keeps its space even when it's empty.
+ *
+ * A project can have its own card style (project.theme, src/lib/card-themes.ts): its class resets
+ * the card's colour tokens (globals.css), it can use the project's white logo, and it can add
+ * comment pins under the content. Hover and focus work the same on every style.
  */
 export function ProjectCard({ project }: { project: PublicProject }) {
 	const link = project.siteUrl;
+	const theme = cardTheme(project.theme);
+	const logo = theme.reversedLogo && project.reversedLogoPath ? project.reversedLogoPath : project.logoPath;
 	return (
 		<article
 			data-project-card
+			data-card-theme={theme.id || undefined}
 			aria-labelledby={`project-${project.slug}`}
-			className={`group relative flex min-w-0 flex-col rounded-2xl border border-line bg-card p-4 transition-colors ${PROJECT_CARD_HEIGHT} ${
-				link ? "hover:border-[var(--axis)] has-[a[data-card-link]:focus-visible]:border-[var(--axis)] has-[a[data-card-link]:focus-visible]:outline-2 has-[a[data-card-link]:focus-visible]:outline-offset-2 has-[a[data-card-link]:focus-visible]:outline-[var(--accent)] has-[a[data-card-link]:focus-visible]:outline-solid" : ""
+			className={`group relative flex min-w-0 flex-col rounded-2xl border border-line bg-card p-4 transition-colors ${PROJECT_CARD_HEIGHT} ${theme.id ? `card-theme-${theme.id}` : ""} ${
+				// With pins, the card is its own stacking context (so the pins can sit under its content), and
+				// it's raised while hovered or focused so the chart's hover card still covers the next row.
+				theme.pins ? "isolate hover:z-20 focus-within:z-20" : ""
+			} ${
+				link ? "hover:border-[var(--card-edge-hover,var(--axis))] has-[a[data-card-link]:focus-visible]:border-[var(--card-edge-hover,var(--axis))] has-[a[data-card-link]:focus-visible]:outline-2 has-[a[data-card-link]:focus-visible]:outline-offset-2 has-[a[data-card-link]:focus-visible]:outline-[var(--card-ring,var(--accent))] has-[a[data-card-link]:focus-visible]:outline-solid" : ""
 			}`}
 		>
+			{theme.pins && <CardPins />}
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex min-w-0 items-center gap-2.5">
-					<ProjectLogo name={project.name} logoPath={project.logoPath} />
+					<ProjectLogo name={project.name} logoPath={logo} />
 					<h3 id={`project-${project.slug}`} className="min-w-0 font-semibold">
 						{link ? (
 							<a
