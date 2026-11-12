@@ -33,6 +33,7 @@ export const owner = {
 	/** The profile's links, in order, each an icon with its label. */
 	links: [
 		{ label: "LinkedIn", url: "https://linkedin.com/in/wahabalikhan" },
+		{ label: "X", url: "https://x.com/heybobbybuilds" },
 		{ label: "GitHub", url: "https://github.com/wahabalikhan" },
 		{ label: "Email", url: "mailto:hello@bobbybuilds.app" },
 	],

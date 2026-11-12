@@ -1,10 +1,11 @@
 import { PROFILE_PHOTO } from "@/lib/logos.generated";
 import { owner, site } from "@/lib/site";
-import { GitHubIcon, LinkedInIcon, MailIcon } from "./icons";
+import { GitHubIcon, LinkedInIcon, MailIcon, XIcon } from "./icons";
 
-/** Each link's icon in its brand colour (LinkedIn's blue, GitHub's black or white mark); Email stays ink. */
+/** Each link's icon in its brand colour (LinkedIn's blue, X's and GitHub's black or white marks); Email stays ink. */
 const ICONS: Record<string, { Icon: typeof LinkedInIcon; colour: string }> = {
 	LinkedIn: { Icon: LinkedInIcon, colour: "text-[var(--brand-linkedin)]" },
+	X: { Icon: XIcon, colour: "text-[var(--brand-x)]" },
 	GitHub: { Icon: GitHubIcon, colour: "text-[var(--brand-github)]" },
 	Email: { Icon: MailIcon, colour: "text-ink" },
 };
@@ -56,7 +57,7 @@ export function Me() {
 								title={link.label}
 								className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-pill sm:h-9 sm:w-9"
 							>
-								{/* One 20px box for all three; each icon is sized inside it to look the same (see icons.tsx). */}
+								{/* One 20px box for all four; each icon is sized inside it to look the same (see icons.tsx). */}
 								{icon ? <icon.Icon className={`block h-5 w-5 shrink-0 ${icon.colour}`} /> : <span className="text-sm">{link.label}</span>}
 								<span className="sr-only">
 									{name}

@@ -38,6 +38,7 @@
 	/* Social icons in their brand colours (LinkedIn #0A66C2: 5.7:1 on white; GitHub's black mark). */
 	--brand-linkedin: #0a66c2;
 	--brand-github: #181717;
+	--brand-x: #000000;
 	/* GitHub activity levels (the public Activity section): empty in light grey, then four blues up to the accent. */
 	--act-0: #ebedf0;
 	--act-1: #c7d0f7;
@@ -115,6 +116,7 @@
 		/* LinkedIn's lighter blue (7.9:1 on the dark page); GitHub's mark is white on dark. */
 		--brand-linkedin: #70b5f9;
 		--brand-github: #fafafa;
+		--brand-x: #fafafa;
 		/* Dark mode: brighter for more, up to the dark-mode accent; empty in a dark grey that matches the cards. */
 		--act-0: #1f1f22;
 		--act-1: #1c2655;
