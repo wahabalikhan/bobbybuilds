@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PAGE } from "@/lib/layout";
+import { PAGE, PUBLIC_PAGE } from "@/lib/layout";
 
 const files = (dir: string): string[] =>
 	readdirSync(dir).flatMap((name) => {
@@ -9,14 +9,19 @@ const files = (dir: string): string[] =>
 		return statSync(path).isDirectory() ? files(path) : /\.(tsx?|mjs|mts|md)$/.test(name) ? [path] : [];
 	});
 
-describe("one page container, public and admin", () => {
-	it("is the public page's width, side padding and centring", () => {
+describe("page containers: one for the admin, one for the public pages", () => {
+	it("the admin's is 900px with its side padding, centred", () => {
 		expect(PAGE).toBe("mx-auto w-full max-w-[900px] px-5 sm:px-6");
 	});
 
-	it("is used by the public page, its footer and header (plain and fading), the 404 page, and the admin top bar and main area", () => {
-		for (const file of ["src/app/page.tsx", "src/components/public/footer.tsx", "src/components/public/site-header.tsx", "src/components/public/fading-header.tsx", "src/app/not-found.tsx"]) {
-			expect(readFileSync(file, "utf8"), file).toContain("${PAGE}");
+	it("the public pages' (Phase 12) is 1200px of content with 24px sides, centred", () => {
+		expect(PUBLIC_PAGE).toBe("mx-auto w-full max-w-[1248px] px-6");
+	});
+
+	it("the public one is used by the home page, the journey, each post, the 404 page, the header and the footer; the admin one by the admin top bar and main area", () => {
+		for (const file of ["src/app/page.tsx", "src/app/journey/page.tsx", "src/app/journey/[slug]/page.tsx", "src/components/public/footer.tsx", "src/components/public/site-header.tsx", "src/app/not-found.tsx"]) {
+			expect(readFileSync(file, "utf8"), file).toMatch(/\bPUBLIC_PAGE\b/);
+			expect(readFileSync(file, "utf8"), file).not.toContain("${PAGE}");
 		}
 		const admin = readFileSync("src/app/admin/layout.tsx", "utf8");
 		expect(admin.match(/\$\{PAGE\}/g)?.length, "admin top bar and main").toBe(2);
@@ -69,9 +74,8 @@ describe("the wordmark", () => {
 		expect(html).toContain('<span class="font-normal text-muted">HQ</span>');
 	});
 
-	it("is in the public header (plain and fading) and, with HQ, in the admin top bar", () => {
-		expect(readFileSync("src/components/public/site-header.tsx", "utf8")).toMatch(/<Wordmark icon \/>/);
-		expect(readFileSync("src/components/public/fading-header.tsx", "utf8")).toMatch(/<Wordmark icon \/>/);
+	it("is in the public header (the large lockup) and, with HQ, in the admin top bar", () => {
+		expect(readFileSync("src/components/public/site-header.tsx", "utf8")).toMatch(/<Wordmark icon large \/>/);
 		expect(readFileSync("src/app/admin/layout.tsx", "utf8")).toMatch(/<Wordmark suffix="HQ" icon \/>/);
 	});
 });

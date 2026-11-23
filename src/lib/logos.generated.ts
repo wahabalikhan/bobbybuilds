@@ -8,7 +8,12 @@ export const LOGOS: string[] = [
 ];
 
 /** Hero screenshots in public/screenshots/, for each project's public card. */
-export const SCREENSHOTS: string[] = [];
+export const SCREENSHOTS: string[] = [
+	"/screenshots/portfolio-desktop.webp",
+	"/screenshots/portfolio-showcase.webp",
+	"/screenshots/rtj-desktop.webp",
+	"/screenshots/rtj-phone-job.webp"
+];
 
 /** The profile photo's path (public/profile.png or .jpg, …), or null until one is added (the initial is shown). */
 export const PROFILE_PHOTO: string | null = "/profile.png";

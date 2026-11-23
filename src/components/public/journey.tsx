@@ -1,12 +1,8 @@
-import Link from "next/link";
 import { formatDay } from "@/lib/format";
 import { journeyType } from "@/lib/journey-types";
 import type { PublicEntry } from "@/lib/public/snapshot";
 import { EntryBody } from "./entry-body";
 import { ArrowIcon } from "./icons";
-
-/** How many entries the home page shows; the rest are on /journey. */
-export const HOME_JOURNEY_COUNT = 5;
 
 export type JourneyEntryData = Pick<PublicEntry, "slug" | "type" | "day" | "title" | "html" | "linkUrl" | "projectName">;
 
@@ -21,7 +17,7 @@ function domain(url: string): string {
 /**
  * Entries on a timeline, newest first: the date, type emoji and label and project name; the title;
  * the text cut to two lines with "Read more" (EntryBody); and the link (shown as its domain). The
- * same design on the home page and /journey.
+ * admin's entry view uses it (the public pages have their own cards since Phase 12).
  */
 export function JourneyList({ entries }: { entries: JourneyEntryData[] }) {
 	return (
@@ -59,21 +55,5 @@ export function JourneyList({ entries }: { entries: JourneyEntryData[] }) {
 				);
 			})}
 		</ol>
-	);
-}
-
-/** The home page's journey: the latest 5 published entries, then "See the full journey →" when there are more. */
-export function Journey({ entries }: { entries: JourneyEntryData[] }) {
-	return (
-		<>
-			<JourneyList entries={entries.slice(0, HOME_JOURNEY_COUNT)} />
-			{entries.length > HOME_JOURNEY_COUNT && (
-				<p className="mt-10">
-					<Link href="/journey" className="link text-sm font-medium">
-						See the full journey <span aria-hidden>→</span>
-					</Link>
-				</p>
-			)}
-		</>
 	);
 }

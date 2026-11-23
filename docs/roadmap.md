@@ -15,6 +15,7 @@ BobbyBuilds is built in phases. Each phase starts with a plan and ends with a te
 | 9 | Launch | In progress: custom domain and Access done (`b2cbb96`, `09c5b40`, `fc88135`) |
 | 10 | Public page redesign | ✅ Done (10a `9d5b21e`; 10b `768053a`, `e9944c4`, `f08aae7`) |
 | 11 | One design system for the admin | ✅ Done ("Admin on the public design system") |
+| 12 | Bento redesign of the public pages | Built, waiting for testing (not committed yet) |
 
 ## 1. Setup ✅
 
@@ -193,3 +194,19 @@ The admin takes on the public page's design language, so the two match.
 - **Step 1: shared foundations** (6 November 2026): one accent blue for both (#2747D6, #8199F8 in dark mode) with the selection tint; text links ink and underlined, blue on hover; focus outlines in the blue; the wordmark bold and all ink everywhere (the admin adds a grey "HQ"); `StatusDot` instead of the admin's status pills; admin page titles bold.
 - **Step 2: charts**: chart tokens are the accent blue in both themes; the admin's server charts show the ink hover card from CSS hover areas (no native titles, still no client JavaScript); the Home visitors chart's hover card is the ink one; the Overview's visitors chart is the interactive `WeekChart` (daily); comparison lines grey; uptime keeps its colours; the public honest-numbers trend stays neutral.
 - **Step 3: cards and pages**: admin Home's project cards on the public card design (keeping visitors, change, numbers and uptime; → for the internal link; `CARD_HEIGHT`); headline figures as plain bold figures; the project header's numbers as text, not a pill; status text in `--critical-ink` and `--warning-ink` (the red status pill 5.4:1, the dark-mode amber pill and delete heading fixed), status icon glyphs at 3:1 or more.
+
+## 12. Bento redesign of the public pages
+
+A new, light-only bento look for the home page and the journey, and a page for each journey post, from the designs in `docs/redesign/designs/` (desktop 1440px, mobile 390px). The admin is unchanged, apart from a link from each journey entry to its page.
+
+- **Home:** a 6-column grid: the intro (photo, name, a "Building …" pill, "A product designer, building tools in public.", the bio, LinkedIn, X and GitHub), RealTechJobs as the tall blue featured card (its live job and company counts and a phone screenshot), four number tiles (days building; visitors in 30 days with "Up/Down from N in the 30 days before" and a small trend line; running costs with "See breakdown" opening "Where the money goes"; revenue in ink), the Portfolio card with its screenshot, Now (from `content/now.ts`, with an optional progress bar), GitHub activity (the live grid) and the latest 3 journey entries. Top navigation (Projects, Numbers, Journey, "Say hello") and a text footer.
+- **Journey:** a header card with coloured type filters (`?type=` kept, `aria-current`), entries by month in a 3-column grid: the newest entry with an image featured in blue, a lone entry with an image as a wide card, a dashed "Next entry" card. Every card opens its post.
+- **Journey posts** (`/journey/<slug>`, new): a blue header (pills, date, reading time, title, summary, hero image), the post with a pull quote and Try/Share buttons, The numbers, the project, More from the journey, and previous and next. Its own title, description and blue share image. Bodies are optional Markdown files in `content/journey/<slug>.md`, with live `{numbers}`; "Tech Jobs went company-first" has its body. The old `/journey/*` redirect is gone.
+- **Images:** `npm run build:images` turns the originals in `content/images/` into WebP copies with `srcset` in `public/screenshots/`. Portfolio's card shows `portfolio-showcase` (a browser and phone mock-up) full-bleed and whole; `portfolio-desktop` stays for the June entry's card and post.
+- **Snapshot version 13:** `visitorsPrev30`, `visitorsDaily` (30 days) and each project's `pitch`.
+- **Removed from the public page:** each project's visitor chart, the 12-month visitors trend, the Shipping rhythm card, the fading header, dark mode, and the card styles' CSS (the "RealTechJobs blue" style now picks the featured card).
+- **Contrast:** the brief's Shipped green #15803D is 4.47:1 on its tint, so it's #157A3A (4.82:1); the light blue #9DB4FF is only used for large text on blue (3.32:1).
+- **Footer and post header** (revised before the commit): the original "Made with 🫶🏼 using" line and tool icons are back on the left of the footer; posts use the shared header (Journey current) with "← All entries" above the blue card, keeping the `?type=` filter.
+- **Next.js 16.4.1 → 16.4.6** (and `eslint-config-next`): seven moderate advisories (cache leaks and poisoning with `use cache`, an SVG bypass in image optimisation, a cookie leak on edge routes, response injection when self-hosting) cover 16.0.0 to 16.4.4; 16.4.6 is the latest 16.x.
+- **Live data after the deploy (on your go-ahead):** rename the June entry to "My portfolio, designed in Figma and built with Claude Code"; set Portfolio's tagline to "Case studies, on a site I designed and built with Claude Code."; set the Screenshots (rtj-phone-job for RealTechJobs; portfolio-showcase for Portfolio, alt text "My portfolio site, wahabalikhan.com, on desktop and mobile"); and change "Tech Jobs went company-first" (same slug) to the title "Going company-first: from 5,000 jobs to 1,000 real ones" and the text "I hid every job copied from other job boards. The board got five times smaller overnight, and much easier to trust."
+

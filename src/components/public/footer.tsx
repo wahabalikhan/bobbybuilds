@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { AdminKeyboardShortcut, AdminTaps } from "@/components/public/admin-shortcut";
 import { owner } from "@/lib/site";
-import { PAGE } from "@/lib/layout";
+import { PUBLIC_PAGE } from "@/lib/layout";
+
+const EMAIL = owner.links.find((l) => l.label === "Email")!.url;
 
 // Every tool icon sits in the same 16px invisible box, in its own shape (no box, border or clipping).
 // In their own colours (each has its name as alt text and on hover).
@@ -31,12 +33,16 @@ const TOOLS: { label: string; icon: ReactNode }[] = [
 	{ label: "Supabase", icon: icon("/made-with/supabase.jpeg", "Supabase") },
 ];
 
-/** "Made with 🫶🏼 using" the tools, then the copyright, as on the portfolio. */
+/**
+ * On the left, "Made with 🫶🏼 using" and the tools as small icons (each named on hover), as before
+ * Phase 12; on the right, the copyright and email (stacked on phones). Five quick taps on the © line
+ * open the admin (AdminTaps), and Option + A works on every public page.
+ */
 export function SiteFooter({ year }: { year: number }) {
 	return (
-		<footer className={`${PAGE} pb-20 sm:pb-24`}>
+		<footer className={`${PUBLIC_PAGE} flex flex-col gap-3 pb-16 pt-12 sm:flex-row sm:items-center sm:justify-between`}>
 			<AdminKeyboardShortcut />
-			<div className="flex flex-wrap items-center gap-x-2 gap-y-2 pt-4 sm:pt-8 text-sm text-muted">
+			<div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-muted">
 				<span>
 					Made with <span aria-label="love">🫶🏼</span> using
 				</span>
@@ -50,10 +56,16 @@ export function SiteFooter({ year }: { year: number }) {
 						</li>
 					))}
 				</ul>
+			</div>
+			<p className="text-[15px] text-muted">
 				<AdminTaps>
 					© {year} {owner.fullName}
 				</AdminTaps>
-			</div>
+				<span aria-hidden> · </span>
+				<a href={EMAIL} className="rounded-sm underline-offset-4 hover:text-ink hover:underline">
+					{EMAIL.replace("mailto:", "")}
+				</a>
+			</p>
 		</footer>
 	);
 }

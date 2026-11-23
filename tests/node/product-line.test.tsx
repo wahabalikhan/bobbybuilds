@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ProjectCard } from "@/components/public/project-card";
-import { fillTagline, fillTaglineParts, productLine, RECENT_DAYS, taglineKeys } from "@/lib/public/product-line";
+import { FeaturedProjectCard } from "@/components/public/home";
+import { fillTagline, fillTaglineParts, fillText, productLine, RECENT_DAYS, taglineKeys } from "@/lib/public/product-line";
 import type { PublicProject } from "@/lib/public/snapshot";
 
 const n = (label: string, figure: number | null, latestDay: string | null, kind: "latest" | "count" = "latest") => ({ kind, label, figure, latestDay });
@@ -49,25 +49,48 @@ describe("taglines with numbers", () => {
 		expect(fillTaglineParts(TEMPLATE, "", [], "2026-11-04")).toEqual([]);
 	});
 
-	it("shows the numbers in bold on the public card, and only the numbers", () => {
+	it("the featured card shows the tagline without numbers, then the recent numbers in large figures", () => {
 		const project = {
 			slug: "realtechjobs",
 			name: "RealTechJobs",
-			tagline: "4,868 real tech jobs, straight from 838 companies",
-			taglineParts: fillTaglineParts(TEMPLATE, FALLBACK, [k("open_jobs", 4868, "2026-11-04"), k("active_companies", 838, "2026-11-04")], "2026-11-04"),
-			status: "building",
+			pitch: FALLBACK,
+			status: "live",
+			up: true,
 			siteUrl: "https://realtechjobs.co.uk",
-			logoPath: null,
-			weekly: null,
-			outcomes: [],
-			now: "",
+			screenshot: null,
+			numbers: [
+				{ key: "open_jobs", label: "Open jobs", kind: "latest", figure: 4868, latestDay: "2026-11-04" },
+				{ key: "active_companies", label: "Companies", kind: "latest", figure: 838, latestDay: "2026-11-04" },
+				{ key: "visitors", label: "Visitors", kind: "count", figure: 50, latestDay: null },
+			],
 		} as unknown as PublicProject;
-		const html = renderToStaticMarkup(<ProjectCard project={project} />);
-		expect([...html.matchAll(/<strong[^>]*>([^<]*)<\/strong>/g)].map((m) => m[1])).toEqual(["4,868", "838"]);
-		expect(html).toContain('title="4,868 real tech jobs, straight from 838 companies"');
+		const text = renderToStaticMarkup(<FeaturedProjectCard project={project} number={2} today="2026-11-04" className="" />).replace(/<[^>]+>/g, "|");
+		expect(text).toContain(FALLBACK);
+		expect(text).toMatch(/\|4,868\|/);
+		expect(text).toMatch(/\|open jobs\|/);
+		expect(text).toMatch(/\|838\|/);
+		expect(text).not.toContain("50");
+		// Over a week old: left out.
+		const stale = renderToStaticMarkup(<FeaturedProjectCard project={project} number={2} today={`2026-11-${String(4 + RECENT_DAYS + 1).padStart(2, "0")}`} className="" />);
+		expect(stale).not.toContain("4,868");
 	});
 
 	it("leaves a tagline without placeholders as it is", () => {
 		expect(fillTagline("Product design case studies.", "", [], "2026-11-04")).toBe("Product design case studies.");
 	});
 });
+
+describe("journey posts' {numbers}", () => {
+	const numbers = [{ key: "open_jobs", kind: "latest" as const, figure: 2103, latestDay: "2026-11-20" }];
+	it("fills a live number, with commas", () => {
+		expect(fillText("Today it lists {open_jobs} jobs.", numbers, "2026-11-23")).toBe("Today it lists 2,103 jobs.");
+	});
+	it("leaves text without numbers as it is", () => {
+		expect(fillText("~5,000", numbers, "2026-11-23")).toBe("~5,000");
+	});
+	it("is null when a number can't be filled (unknown, or over a week old), so it's left out", () => {
+		expect(fillText("{companies} companies", numbers, "2026-11-23")).toBeNull();
+		expect(fillText("{open_jobs} jobs", numbers, "2026-12-30")).toBeNull();
+	});
+});
+

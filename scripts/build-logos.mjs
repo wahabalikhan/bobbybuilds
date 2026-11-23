@@ -12,6 +12,8 @@ const files = readdirSync("public/logos")
 
 const screenshots = (existsSync("public/screenshots") ? readdirSync("public/screenshots") : [])
 	.filter((name) => /^[A-Za-z0-9._-]+\.(png|jpe?g|webp)$/i.test(name) && !name.includes(".."))
+	// Only each screenshot's full size: its smaller copies (<name>-480.webp, …) are for srcset.
+	.filter((name) => !/-\d+\.webp$/i.test(name))
 	.sort()
 	.map((name) => `/screenshots/${name}`);
 

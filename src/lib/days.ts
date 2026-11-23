@@ -19,3 +19,10 @@ export function weekStart(day: string): string {
 	const weekday = new Date(`${day}T00:00:00Z`).getUTCDay(); // 0 = Sunday
 	return addDays(day, -((weekday + 6) % 7));
 }
+
+/** Days from the start date to today, counting both (the first day is day 1). */
+export function daysBuilding(since: string, today: string): number {
+	let days = 0;
+	for (let day = since; day <= today; day = addDays(day, 1)) days += 1;
+	return days;
+}

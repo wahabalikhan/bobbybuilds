@@ -24,10 +24,10 @@ import { renderMarkdown } from "@/lib/markdown";
 import { hasPinnedLogo, logoFor, reversedLogoFor } from "@/lib/project-logo";
 import { cardTheme } from "@/lib/card-themes";
 import { owner } from "@/lib/site";
-import { fillOutcome, fillTaglineParts, type TaglinePart } from "./product-line";
+import { fillOutcome, fillTaglineParts, taglineKeys, type TaglinePart } from "./product-line";
 
 export const SNAPSHOT_KEY = "public-snapshot";
-export const SNAPSHOT_VERSION = 12;
+export const SNAPSHOT_VERSION = 13;
 
 /** The first month any product existed: the combined visitors trend starts here, not 12 months back. */
 export const FIRST_PRODUCT_MONTH = "2026-10";
@@ -57,6 +57,8 @@ export type PublicProject = {
 	tagline: string;
 	/** The same, in pieces, so the card can show the numbers in bold. */
 	taglineParts: TaglinePart[];
+	/** The tagline without numbers, for a card that shows the numbers beside it: the fallback when the tagline uses {numbers}, else the tagline. */
+	pitch: string;
 	status: ProjectStatus;
 	lesson: string | null;
 	logoPath: string | null;
@@ -134,6 +136,10 @@ export type PublicSnapshot = {
 	monthly: Month[];
 	/** Visitors in the last 30 days across projects whose visitors are public. */
 	visitors30: number;
+	/** The same for the 30 days before that, for "Up from …". */
+	visitorsPrev30: number;
+	/** Those visitors per day for the last 30 days (today last), for the tile's small trend line. */
+	visitorsDaily: Point[];
 	profile: { buildingSince: string | null };
 	money: PublicMoney | null;
 	projects: PublicProject[];
@@ -204,6 +210,8 @@ async function publicNumber(db: D1Database, metric: Metric, today: string): Prom
 export async function buildSnapshot(db: D1Database, today: string, now: number = Date.now()): Promise<PublicSnapshot> {
 	const [projects, metrics, profile, firstTracked, uptime, storedIcons] = await Promise.all([listPublicProjects(db), listMetrics(db), getProfile(db), firstTrackedDays(db), latestUptime(db, now), listIcons(db)]);
 	const icons: PublicSnapshot["icons"] = {};
+	/** Visitors per day across the public projects (for the last 60 days' figures). */
+	const dailyVisitors = new Map<string, number>();
 	const firstMonthDay = `${months(today)[0]}-01`;
 
 	const publicProjects: PublicProject[] = [];
@@ -211,6 +219,7 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 		const own = metrics.filter((m) => m.projectId === project.id && m.isPublic);
 		const visitorsMetric = own.find((m) => m.source === "collector" && m.key === "visitors");
 		const visitorsDaily = visitorsMetric ? await metricSeries(db, visitorsMetric, firstMonthDay, today) : null;
+		for (const d of visitorsDaily ?? []) dailyVisitors.set(d.day, (dailyVisitors.get(d.day) ?? 0) + d.value);
 		const numbers = await Promise.all(own.map((m) => publicNumber(db, m, today)));
 		const headline = own.find((m) => m.isHeadline);
 		// Filled in here, so the public page only ever sees the finished text, never {placeholders}.
@@ -227,6 +236,7 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 			name: project.name,
 			tagline: taglineParts.map((p) => p.text).join(""),
 			taglineParts,
+			pitch: taglineKeys(project.tagline).length && project.taglineFallback ? project.taglineFallback : taglineParts.map((p) => p.text).join(""),
 			status: project.status,
 			lesson: project.lesson,
 			// Its pinned file in public/logos (PINNED_LOGOS), else its own current icon when one has been
@@ -284,6 +294,8 @@ export async function buildSnapshot(db: D1Database, today: string, now: number =
 		today,
 		monthly,
 		visitors30,
+		visitorsPrev30: sum(Array.from({ length: 30 }, (_, i) => ({ value: dailyVisitors.get(addDays(today, -59 + i)) ?? 0 }))),
+		visitorsDaily: Array.from({ length: 30 }, (_, i) => addDays(today, -29 + i)).map((day) => ({ day, value: dailyVisitors.get(day) ?? 0 })),
 		profile: { buildingSince: profile.buildingSince },
 		money: await publicMoney(db, today.slice(0, 7)),
 		projects: publicProjects,

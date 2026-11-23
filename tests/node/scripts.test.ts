@@ -40,13 +40,12 @@ describe("wrangler.jsonc and site.url", () => {
 	});
 });
 
-describe("removed project and journey pages", () => {
-	it("redirects /p/* to / and old entry pages (/journey/*) to /journey, permanently, but not /journey itself", async () => {
+describe("removed project pages", () => {
+	it("redirects /p/* to /, permanently, and never journey posts (/journey/<slug> are pages again since Phase 12)", async () => {
 		const { default: config } = await import("../../next.config");
 		const redirects = await config.redirects!();
 		expect(redirects).toContainEqual({ source: "/p/:path*", destination: "/", permanent: true });
-		expect(redirects).toContainEqual({ source: "/journey/:path+", destination: "/journey", permanent: true });
-		expect(redirects.map((r) => r.source)).not.toContain("/journey/:path*");
+		expect(redirects.some((r) => r.source.startsWith("/journey"))).toBe(false);
 	});
 });
 

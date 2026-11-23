@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-plugin";
 import { defineConfig } from "vitest/config";
 
-const alias = { "@": fileURLToPath(new URL("./src", import.meta.url)) };
+const alias = { "@": fileURLToPath(new URL("./src", import.meta.url)), "@content": fileURLToPath(new URL("./content", import.meta.url)) };
 
 // Two projects:
 // - workers: runs inside the Workers runtime against a fresh local D1 with every migration applied

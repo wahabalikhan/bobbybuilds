@@ -29,7 +29,9 @@ export const owner = {
 	/** The GitHub account behind the public GitHub section (contribution calendar). */
 	githubLogin: "wahabalikhan",
 	// Photo: add a square public/profile.png or public/profile.jpg (detected at build). Until then, the initial is shown.
-	bio: "Product designer with 4+ years in B2B SaaS, also designing and building tools that make everyday things easier, in public.",
+	/** The home page's big heading (its h1). */
+	headline: "A product designer, building tools in public.",
+	bio: "4+ years designing B2B SaaS. Now designing and building my own products, with the real numbers, costs and decisions out in the open.",
 	/** The profile's links, in order, each an icon with its label. */
 	links: [
 		{ label: "LinkedIn", url: "https://linkedin.com/in/wahabalikhan" },

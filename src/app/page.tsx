@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
-import { SectionHeading } from "@/components/admin/ui";
 import { SiteFooter } from "@/components/public/footer";
-import { HonestNumbers } from "@/components/public/honest-numbers";
-import { Journey } from "@/components/public/journey";
-import { Activity } from "@/components/public/activity";
-import { Me } from "@/components/public/me";
-import { ProjectCard } from "@/components/public/project-card";
+import { FeaturedProjectCard, GitHubCard, IntroCard, LatestJourneyCard, NowCard, ProjectCard } from "@/components/public/home";
+import { NumberTiles, type TilesData } from "@/components/public/number-tiles";
 import { SiteHeader, SkipLink } from "@/components/public/site-header";
 import { PublicTracker } from "@/components/public/tracker";
+import { formatDay, formatLongMonth, formatMonth } from "@/lib/format";
+import { daysBuilding } from "@/lib/days";
+import { PUBLIC_PAGE } from "@/lib/layout";
 import { getSnapshot } from "@/lib/public/get";
+import { journeyPosts } from "@/lib/public/journey";
 import { homeTitle, owner } from "@/lib/site";
-import { PAGE, PUBLIC_SECTION_DIVIDERS } from "@/lib/layout";
 
 // Reads the public snapshot (rebuilt from the roll-ups every 10 minutes) on each request.
 export const dynamic = "force-dynamic";
@@ -19,72 +18,66 @@ export const metadata: Metadata = {
 	title: { absolute: homeTitle },
 	openGraph: { title: homeTitle },
 	twitter: { title: homeTitle },
-	description: `${owner.firstName}'s free, honest tools, built in public.`,
+	description: owner.bio,
 	alternates: { canonical: "/" },
 };
 
 /** Statuses shown on the public page. Ideas and retired projects aren't, for now. */
 const SHOWN = new Set(["live", "building", "paused"]);
 
+/** The card style that makes a project the tall blue featured card. */
+const FEATURED_THEME = "realtechjobs-blue";
+
 /**
- * Top to bottom: Me (a short intro), Projects (two columns on desktop), The honest numbers,
- * Activity (only when "Show my activity" is on in Profile), and The journey last, because it keeps
- * growing. Everything comes from the
- * public snapshot. Each section has a stable anchor to link to: #projects, #numbers, #activity, #journey.
+ * The bento home page: a 6-column grid from lg (one column on phones, the number tiles two per row).
+ * Row by row on desktop: the intro (4 columns) beside the featured project (2 columns, 2 rows tall);
+ * the number tiles under the intro (with "Where the money goes" under them when it's open); the other
+ * projects and Now (3 columns each); GitHub activity (4) and the latest from the journey (2).
+ * Everything comes from the public snapshot, plus content/now.ts and the journey post files.
  */
 export default async function Home() {
 	const snapshot = await getSnapshot();
 	const projects = snapshot.projects.filter((p) => SHOWN.has(p.status));
+	const featured = projects.find((p) => p.theme === FEATURED_THEME) ?? null;
+	const others = projects.filter((p) => p !== featured);
+	const posts = journeyPosts(snapshot);
+	const { profile, money, today } = snapshot;
+	// With a featured project, the intro and tiles share its rows; without one they're full width.
+	const left = featured ? "lg:col-span-4" : "lg:col-span-6";
+
+	const tiles: TilesData = {
+		building: profile.buildingSince && profile.buildingSince <= today ? { days: daysBuilding(profile.buildingSince, today), since: formatDay(profile.buildingSince) } : null,
+		visitors: { value: snapshot.visitors30, previous: snapshot.visitorsPrev30, daily: snapshot.visitorsDaily.map((d) => d.value) },
+		money: money
+			? {
+					monthShort: formatMonth(money.month).slice(0, 3),
+					monthLong: formatLongMonth(money.month),
+					runningPence: money.runningPence,
+					toolsPence: money.toolsPence,
+					revenuePence: money.revenuePence,
+					running: money.running,
+					tools: money.tools,
+				}
+			: null,
+	};
 
 	return (
-		<div className="public-theme min-h-screen bg-page text-ink">
+		<div className="public-theme min-h-screen bg-page font-sans text-ink">
 			<PublicTracker />
 			<SkipLink />
-			<SiteHeader showAfter="projects" />
-			<main id="content" className={`${PAGE} space-y-20 pb-16 pt-[72px] sm:space-y-24 sm:pt-[88px]`}>
-				{/* No dividers: space alone separates the sections. The hero has 64px below it (80px from sm),
-				    and the other sections are 80px apart (96px from sm). */}
-				<div className="mb-16! sm:mb-20!">
-					<Me />
-				</div>
-
-				{projects.length > 0 && (
-					<section id="projects" aria-labelledby="projects-heading" className="scroll-mt-20">
-						<SectionHeading id="projects-heading" aside={projects.length} relaxed divider={PUBLIC_SECTION_DIVIDERS}>
-							Projects
-						</SectionHeading>
-						<div className="grid auto-rows-fr gap-3 md:grid-cols-2">
-							{projects.map((p) => (
-								<ProjectCard key={p.slug} project={p} />
-							))}
-						</div>
-					</section>
-				)}
-
-				<HonestNumbers snapshot={snapshot} />
-
-				{snapshot.activity && <Activity activity={snapshot.activity} />}
-
-				{snapshot.journey.length > 0 && (
-					<section id="journey" aria-labelledby="journey-heading" className="scroll-mt-20">
-						<SectionHeading id="journey-heading" aside={snapshot.journey.length} relaxed divider={PUBLIC_SECTION_DIVIDERS}>
-							The journey
-						</SectionHeading>
-						<Journey
-							entries={snapshot.journey.map(({ slug, type, day, title, html, linkUrl, projectName }) => ({
-								slug,
-								type,
-								day,
-								title,
-								html,
-								linkUrl,
-								projectName,
-							}))}
-						/>
-					</section>
-				)}
+			<SiteHeader />
+			<main id="content" className={`${PUBLIC_PAGE} grid grid-cols-1 gap-4 lg:grid-cols-6`}>
+				<IntroCard className={left} />
+				{featured && <FeaturedProjectCard project={featured} number={projects.indexOf(featured) + 1} today={today} className="lg:col-span-2 lg:row-span-2" />}
+				<NumberTiles data={tiles} tilesClass={left} panelClass="lg:col-span-6" />
+				{others.map((p, i) => (
+					<ProjectCard key={p.slug} project={p} number={projects.indexOf(p) + 1} anchor={!featured && i === 0} className="lg:col-span-3" />
+				))}
+				<NowCard className="lg:col-span-3" />
+				<GitHubCard github={snapshot.activity?.github ?? null} className={posts.length ? "lg:col-span-4" : "lg:col-span-6"} />
+				{posts.length > 0 && <LatestJourneyCard posts={posts} className="lg:col-span-2" />}
 			</main>
-			<SiteFooter year={Number(snapshot.today.slice(0, 4))} />
+			<SiteFooter year={Number(today.slice(0, 4))} />
 		</div>
 	);
 }

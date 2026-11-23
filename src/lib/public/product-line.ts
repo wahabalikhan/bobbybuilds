@@ -78,3 +78,12 @@ export function fillTagline(tagline: string, fallback: string, numbers: Pick<Pub
 		.map((p) => p.text)
 		.join("");
 }
+
+/**
+ * Text with {key} placeholders (a journey post's paragraph or number), filled like an outcome:
+ * the text itself when it has none, or null when any can't be filled (then it's left out).
+ */
+export function fillText(template: string, numbers: Pick<PublicNumber, "key" | "kind" | "figure" | "latestDay">[], today: string): string | null {
+	if (!taglineKeys(template).length) return template;
+	return fillOutcome(template, numbers, today)?.map((p) => p.text).join("") ?? null;
+}

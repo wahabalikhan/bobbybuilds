@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "next dev",
     "check-env": "node scripts/check-env.mjs",
-    "prebuild": "npm run check-env && npm run build:tracker && npm run build:logos",
+    "prebuild": "npm run check-env && npm run build:tracker && npm run build:logos && npm run build:journey",
     "build": "next build",
     "predeploy": "node scripts/check-env.mjs --deploy",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
@@ -15,7 +15,7 @@
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "prepreview": "npm run check-env",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "typecheck": "npm run --silent build:logos && next typegen && tsc --noEmit",
+    "typecheck": "npm run --silent build:logos && npm run --silent build:journey && next typegen && tsc --noEmit",
     "lint": "eslint .",
     "verify": "npm run check-env && npm run typecheck && npm run lint && npm test && npm run test:admin-live",
     "db:migrate:local": "wrangler d1 migrations apply bobbybuilds-db --local",
@@ -24,7 +24,7 @@
     "keys:create": "node scripts/keys-create.mts",
     "test": "vitest run",
     "build:tracker": "node scripts/build-tracker.mjs",
-    "predev": "npm run build:tracker && npm run build:logos",
+    "predev": "npm run build:tracker && npm run build:logos && npm run build:journey",
     "test:collector": "vitest run tests/collector tests/tracker",
     "playground": "node scripts/playground.mts",
     "deploy:cron": "node scripts/check-env.mjs --deploy --cron && wrangler deploy --config cron/wrangler.jsonc",
@@ -33,13 +33,15 @@
     "admin:live": "node scripts/admin-live.mts",
     "test:admin-live": "node scripts/test-admin-live.mts",
     "build:logos": "node scripts/build-logos.mjs",
-    "build:icons": "node scripts/build-icons.mjs"
+    "build:icons": "node scripts/build-icons.mjs",
+    "build:images": "node scripts/build-images.mjs",
+    "build:journey": "node scripts/build-journey.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.3",
     "jose": "^6.2.15",
     "marked": "^18.1.2",
-    "next": "16.4.1",
+    "next": "16.4.6",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "web-vitals": "^6.2.3"
@@ -52,7 +54,7 @@
     "@types/react-dom": "^19.3.0",
     "esbuild": "^0.28.2",
     "eslint": "^9",
-    "eslint-config-next": "16.4.1",
+    "eslint-config-next": "16.4.6",
     "happy-dom": "^21.0.4",
     "tailwindcss": "^4",
     "typescript": "^5.7.4",

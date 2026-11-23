@@ -8,8 +8,9 @@ const ICON = "/icon.svg?v=2";
  * optional suffix ("HQ" in the admin top bar) follows in muted grey, after a real space so screen
  * readers say "BobbyBuilds HQ". With `icon`, the lockup: the B icon (22px, decorative) 8px before the
  * name, vertically centred; below 360px wide only the icon shows, and the name stays for screen readers.
+ * With `large` (the public header), the icon is 32px and the name 20px.
  */
-export function Wordmark({ suffix, icon = false }: { suffix?: string; icon?: boolean }) {
+export function Wordmark({ suffix, icon = false, large = false }: { suffix?: string; icon?: boolean; large?: boolean }) {
 	const name = (
 		<>
 			<span className="font-bold text-ink">{site.name}</span>
@@ -22,10 +23,12 @@ export function Wordmark({ suffix, icon = false }: { suffix?: string; icon?: boo
 		</>
 	);
 	if (!icon) return <span className="text-lg tracking-tight">{name}</span>;
+	// `large`: the public pages' header (Phase 12), a 32px icon and 20px name, 12px apart.
+	const size = large ? 32 : 22;
 	return (
-		<span className="inline-flex items-center gap-2 text-lg tracking-tight">
+		<span className={`inline-flex items-center tracking-tight ${large ? "gap-3 text-xl" : "gap-2 text-lg"}`}>
 			{/* eslint-disable-next-line @next/next/no-img-element -- one tiny local SVG */}
-			<img src={ICON} alt="" width={22} height={22} className="block h-[22px] w-[22px] shrink-0" />
+			<img src={ICON} alt="" width={size} height={size} className="block shrink-0" style={{ width: size, height: size }} />
 			<span className="max-[359px]:sr-only">{name}</span>
 		</span>
 	);

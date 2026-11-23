@@ -66,6 +66,30 @@ describe("public snapshot", () => {
 		expect(after - before).toBe(3); // only the public project's November visitors (3 of its 5) were added
 	});
 
+	it("has visitors per day for the last 30 days, their total, and the 30 days before (for the home page's tile)", async () => {
+		const before = await buildSnapshot(db, TODAY, NOW);
+		const id = await project("pub-prev30");
+		// 43 days before TODAY: in the 30 days before the last 30.
+		const day = "2026-09-20";
+		await insert("page_views", validPageView(id, { day, ts: Date.parse(`${day}T10:00:00Z`), visitor_id: visitor(9) }));
+		await rollupDay(db, day);
+		const after = await buildSnapshot(db, TODAY, NOW);
+		expect(after.visitorsDaily).toHaveLength(30);
+		expect(after.visitorsDaily[0].day).toBe("2026-10-04");
+		expect(after.visitorsDaily.at(-1)!.day).toBe(TODAY);
+		expect(after.visitorsDaily.at(-1)!.value - before.visitorsDaily.at(-1)!.value).toBe(3);
+		expect(after.visitors30 - before.visitors30).toBe(5);
+		expect(after.visitorsPrev30 - before.visitorsPrev30).toBe(1);
+	});
+
+	it("gives each project its tagline without numbers (pitch): the fallback when the tagline uses {numbers}", async () => {
+		await createProject({ slug: "pub-pitch-numbers", name: "Numbers", tagline: "{jobs} real jobs", tagline_fallback: "Only real jobs" });
+		await createProject({ slug: "pub-pitch-plain", name: "Plain", tagline: "Case studies, on a site I built" });
+		const snapshot = await buildSnapshot(db, TODAY, NOW);
+		expect(snapshot.projects.find((p) => p.slug === "pub-pitch-numbers")!.pitch).toBe("Only real jobs");
+		expect(snapshot.projects.find((p) => p.slug === "pub-pitch-plain")!.pitch).toBe("Case studies, on a site I built");
+	});
+
 	it("builds 12 weeks with this week last, and 12 months with this month last", async () => {
 		await project("pub-series");
 		const p = (await buildSnapshot(db, TODAY, NOW)).projects.find((x) => x.slug === "pub-series")!;

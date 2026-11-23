@@ -11,13 +11,14 @@ import { utcDay } from "@/lib/days";
 import { listProjects } from "@/lib/db/projects";
 import { getJourney } from "@/lib/db/settings";
 import { renderMarkdown } from "@/lib/markdown";
-import { adminHref } from "@/lib/site";
+import { adminHref, site } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Journey entry" };
 
 /**
- * An entry as it looks on the public page (the public journey's own entry design), with its status
- * as a dot and its three actions: Edit, Publish or Unpublish, and Delete (which asks first).
+ * An entry (its text, in the timeline design), with its status as a dot, a link to its own public
+ * page (/journey/<slug>, once published) and where its longer post lives (content/journey/<slug>.md),
+ * and its three actions: Edit, Publish or Unpublish, and Delete (which asks first).
  */
 export default async function JourneyEntryView({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
 	const [{ id }, query] = await Promise.all([params, searchParams]);
@@ -36,9 +37,22 @@ export default async function JourneyEntryView({ params, searchParams }: { param
 				<BackLink href={adminHref("/settings/journey")}>Journey</BackLink>
 				<EntryStatus published={entry.isPublished} />
 			</div>
-			<section aria-label="As it looks on your public page" className="rounded-2xl border border-line bg-card p-6">
+			<section aria-label="The entry" className="rounded-2xl border border-line bg-card p-6">
 				<JourneyList entries={[{ slug: entry.slug, type: entry.type, day, title: entry.title, html: renderMarkdown(entry.bodyMd), linkUrl: entry.linkUrl, projectName: project?.name ?? null }]} />
 			</section>
+			<div className="space-y-1 text-sm text-ink-2">
+				{entry.isPublished && (
+					<p>
+						Its page:{" "}
+						<a href={`/journey/${entry.slug}`} target="_blank" rel="noopener noreferrer" className="link">
+							{`${site.url.replace("https://", "")}/journey/${entry.slug}`} ↗<span className="sr-only"> (opens in a new tab)</span>
+						</a>
+					</p>
+				)}
+				<p className="text-muted">
+					To add a longer post, an image or The numbers, edit <code className="rounded bg-pill px-1 py-0.5 text-[13px]">content/journey/{entry.slug}.md</code> and deploy.
+				</p>
+			</div>
 			<EntryActions id={entry.id} published={entry.isPublished} editHref={adminHref(`/settings/journey/${entry.id}/edit`)} />
 		</div>
 	);
