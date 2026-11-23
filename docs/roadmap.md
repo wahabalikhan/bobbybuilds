@@ -15,7 +15,7 @@ BobbyBuilds is built in phases. Each phase starts with a plan and ends with a te
 | 9 | Launch | In progress: custom domain and Access done (`b2cbb96`, `09c5b40`, `fc88135`) |
 | 10 | Public page redesign | ✅ Done (10a `9d5b21e`; 10b `768053a`, `e9944c4`, `f08aae7`) |
 | 11 | One design system for the admin | ✅ Done ("Admin on the public design system") |
-| 12 | Bento redesign of the public pages | Built, waiting for testing (not committed yet) |
+| 12 | Bento redesign of the public pages | ✅ Done (`87da107`); live data changes wait for your go |
 
 ## 1. Setup ✅
 
@@ -196,6 +196,8 @@ The admin takes on the public page's design language, so the two match.
 - **Step 3: cards and pages**: admin Home's project cards on the public card design (keeping visitors, change, numbers and uptime; → for the internal link; `CARD_HEIGHT`); headline figures as plain bold figures; the project header's numbers as text, not a pill; status text in `--critical-ink` and `--warning-ink` (the red status pill 5.4:1, the dark-mode amber pill and delete heading fixed), status icon glyphs at 3:1 or more.
 
 ## 12. Bento redesign of the public pages
+
+- `87da107` (23 November 2026): committed, pushed and deployed. Checks: typecheck, lint, 563 tests, `test:admin-live` (20 admin pages in Chrome), and a Chrome click-through of the public pages on the production preview at 1440px and 390px. Safari wasn't available (its remote automation is off).
 
 A new, light-only bento look for the home page and the journey, and a page for each journey post, from the designs in `docs/redesign/designs/` (desktop 1440px, mobile 390px). The admin is unchanged, apart from a link from each journey entry to its page.
 
