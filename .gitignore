@@ -40,3 +40,6 @@ next-env.d.ts
 
 # Local notes and reports, never committed (the repo is public)
 .tmp/
+
+# The Phase 12 design pack (designs, assets and brief): kept locally, not in Git
+/docs/redesign/

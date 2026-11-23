@@ -15,7 +15,7 @@ BobbyBuilds is built in phases. Each phase starts with a plan and ends with a te
 | 9 | Launch | In progress: custom domain and Access done (`b2cbb96`, `09c5b40`, `fc88135`) |
 | 10 | Public page redesign | ✅ Done (10a `9d5b21e`; 10b `768053a`, `e9944c4`, `f08aae7`) |
 | 11 | One design system for the admin | ✅ Done ("Admin on the public design system") |
-| 12 | Bento redesign of the public pages | ✅ Done (`87da107`); live data changes wait for your go |
+| 12 | Bento redesign of the public pages | ✅ Done (`87da107`) |
 
 ## 1. Setup ✅
 
@@ -199,7 +199,7 @@ The admin takes on the public page's design language, so the two match.
 
 - `87da107` (23 November 2026): committed, pushed and deployed. Checks: typecheck, lint, 563 tests, `test:admin-live` (20 admin pages in Chrome), and a Chrome click-through of the public pages on the production preview at 1440px and 390px. Safari wasn't available (its remote automation is off).
 
-A new, light-only bento look for the home page and the journey, and a page for each journey post, from the designs in `docs/redesign/designs/` (desktop 1440px, mobile 390px). The admin is unchanged, apart from a link from each journey entry to its page.
+A new, light-only bento look for the home page and the journey, and a page for each journey post, from the designs in `docs/redesign/designs/` (desktop 1440px, mobile 390px; kept locally, not in Git). The admin is unchanged, apart from a link from each journey entry to its page.
 
 - **Home:** a 6-column grid: the intro (photo, name, a "Building …" pill, "A product designer, building tools in public.", the bio, LinkedIn, X and GitHub), RealTechJobs as the tall blue featured card (its live job and company counts and a phone screenshot), four number tiles (days building; visitors in 30 days with "Up/Down from N in the 30 days before" and a small trend line; running costs with "See breakdown" opening "Where the money goes"; revenue in ink), the Portfolio card with its screenshot, Now (from `content/now.ts`, with an optional progress bar), GitHub activity (the live grid) and the latest 3 journey entries. Top navigation (Projects, Numbers, Journey, "Say hello") and a text footer.
 - **Journey:** a header card with coloured type filters (`?type=` kept, `aria-current`), entries by month in a 3-column grid: the newest entry with an image featured in blue, a lone entry with an image as a wide card, a dashed "Next entry" card. Every card opens its post.
@@ -210,5 +210,5 @@ A new, light-only bento look for the home page and the journey, and a page for e
 - **Contrast:** the brief's Shipped green #15803D is 4.47:1 on its tint, so it's #157A3A (4.82:1); the light blue #9DB4FF is only used for large text on blue (3.32:1).
 - **Footer and post header** (revised before the commit): the original "Made with 🫶🏼 using" line and tool icons are back on the left of the footer; posts use the shared header (Journey current) with "← All entries" above the blue card, keeping the `?type=` filter.
 - **Next.js 16.4.1 → 16.4.6** (and `eslint-config-next`): seven moderate advisories (cache leaks and poisoning with `use cache`, an SVG bypass in image optimisation, a cookie leak on edge routes, response injection when self-hosting) cover 16.0.0 to 16.4.4; 16.4.6 is the latest 16.x.
-- **Live data after the deploy (on your go-ahead):** rename the June entry to "My portfolio, designed in Figma and built with Claude Code"; set Portfolio's tagline to "Case studies, on a site I designed and built with Claude Code."; set the Screenshots (rtj-phone-job for RealTechJobs; portfolio-showcase for Portfolio, alt text "My portfolio site, wahabalikhan.com, on desktop and mobile"); and change "Tech Jobs went company-first" (same slug) to the title "Going company-first: from 5,000 jobs to 1,000 real ones" and the text "I hid every job copied from other job boards. The board got five times smaller overnight, and much easier to trust."
+- **Live data after the deploy (done 23 November 2026, with bound queries, then the snapshot rebuilt):** renamed the June entry to "My portfolio, designed in Figma and built with Claude Code"; set Portfolio's tagline to "Case studies, on a site I designed and built with Claude Code."; set the Screenshots (rtj-phone-job for RealTechJobs; portfolio-showcase for Portfolio, alt text "My portfolio site, wahabalikhan.com, on desktop and mobile"); and changed "Tech Jobs went company-first" (same slug) to the title "Going company-first: from 5,000 jobs to 1,000 real ones" and the text "I hid every job copied from other job boards. The board got five times smaller overnight, and much easier to trust."
 
