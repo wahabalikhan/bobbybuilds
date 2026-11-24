@@ -33,7 +33,7 @@ export const IMAGES: Record<string, { width: number; height: number; widths: num
 	},
 	"rtj-phone-job": {
 		"width": 780,
-		"height": 1244,
+		"height": 1688,
 		"widths": [
 			480,
 			780
